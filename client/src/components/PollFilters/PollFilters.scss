@@ -1,0 +1,72 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.poll-filters {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-md;
+
+  &__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__heading {
+    margin: 0;
+    font-size: $font-size-lg;
+  }
+
+  &__clear {
+    @include button-reset;
+    color: var(--accent);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__active {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $gap-xs;
+  }
+
+  &__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 4px 3px 10px;
+    border-radius: $radius-pill;
+    color: #fff;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    white-space: nowrap;
+  }
+
+  &__pill-close {
+    @include button-reset;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+    font-size: 0.7rem;
+    line-height: 1;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.45);
+    }
+  }
+
+  &__selects {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-sm;
+  }
+}

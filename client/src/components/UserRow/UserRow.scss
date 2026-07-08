@@ -1,0 +1,42 @@
+@use "variables" as *;
+
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: $gap-md;
+  padding: $gap-md;
+  border-bottom: 1px solid var(--border-color);
+
+  &__main {
+    display: flex;
+    align-items: center;
+    gap: $gap-md;
+    flex: 1;
+    min-width: 0;
+
+    &:hover .user-row__display {
+      text-decoration: underline;
+    }
+  }
+
+  &__names {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__display {
+    color: var(--text-primary);
+    font-weight: $font-weight-bold;
+  }
+
+  &__handle {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  &__action {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+}

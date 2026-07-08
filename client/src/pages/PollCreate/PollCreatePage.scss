@@ -1,0 +1,118 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.poll-create {
+  &__header {
+    padding: $gap-md;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-sm;
+    padding: $gap-md;
+  }
+
+  &__question,
+  &__option,
+  &__select {
+    padding: $gap-sm;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-sm;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font: inherit;
+  }
+
+  &__question {
+    font-size: $font-size-lg;
+  }
+
+  &__label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: var(--text-secondary);
+  }
+
+  &__link {
+    align-self: flex-start;
+    font-size: $font-size-sm;
+    color: var(--accent);
+  }
+
+  &__resolution {
+    margin: 0;
+    font-size: $font-size-sm;
+
+    &--scored {
+      color: var(--color-success);
+    }
+    &--opinion {
+      color: var(--text-secondary);
+    }
+  }
+
+  &__add {
+    @include button-reset;
+    align-self: flex-start;
+    color: var(--accent);
+  }
+
+  &__error {
+    color: var(--color-danger);
+    font-size: $font-size-sm;
+  }
+
+  &__cooldown-msg {
+    margin: 0 0 $gap-md;
+    color: var(--text-primary);
+  }
+
+  &__cooldown-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: $gap-sm;
+  }
+
+  &__cooldown-vote {
+    @include button-reset;
+    padding: $gap-sm $gap-lg;
+    border-radius: $radius-pill;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      background: var(--accent-hover);
+    }
+  }
+
+  &__cooldown-dismiss {
+    @include button-reset;
+    padding: $gap-sm $gap-lg;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-pill;
+    color: var(--text-primary);
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+  }
+
+  &__submit {
+    @include button-reset;
+    align-self: flex-end;
+    padding: $gap-sm $gap-lg;
+    border-radius: $radius-pill;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      background: var(--accent-hover);
+    }
+  }
+}

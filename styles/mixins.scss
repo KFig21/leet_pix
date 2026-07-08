@@ -1,0 +1,31 @@
+@use "variables" as *;
+
+@mixin tablet {
+  @media (min-width: $bp-tablet) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: $bp-desktop) {
+    @content;
+  }
+}
+
+// Standard card surface used by poll cards, panels, etc.
+@mixin card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+}
+
+// Reset native button chrome. Includes `color: inherit` so button text follows
+// the theme instead of the browser's default (invisible in dark mode).
+@mixin button-reset {
+  appearance: none;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}

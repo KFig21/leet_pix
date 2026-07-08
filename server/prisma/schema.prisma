@@ -1,0 +1,237 @@
+// LeetPix data model.
+// Auth (auth.users) is owned by Supabase. `Profile.id` == Supabase auth user id.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Sport {
+  FOOTBALL
+  BASEBALL
+}
+
+enum PollStatus {
+  OPEN
+  LOCKED
+  RESOLVED
+}
+
+enum PollLockType {
+  FIXED_TIME
+  GAME_START
+}
+
+enum PollQuestionType {
+  START
+  BENCH
+  ADD
+  DROP
+  TRADE_FOR
+  TRADE_AWAY
+  BUY_LOW
+}
+
+enum NotificationType {
+  FOLLOW // actor started following recipient
+  VOTE // actor voted on recipient's poll
+  POLL_OUTCOME // recipient's poll resolved
+}
+
+// ── Users / social graph ───────────────────────────────────
+
+model Profile {
+  id          String   @id @db.Uuid // mirrors auth.users.id
+  username    String   @unique
+  displayName String
+  bio         String?
+  // Generic avatar (icon + colors), stored as JSON. No uploads.
+  avatar      Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  polls          Poll[]
+  votes          Vote[]
+  scoringFormats ScoringFormat[]
+
+  following Follow[] @relation("follower")
+  followers Follow[] @relation("following")
+
+  notifications      Notification[] @relation("recipient")
+  notificationsActed Notification[] @relation("actor")
+
+  @@index([username])
+  @@map("profiles")
+}
+
+// Directed follow edge.
+model Follow {
+  followerId  String  @db.Uuid
+  followingId String  @db.Uuid
+  follower    Profile @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   Profile @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([followerId, followingId])
+  @@index([followingId])
+  @@map("follows")
+}
+
+// ── Polls / options / votes ────────────────────────────────
+
+model Poll {
+  id       String       @id @default(uuid()) @db.Uuid
+  authorId String       @db.Uuid
+  author   Profile      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  sport        Sport
+  questionType PollQuestionType
+  status       PollStatus       @default(OPEN)
+  lockType PollLockType
+  lockAt   DateTime? // resolved lock time (set explicitly or derived from game start)
+
+  // Number of weeks the outcome is tallied over (add/drop polls). Null = a
+  // single game (start/bench) or not scored (opinion).
+  evaluationWeeks Int?
+
+  // Scoring: exactly one of preset/customFormat applies.
+  scoringPreset   String?
+  scoringFormatId String?        @db.Uuid
+  scoringFormat   ScoringFormat? @relation(fields: [scoringFormatId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  resolvedAt DateTime?
+
+  options       PollOption[]
+  votes         Vote[]
+  notifications Notification[]
+
+  @@index([authorId, createdAt])
+  @@index([status, lockAt])
+  @@map("polls")
+}
+
+model PollOption {
+  id         String  @id @default(uuid()) @db.Uuid
+  pollId     String  @db.Uuid
+  poll       Poll    @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  playerId   String // id from the stats source
+  playerName String
+  // Projected fantasy points under the poll's scoring format (filled at lock).
+  projectedPoints Float?
+  // Set when the poll resolves: the actual scored points for this option.
+  actualPoints    Float?
+  isWinner        Boolean @default(false)
+
+  votes Vote[]
+
+  @@index([pollId])
+  @@map("poll_options")
+}
+
+model Vote {
+  id       String     @id @default(uuid()) @db.Uuid
+  pollId   String     @db.Uuid
+  poll     Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  optionId String     @db.Uuid
+  option   PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  voterId  String     @db.Uuid
+  voter    Profile    @relation(fields: [voterId], references: [id], onDelete: Cascade)
+
+  // Snapshot of this option's vote share at cast time (for risk weighting).
+  consensusAtVote Float?
+
+  createdAt DateTime @default(now())
+  result    PollResult?
+
+  // One vote per user per poll.
+  @@unique([pollId, voterId])
+  @@index([voterId, createdAt])
+  @@map("votes")
+}
+
+// Graded outcome of a vote once its poll resolves. Drives all profile stats.
+model PollResult {
+  id      String  @id @default(uuid()) @db.Uuid
+  voteId  String  @unique @db.Uuid
+  vote    Vote    @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  correct Boolean
+  // Risk-adjusted score: low consensus + correct => high; high consensus + correct => mild.
+  score   Float
+  resolvedAt DateTime @default(now())
+
+  @@index([resolvedAt])
+  @@map("poll_results")
+}
+
+// ── Notifications ──────────────────────────────────────────
+
+model Notification {
+  id          String           @id @default(uuid()) @db.Uuid
+  recipientId String           @db.Uuid
+  recipient   Profile          @relation("recipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  // The user who triggered it (follower/voter). Null for system events.
+  actorId     String?          @db.Uuid
+  actor       Profile?         @relation("actor", fields: [actorId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  // Related poll for VOTE / POLL_OUTCOME.
+  pollId      String?          @db.Uuid
+  poll        Poll?            @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  read        Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  @@index([recipientId, read])
+  @@index([recipientId, createdAt])
+  @@map("notifications")
+}
+
+// ── Players ────────────────────────────────────────────────
+// Canonical player table. Poll options reference these by id (via a snapshot),
+// and external source ids let us join projections/stats later.
+
+model Player {
+  id        String  @id @default(uuid()) @db.Uuid
+  sport     Sport
+  fullName  String
+  firstName String?
+  lastName  String?
+  team      String?
+  position  String?
+  active    Boolean @default(true)
+
+  // External source ids (for future projections / live stats).
+  sleeperId String? @unique
+  espnId    String?
+  yahooId   String?
+  mlbamId   String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sport, active, fullName])
+  @@index([fullName])
+  @@map("players")
+}
+
+// ── Custom scoring formats ─────────────────────────────────
+
+model ScoringFormat {
+  id       String  @id @default(uuid()) @db.Uuid
+  ownerId  String  @db.Uuid
+  owner    Profile @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name     String
+  sport    Sport
+  // statKey -> points per unit
+  rules    Json
+  createdAt DateTime @default(now())
+
+  polls Poll[]
+
+  @@unique([ownerId, name])
+  @@map("scoring_formats")
+}

@@ -1,0 +1,13 @@
+@use "variables" as *;
+
+.poll-countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: $font-size-sm;
+
+  &__icon {
+    font-size: 15px;
+  }
+}

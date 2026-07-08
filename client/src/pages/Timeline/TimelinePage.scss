@@ -1,0 +1,42 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.timeline {
+  &__header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: $gap-md;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    background: color-mix(in srgb, var(--bg-primary) 80%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__msg {
+    padding: $gap-lg $gap-md;
+    color: var(--text-secondary);
+    text-align: center;
+  }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $gap-sm;
+    padding: $gap-xl $gap-md;
+  }
+
+  &__cta {
+    padding: $gap-sm $gap-lg;
+    border-radius: $radius-pill;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      background: var(--accent-hover);
+    }
+  }
+}

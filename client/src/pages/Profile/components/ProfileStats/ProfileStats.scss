@@ -1,0 +1,61 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.profile-stats {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-md;
+  padding: $gap-md;
+  border-bottom: 1px solid var(--border-color);
+
+  &__windows {
+    display: flex;
+    gap: $gap-xs;
+    flex-wrap: wrap;
+  }
+
+  &__window {
+    @include button-reset;
+    padding: $gap-xs $gap-md;
+    border-radius: $radius-pill;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+
+    &--active {
+      background: var(--accent);
+      color: var(--accent-contrast);
+    }
+  }
+
+  &__figures {
+    display: flex;
+    gap: $gap-lg;
+    flex-wrap: wrap;
+  }
+
+  &__figure {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      font-size: $font-size-lg;
+    }
+    span {
+      color: var(--text-secondary);
+      font-size: $font-size-sm;
+    }
+  }
+
+  &__heatmap-label {
+    display: block;
+    margin-bottom: $gap-sm;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+  }
+}

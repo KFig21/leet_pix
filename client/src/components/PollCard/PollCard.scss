@@ -1,0 +1,218 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.poll-card {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-sm;
+  padding: $gap-md;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--hover-overlay);
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+  }
+
+  &__identity {
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+    color: inherit;
+    min-width: 0;
+
+    &:hover .poll-card__name {
+      text-decoration: underline;
+    }
+  }
+
+  &__names {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__name {
+    font-weight: $font-weight-bold;
+    color: var(--text-primary);
+  }
+
+  &__handle {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  &__meta {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+  }
+
+  &__sport {
+    font-size: 20px;
+    color: var(--text-secondary);
+  }
+
+  &__question {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: $font-size-lg;
+  }
+
+  &__badges {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: $gap-sm;
+    margin-bottom: $gap-xs;
+  }
+
+  &__options {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-sm;
+  }
+
+  &__option {
+    @include button-reset;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+    width: 100%;
+    padding: $gap-sm;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: $radius-md;
+    overflow: hidden;
+
+    &:not(:disabled) {
+      cursor: pointer;
+
+      &:hover {
+        border-color: var(--accent);
+      }
+    }
+
+    // The option the viewer voted for (green border + "You" pill mark it as
+    // theirs; the fill stays neutral — green is reserved for a correct outcome).
+    &--voted {
+      border-color: var(--accent);
+
+      .poll-card__option-label {
+        font-weight: $font-weight-bold;
+      }
+    }
+
+    // Selected-but-not-yet-confirmed (confirm-votes mode). Same clean 1px accent
+    // border as the voted state; the Confirm/Cancel bar signals it's pending.
+    &--pending {
+      border-color: var(--accent);
+    }
+  }
+
+  &__option-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    // Clearly lighter than the option surface so the vote share reads.
+    background: color-mix(in srgb, var(--text-primary) 18%, var(--bg-secondary));
+    z-index: 0;
+  }
+
+  &__confirm {
+    display: flex;
+    gap: $gap-sm;
+  }
+
+  &__confirm-btn {
+    @include button-reset;
+    padding: $gap-sm $gap-lg;
+    border-radius: $radius-pill;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      background: var(--accent-hover);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+  }
+
+  &__cancel-btn {
+    @include button-reset;
+    padding: $gap-sm $gap-lg;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-pill;
+    color: var(--text-primary);
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+  }
+
+  &__error {
+    margin: 0;
+    color: var(--color-danger);
+    font-size: $font-size-sm;
+  }
+
+  &__option-label,
+  &__proj,
+  &__option-right {
+    position: relative;
+    z-index: 1;
+  }
+
+  &__proj {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  &__option-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: $gap-xs;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: $radius-pill;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    white-space: nowrap;
+
+    &--you {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+  }
+
+  &__pct {
+    font-weight: $font-weight-bold;
+  }
+
+  &__foot {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+}

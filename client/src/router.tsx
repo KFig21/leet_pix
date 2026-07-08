@@ -1,0 +1,38 @@
+import { createBrowserRouter, Navigate } from "react-router-dom";
+import { AppLayout } from "@/components/AppLayout/AppLayout";
+import { ProtectedRoute } from "@/components/ProtectedRoute/ProtectedRoute";
+import { LoginPage } from "@/pages/Login/LoginPage";
+import { RegisterPage } from "@/pages/Register/RegisterPage";
+import { TimelinePage } from "@/pages/Timeline/TimelinePage";
+import { ExplorePage } from "@/pages/Explore/ExplorePage";
+import { NotificationsPage } from "@/pages/Notifications/NotificationsPage";
+import { ProfilePage } from "@/pages/Profile/ProfilePage";
+import { PollCreatePage } from "@/pages/PollCreate/PollCreatePage";
+import { PollViewPage } from "@/pages/PollView/PollViewPage";
+import { SearchPage } from "@/pages/Search/SearchPage";
+import { SettingsPage } from "@/pages/Settings/SettingsPage";
+import { ScoringFormatCreatorPage } from "@/pages/ScoringFormatCreator/ScoringFormatCreatorPage";
+
+export const router = createBrowserRouter([
+  { path: "/login", element: <LoginPage /> },
+  { path: "/register", element: <RegisterPage /> },
+  {
+    element: (
+      <ProtectedRoute>
+        <AppLayout />
+      </ProtectedRoute>
+    ),
+    children: [
+      { index: true, element: <Navigate to="/home" replace /> },
+      { path: "/home", element: <TimelinePage /> },
+      { path: "/explore", element: <ExplorePage /> },
+      { path: "/notifications", element: <NotificationsPage /> },
+      { path: "/search", element: <SearchPage /> },
+      { path: "/create", element: <PollCreatePage /> },
+      { path: "/polls/:id", element: <PollViewPage /> },
+      { path: "/u/:username", element: <ProfilePage /> },
+      { path: "/settings", element: <SettingsPage /> },
+      { path: "/scoring/new", element: <ScoringFormatCreatorPage /> },
+    ],
+  },
+]);

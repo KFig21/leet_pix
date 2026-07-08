@@ -1,0 +1,81 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.profile-editor {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-md;
+
+  &__msg {
+    color: var(--text-secondary);
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-xs;
+
+    span {
+      font-size: $font-size-sm;
+      font-weight: $font-weight-bold;
+      color: var(--text-secondary);
+    }
+
+    input,
+    textarea {
+      padding: $gap-sm;
+      border: 1px solid var(--border-color);
+      border-radius: $radius-sm;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font: inherit;
+      resize: vertical;
+
+      &:focus {
+        outline: 2px solid var(--accent);
+      }
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: $gap-md;
+  }
+
+  &__status {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  &__cancel {
+    @include button-reset;
+    padding: $gap-sm $gap-lg;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-pill;
+    color: var(--text-primary);
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+  }
+
+  &__save {
+    @include button-reset;
+    padding: $gap-sm $gap-lg;
+    border-radius: $radius-pill;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      background: var(--accent-hover);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+  }
+}

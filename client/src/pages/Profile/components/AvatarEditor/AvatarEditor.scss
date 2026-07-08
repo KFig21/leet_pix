@@ -1,0 +1,131 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.avatar-editor {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-sm;
+
+  &__preview {
+    display: flex;
+    justify-content: center;
+    padding: $gap-sm 0 $gap-md;
+  }
+
+  &__tabs {
+    display: flex;
+    gap: $gap-xs;
+    padding: $gap-xs;
+    background: var(--bg-secondary);
+    border-radius: $radius-pill;
+  }
+
+  &__tab {
+    @include button-reset;
+    flex: 1;
+    padding: $gap-sm;
+    border-radius: $radius-pill;
+    color: var(--text-secondary);
+    font-weight: $font-weight-bold;
+
+    &--active {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      box-shadow: var(--shadow-card);
+    }
+  }
+
+  &__label {
+    margin-top: $gap-sm;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: var(--text-secondary);
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: $gap-xs;
+
+    @media (max-width: $bp-tablet) {
+      grid-template-columns: repeat(6, 1fr);
+    }
+  }
+
+  &__cell {
+    @include button-reset;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-sm;
+    color: var(--text-primary);
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+
+    &--active {
+      border-color: var(--accent);
+      background: var(--bg-hover);
+    }
+  }
+
+  &__emoji {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  &__colors {
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+    flex-wrap: wrap;
+  }
+
+  &__swatch {
+    @include button-reset;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+
+    &--active {
+      border-color: var(--text-primary);
+    }
+  }
+
+  &__native {
+    @include button-reset;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+  }
+
+  &__shapes {
+    display: flex;
+    gap: $gap-sm;
+  }
+
+  &__shape {
+    @include button-reset;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $gap-xs;
+    padding: $gap-sm;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-md;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    flex: 1;
+
+    &--active {
+      border-color: var(--accent);
+      color: var(--text-primary);
+    }
+  }
+}

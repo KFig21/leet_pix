@@ -1,0 +1,53 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.scoring {
+  &__header {
+    padding: $gap-md;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-sm;
+    padding: $gap-md;
+  }
+
+  &__name,
+  &__row input {
+    padding: $gap-sm;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-sm;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: $gap-sm;
+  }
+
+  &__add {
+    @include button-reset;
+    align-self: flex-start;
+    color: var(--accent);
+  }
+
+  &__save {
+    @include button-reset;
+    align-self: flex-end;
+    padding: $gap-sm $gap-lg;
+    border-radius: $radius-pill;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      background: var(--accent-hover);
+    }
+  }
+}

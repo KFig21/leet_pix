@@ -1,0 +1,29 @@
+@use "variables" as *;
+
+.loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $gap-lg;
+
+  &__spinner {
+    display: inline-block;
+    border-style: solid;
+    border-color: var(--border-color);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: loader-spin 0.7s linear infinite;
+  }
+}
+
+@keyframes loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader__spinner {
+    animation-duration: 1.4s;
+  }
+}

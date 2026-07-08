@@ -1,0 +1,91 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.player-select {
+  position: relative;
+
+  &__input,
+  &__selected {
+    width: 100%;
+    padding: $gap-sm;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-sm;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font: inherit;
+  }
+
+  &__selected {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $gap-sm;
+    border-color: var(--accent);
+  }
+
+  &__selected-name {
+    font-weight: $font-weight-bold;
+  }
+
+  &__clear {
+    @include button-reset;
+    color: var(--text-secondary);
+    padding: 0 $gap-xs;
+
+    &:hover {
+      color: var(--color-danger);
+    }
+  }
+
+  &__menu {
+    position: absolute;
+    z-index: 10;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: $gap-xs;
+    list-style: none;
+    max-height: 280px;
+    overflow-y: auto;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: $radius-md;
+    box-shadow: var(--shadow-card);
+  }
+
+  &__msg {
+    display: flex;
+    align-items: center;
+    gap: $gap-xs;
+    padding: $gap-sm;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  &__option {
+    @include button-reset;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: $gap-sm;
+    width: 100%;
+    padding: $gap-sm;
+    border-radius: $radius-sm;
+    color: var(--text-primary);
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+  }
+
+  &__name {
+    font-weight: $font-weight-bold;
+  }
+
+  &__meta {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    white-space: nowrap;
+  }
+}

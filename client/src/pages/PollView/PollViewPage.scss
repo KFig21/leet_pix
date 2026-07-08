@@ -1,0 +1,57 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.poll-view {
+  &__header {
+    padding: $gap-md;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__voters {
+    padding-top: $gap-md;
+  }
+
+  &__title {
+    margin: 0;
+    padding: 0 $gap-md $gap-sm;
+    font-size: $font-size-lg;
+  }
+
+  &__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $gap-xs;
+    padding: 0 $gap-md $gap-sm;
+  }
+
+  &__filter {
+    @include button-reset;
+    padding: $gap-xs $gap-md;
+    border-radius: $radius-pill;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+
+    &--active {
+      background: var(--accent);
+      color: var(--accent-contrast);
+      border-color: var(--accent);
+    }
+  }
+
+  &__picked {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  &__msg {
+    padding: $gap-md;
+    color: var(--text-secondary);
+  }
+}

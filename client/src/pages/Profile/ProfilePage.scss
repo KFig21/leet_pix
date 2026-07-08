@@ -1,0 +1,81 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.profile {
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: $gap-md;
+    padding: $gap-md;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__identity {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__name {
+    margin: 0;
+    font-size: $font-size-xl;
+  }
+
+  &__handle {
+    color: var(--text-secondary);
+  }
+
+  &__bio {
+    margin: $gap-xs 0 0;
+    color: var(--text-primary);
+    font-size: $font-size-sm;
+  }
+
+  &__action {
+    margin-left: auto;
+  }
+
+  &__edit {
+    @include button-reset;
+    margin-left: auto;
+    padding: $gap-sm $gap-md;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-pill;
+    color: var(--text-primary);
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+  }
+
+  &__editor {
+    padding: $gap-md;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__stats {
+    display: flex;
+    gap: $gap-lg;
+    padding: $gap-md;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__stat {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      font-size: $font-size-lg;
+    }
+    span {
+      color: var(--text-secondary);
+      font-size: $font-size-sm;
+    }
+  }
+
+  &__placeholder {
+    padding: $gap-lg $gap-md;
+    color: var(--text-secondary);
+    text-align: center;
+  }
+}

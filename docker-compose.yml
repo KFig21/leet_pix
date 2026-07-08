@@ -1,0 +1,26 @@
+# Dev orchestration. The database is hosted Supabase (Postgres), so it isn't a
+# service here — point DATABASE_URL at your Supabase project in .env.
+services:
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    env_file: .env
+    ports:
+      - "4000:4000"
+
+  client:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - server
+
+  scraper:
+    build:
+      context: ./scraper
+    env_file: .env
+    profiles:
+      - jobs # run on demand: `docker compose run scraper`

@@ -1,0 +1,77 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.explore {
+  &__header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: $gap-md;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    background: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__section {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: $gap-sm;
+  }
+
+  &__title {
+    margin: 0;
+    padding: $gap-md;
+    font-size: $font-size-lg;
+  }
+
+  &__filters {
+    display: flex;
+    gap: $gap-xs;
+    padding: 0 $gap-md $gap-sm;
+  }
+
+  &__filter {
+    @include button-reset;
+    display: inline-flex;
+    align-items: center;
+    gap: $gap-xs;
+    padding: $gap-xs $gap-md;
+    border-radius: $radius-pill;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+
+    &--active {
+      background: var(--accent);
+      color: var(--accent-contrast);
+    }
+  }
+
+  &__filter-icon {
+    font-size: 18px;
+  }
+
+  &__msg {
+    padding: 0 $gap-md $gap-md;
+    color: var(--text-secondary);
+  }
+
+  &__more {
+    @include button-reset;
+    display: block;
+    width: 100%;
+    padding: $gap-md;
+    color: var(--accent);
+    font-weight: $font-weight-bold;
+    text-align: left;
+
+    &:hover {
+      background: var(--hover-overlay);
+    }
+  }
+}

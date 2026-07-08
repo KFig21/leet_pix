@@ -1,0 +1,67 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.profile-tabs {
+  &__bar {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__tab {
+    @include button-reset;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: $gap-sm;
+    flex: 1;
+    padding: $gap-md $gap-sm;
+    color: var(--text-secondary);
+    font-weight: $font-weight-bold;
+    border-bottom: 2px solid transparent;
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+
+    &--active {
+      color: var(--text-primary);
+      border-bottom-color: var(--accent);
+
+      .profile-tabs__count {
+        background: var(--accent);
+        color: var(--accent-contrast);
+      }
+    }
+  }
+
+  &__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: $radius-pill;
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    font-size: $font-size-sm;
+  }
+
+  &__msg {
+    padding: $gap-lg $gap-md;
+    color: var(--text-secondary);
+    text-align: center;
+  }
+
+  &__pick-label {
+    display: block;
+    padding: $gap-sm $gap-md 0;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+}

@@ -1,0 +1,47 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.follow-btn {
+  @include button-reset;
+  min-width: 92px;
+  padding: $gap-xs $gap-md;
+  border-radius: $radius-pill;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: $font-weight-bold;
+  font-size: $font-size-sm;
+  text-align: center;
+
+  &:hover {
+    background: var(--accent-hover);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  // Following state: outlined; swaps "Following" → red "Unfollow" on hover.
+  &--following {
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+
+    .follow-btn__hover-text {
+      display: none;
+    }
+
+    &:hover {
+      background: var(--bg-hover);
+      color: var(--color-danger);
+      border-color: var(--color-danger);
+
+      .follow-btn__text {
+        display: none;
+      }
+      .follow-btn__hover-text {
+        display: inline;
+      }
+    }
+  }
+}

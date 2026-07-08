@@ -1,0 +1,123 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.app-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  max-width: $layout-max-width;
+  margin: 0 auto;
+
+  @include tablet {
+    grid-template-columns: $sidebar-width minmax(0, $content-max-width);
+  }
+
+  @include desktop {
+    grid-template-columns: $sidebar-width minmax(0, $content-max-width) 1fr;
+  }
+
+  &__nav {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-sm;
+    padding: $gap-md;
+    border-right: 1px solid var(--border-color);
+  }
+
+  &__brand {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: var(--accent);
+    margin-bottom: $gap-md;
+  }
+
+  &__link {
+    @include button-reset;
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+    padding: $gap-sm $gap-md;
+    border-radius: $radius-pill;
+    color: var(--text-primary);
+    font-size: $font-size-lg;
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+
+    &--active {
+      font-weight: $font-weight-bold;
+    }
+  }
+
+  &__icon {
+    font-size: 24px;
+  }
+
+  &__icon-wrap {
+    position: relative;
+    display: inline-flex;
+  }
+
+  &__badge {
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-size: 11px;
+    font-weight: $font-weight-bold;
+    line-height: 18px;
+    text-align: center;
+  }
+
+  &__theme,
+  &__signout {
+    @include button-reset;
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+    padding: $gap-sm $gap-md;
+    border-radius: $radius-pill;
+    color: var(--text-secondary);
+    font-size: $font-size-lg;
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+  }
+
+  &__theme {
+    margin-top: auto;
+  }
+
+  &__main {
+    min-height: 100vh;
+    border-right: 1px solid var(--border-color);
+  }
+
+  &__rail {
+    display: none;
+
+    @include desktop {
+      display: block;
+      position: sticky;
+      top: 0;
+      align-self: start;
+      padding: $gap-md;
+    }
+  }
+
+  &__panel {
+    @include card;
+    padding: $gap-md;
+    background: var(--bg-secondary);
+  }
+}

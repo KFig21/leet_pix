@@ -1,0 +1,38 @@
+@use "../colors" as *;
+
+// Dark theme. Applied via <html data-theme="dark">.
+[data-theme="dark"] {
+  // ── Surfaces ────────────────────────────────────────────────────────────
+  --bg-primary: #{$black};
+  --bg-secondary: #{$gray-850};
+  --bg-hover: #{$gray-800};
+  // Subtle hover feedback for large rows/cards (translucent, so it never
+  // matches solid surfaces like option fills).
+  --hover-overlay: rgba(214, 223, 255, 0.06);
+
+  // ── Text ────────────────────────────────────────────────────────────────
+  --text-primary: #{$gray-50};
+  --text-secondary: #{$gray-400};
+
+  // ── Borders ─────────────────────────────────────────────────────────────
+  --border-color: #{$gray-750};
+
+  // ── Accent (kelly green — brighter for dark bg) ──────────────────────────
+  --accent: #{$kelly-400};
+  --accent-hover: #{$kelly-500};
+  --accent-contrast: #{$black};
+
+  // ── Semantic ────────────────────────────────────────────────────────────
+  --color-success: #{$kelly-400};
+  --color-danger: #{$red-400};
+  --color-warning: #{$yellow-400};
+  --color-info: #{$blue-400};
+
+  // ── Streaks ─────────────────────────────────────────────────────────────
+  --color-hot: #{$hot-500};
+  --color-cold: #{$cold-500};
+
+  // ── Overlays / shadows ───────────────────────────────────────────────────
+  --overlay-bg: rgba(0, 0, 0, 0.6);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.5);
+}

@@ -1,0 +1,83 @@
+@use "variables" as *;
+
+.notifications {
+  &__header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: $gap-md;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    background: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__msg {
+    padding: $gap-lg $gap-md;
+    color: var(--text-secondary);
+    text-align: center;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: $gap-md;
+    padding: $gap-md;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+
+    &:hover {
+      background: var(--hover-overlay);
+    }
+
+    // Unread: subtle accent-tinted background + left accent bar.
+    &--unread {
+      background: color-mix(in srgb, var(--accent) 8%, transparent);
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+  }
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  &__main {
+    display: flex;
+    align-items: center;
+    gap: $gap-md;
+    flex: 1;
+    min-width: 0;
+    color: inherit;
+
+    &:hover strong {
+      text-decoration: underline;
+    }
+  }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__time {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    flex-shrink: 0;
+  }
+
+  &__following {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    flex-shrink: 0;
+  }
+}

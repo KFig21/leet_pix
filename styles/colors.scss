@@ -1,0 +1,36 @@
+// Raw color palette. Themes map these to semantic CSS custom properties in
+// themes/light.scss and themes/dark.scss — components never use these directly.
+
+// ── Grays ────────────────────────────────────────────────────────────────────
+$gray-50: #f7f9f9;
+$gray-100: #eff3f4;
+$gray-200: #e1e8ed;
+$gray-300: #cfd9de;
+$gray-400: #8899a6;
+$gray-500: #66757f;
+$gray-600: #536471;
+$gray-700: #3a3f44;
+$gray-750: #2f3336; // visible borders on dark surfaces
+$gray-800: #202327;
+$gray-850: #16181c;
+$gray-900: #0f1113;
+$black: #000000;
+$white: #ffffff;
+
+// ── Brand: Kelly green ────────────────────────────────────────────────────────
+// 500 = light-mode accent, 400 = brighter dark-mode accent, 600 = hover/darker.
+$kelly-400: #3dbb5e;
+$kelly-500: #2fa84f;
+$kelly-600: #268a41;
+
+// ── Semantic hues (base = light mode, bright = dark mode) ─────────────────────
+$red-400: #f87171;
+$red-500: #ef4444;
+$yellow-400: #fbbf24;
+$yellow-500: #f59e0b;
+$blue-400: #60a5fa;
+$blue-500: #3b82f6;
+
+// ── Spec accents (hot / cold streaks) ────────────────────────────────────────
+$hot-500: #ff5722; // fire
+$cold-500: #2196f3;

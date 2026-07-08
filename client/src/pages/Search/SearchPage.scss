@@ -1,0 +1,36 @@
+@use "variables" as *;
+
+.search {
+  &__header {
+    padding: $gap-md;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__input {
+    width: 100%;
+    padding: $gap-sm $gap-md;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-pill;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+
+    &:focus {
+      outline: 2px solid var(--accent);
+    }
+  }
+
+  &__results {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__row {
+    padding: $gap-md;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+  }
+}

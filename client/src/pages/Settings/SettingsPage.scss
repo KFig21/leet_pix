@@ -1,0 +1,62 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.settings {
+  &__header {
+    padding: $gap-md;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__section {
+    padding: $gap-md;
+    border-bottom: 1px solid var(--border-color);
+
+    h2 {
+      margin: 0 0 $gap-sm;
+      font-size: $font-size-lg;
+    }
+  }
+
+  &__row {
+    @include button-reset;
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: $gap-sm 0;
+    color: var(--text-primary);
+  }
+
+  &__hint {
+    margin: $gap-sm 0 0;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  &__toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $gap-md;
+  }
+
+  &__label {
+    color: var(--text-primary);
+  }
+
+  &__theme {
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+  }
+
+  &__theme-icon {
+    font-size: 20px;
+    color: var(--text-secondary);
+
+    &--active {
+      color: var(--accent);
+    }
+  }
+}

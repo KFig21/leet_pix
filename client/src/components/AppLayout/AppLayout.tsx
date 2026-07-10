@@ -1,9 +1,8 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { useState, type ComponentType, type ReactNode } from "react";
 import type { SvgIconProps } from "@mui/material/SvgIcon";
 import { useQuery } from "@tanstack/react-query";
 import HomeIcon from "@mui/icons-material/Home";
-import ExploreIcon from "@mui/icons-material/Explore";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import SearchIcon from "@mui/icons-material/Search";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
@@ -12,19 +11,30 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LogoutIcon from "@mui/icons-material/Logout";
+import MenuIcon from "@mui/icons-material/Menu";
 import { api } from "@/lib/api";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { RightRailContext } from "@/context/RightRailContext";
+import { MobileDrawer } from "./MobileDrawer";
 import "./AppLayout.scss";
 
-const NAV: { to: string; label: string; Icon: ComponentType<SvgIconProps> }[] = [
+type NavItem = { to: string; label: string; Icon: ComponentType<SvgIconProps> };
+
+const NAV: NavItem[] = [
   { to: "/home", label: "Home", Icon: HomeIcon },
-  { to: "/explore", label: "Explore", Icon: ExploreIcon },
-  { to: "/notifications", label: "Notifications", Icon: NotificationsIcon },
   { to: "/search", label: "Search", Icon: SearchIcon },
+  { to: "/notifications", label: "Notifications", Icon: NotificationsIcon },
   { to: "/create", label: "Create", Icon: AddCircleIcon },
   { to: "/settings", label: "Settings", Icon: SettingsIcon },
+];
+
+// The core destinations for the mobile bottom bar (Create is a FAB; Settings is
+// reached from the drawer). Profile is appended dynamically once we know /me.
+const MOBILE_NAV: NavItem[] = [
+  { to: "/home", label: "Home", Icon: HomeIcon },
+  { to: "/search", label: "Search", Icon: SearchIcon },
+  { to: "/notifications", label: "Notifications", Icon: NotificationsIcon },
 ];
 
 // Three-column shell (left nav / feed / right rail), Twitter-style.
@@ -45,9 +55,12 @@ export function AppLayout() {
 
   // Content a page has injected into the right rail (e.g. filters).
   const [rail, setRail] = useState<ReactNode>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `app-layout__link${isActive ? " app-layout__link--active" : ""}`;
+  const tabClass = ({ isActive }: { isActive: boolean }) =>
+    `app-layout__tab${isActive ? " app-layout__tab--active" : ""}`;
 
   return (
     <RightRailContext.Provider value={setRail}>
@@ -94,6 +107,44 @@ export function AppLayout() {
             <div className="app-layout__panel">Trends &amp; suggestions</div>
           )}
         </aside>
+
+        {/* Mobile-only: floating compose button + fixed bottom tab bar. */}
+        <Link to="/create" className="app-layout__fab" aria-label="Create poll">
+          <AddCircleIcon />
+        </Link>
+        <nav className="app-layout__mobile-nav">
+          {MOBILE_NAV.map(({ to, label, Icon }) => (
+            <NavLink key={to} to={to} className={tabClass} aria-label={label}>
+              <span className="app-layout__icon-wrap">
+                <Icon className="app-layout__tab-icon" />
+                {to === "/notifications" && (unread?.count ?? 0) > 0 && (
+                  <span className="app-layout__badge">{unread!.count}</span>
+                )}
+              </span>
+            </NavLink>
+          ))}
+          {me && (
+            <NavLink
+              to={`/u/${me.username}`}
+              className={tabClass}
+              aria-label="Profile"
+            >
+              <AccountCircleIcon className="app-layout__tab-icon" />
+            </NavLink>
+          )}
+          <button
+            type="button"
+            className="app-layout__tab"
+            aria-label="More"
+            onClick={() => setDrawerOpen(true)}
+          >
+            <MenuIcon className="app-layout__tab-icon" />
+          </button>
+        </nav>
+
+        {drawerOpen && (
+          <MobileDrawer rail={rail} onClose={() => setDrawerOpen(false)} />
+        )}
       </div>
     </RightRailContext.Provider>
   );

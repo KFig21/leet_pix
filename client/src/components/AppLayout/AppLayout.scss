@@ -25,6 +25,11 @@
     gap: $gap-sm;
     padding: $gap-md;
     border-right: 1px solid var(--border-color);
+
+    // On phones the sidebar is replaced by the bottom tab bar.
+    @include mobile {
+      display: none;
+    }
   }
 
   &__brand {
@@ -101,6 +106,12 @@
   &__main {
     min-height: 100vh;
     border-right: 1px solid var(--border-color);
+
+    // Full-bleed on phones, with room so content clears the fixed bottom bar.
+    @include mobile {
+      border-right: none;
+      padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    }
   }
 
   &__rail {
@@ -119,5 +130,68 @@
     @include card;
     padding: $gap-md;
     background: var(--bg-secondary);
+  }
+
+  // ── Mobile bottom tab bar + compose FAB (phones only) ──
+  &__mobile-nav {
+    display: none;
+
+    @include mobile {
+      display: flex;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      height: calc(56px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      background: var(--bg-primary);
+      border-top: 1px solid var(--border-color);
+    }
+  }
+
+  &__tab {
+    @include button-reset;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+
+    &--active {
+      color: var(--accent);
+    }
+  }
+
+  &__tab-icon {
+    font-size: 26px;
+  }
+
+  &__fab {
+    display: none;
+
+    @include mobile {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+      right: $gap-md;
+      bottom: calc(56px + env(safe-area-inset-bottom, 0px) + #{$gap-md});
+      z-index: 101;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: var(--accent-contrast);
+      box-shadow: var(--shadow-card);
+
+      svg {
+        font-size: 32px;
+      }
+
+      &:hover {
+        background: var(--accent-hover);
+      }
+    }
   }
 }

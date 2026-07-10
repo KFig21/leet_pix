@@ -27,6 +27,8 @@
   --color-danger: #{$red-400};
   --color-warning: #{$yellow-400};
   --color-info: #{$blue-400};
+  // Scored polls (distinct from the green accent to reduce green everywhere).
+  --color-scored: #{$purple-400};
 
   // ── Streaks ─────────────────────────────────────────────────────────────
   --color-hot: #{$hot-500};

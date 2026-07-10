@@ -1,50 +1,65 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import { POLL_QUESTION_LABELS } from "@leetpix/shared";
 import type { Avatar as AvatarData } from "@leetpix/shared";
 import { api } from "@/lib/api";
+import { getPollRules } from "@/lib/pollRules";
 import { useAuth } from "@/context/AuthContext";
 import { usePreferences } from "@/context/PreferencesContext";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { Avatar } from "@/components/Avatar/Avatar";
+import { PlayerMeta } from "@/components/PlayerMeta/PlayerMeta";
+import { TeamTag } from "@/components/TeamTag/TeamTag";
 import { SportIcon } from "@/components/SportIcon/SportIcon";
 import { ScoringBadge } from "@/components/ScoringBadge/ScoringBadge";
 import { ResolutionBadge } from "@/components/ResolutionBadge/ResolutionBadge";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import { PollCountdown } from "@/components/PollCountdown/PollCountdown";
-import type { PollView } from "@/types";
+import {
+  ScoringBreakdownModal,
+  type BreakdownOption,
+} from "@/components/ScoringBreakdownModal/ScoringBreakdownModal";
+import type { PollOptionView, PollView } from "@/types";
 import "./PollCard.scss";
 
 interface Props {
   poll: PollView;
-  // Badges an option with an avatar + "picked" pill (e.g. a profile's Picks feed).
-  // `isSelf` marks that the pick belongs to the signed-in viewer (own profile),
-  // so the separate "You" badge is suppressed to avoid a duplicate.
   pick?: { optionId: string; avatar: AvatarData; isSelf?: boolean };
+  // Static render for the create-screen preview: no navigation on click. The
+  // scoring/resolution badges stay interactive (they open their own modals).
+  preview?: boolean;
 }
 
-// Query keys refreshed after a vote so counts update everywhere the poll appears.
 const REFRESH_KEYS = ["timeline", "explore-polls", "profile-polls", "profile-picks"];
-
 const stop = (e: React.MouseEvent) => e.stopPropagation();
 
 // Self-contained poll card. Clicking the card opens the detail page; the author
-// identity links to their profile; option buttons vote in place.
-export function PollCard({ poll, pick }: Props) {
+// identity links to their profile; option buttons vote (open polls) or open a
+// scoring breakdown (resolved polls).
+export function PollCard({ poll, pick, preview }: Props) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { session } = useAuth();
   const { confirmVotes } = usePreferences();
-  // Viewer's avatar for the "You" badge (shared cache with the sidebar/editor).
+  const isMobile = useIsMobile();
   const { data: me } = useQuery({
     queryKey: ["me"],
     queryFn: () => api.get<{ avatar: AvatarData }>("/profiles/me"),
   });
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Options shown in the breakdown modal (one when a row is clicked, all via
+  // the "view all" button).
+  const [breakdownList, setBreakdownList] = useState<PollOptionView[] | null>(
+    null,
+  );
 
   const voted = poll.myVoteOptionId ?? null;
   const isOwn = session?.user.id === poll.author.id;
+  const resolved = poll.status === "RESOLVED";
   const canVote = poll.status === "OPEN" && !voted && !isOwn;
   const totalVotes = poll.options.reduce((n, o) => n + (o._count?.votes ?? 0), 0);
 
@@ -60,15 +75,22 @@ export function PollCard({ poll, pick }: Props) {
     onError: (e) => setError(e instanceof Error ? e.message : "Vote failed"),
   });
 
-  const onOption = (e: React.MouseEvent, optionId: string) => {
+  const onOption = (e: React.MouseEvent, o: PollOptionView) => {
     e.stopPropagation();
+    if (resolved) {
+      if (o.statLine) setBreakdownList([o]); // detail view carries stat lines
+      return;
+    }
     if (!canVote) return;
-    if (confirmVotes) setPending(optionId);
-    else vote.mutate(optionId);
+    if (confirmVotes) setPending(o.id);
+    else vote.mutate(o.id);
   };
 
   return (
-    <article className="poll-card" onClick={() => navigate(`/polls/${poll.id}`)}>
+    <article
+      className={`poll-card${preview ? " poll-card--preview" : ""}`}
+      onClick={preview ? undefined : () => navigate(`/polls/${poll.id}`)}
+    >
       <header className="poll-card__head">
         <Link
           to={`/u/${poll.author.username}`}
@@ -82,6 +104,20 @@ export function PollCard({ poll, pick }: Props) {
           </span>
         </Link>
         <span className="poll-card__meta">
+          {resolved && poll.options.some((o) => o.statLine) && (
+            <button
+              type="button"
+              className="poll-card__breakdown-icon"
+              title="Scoring breakdown"
+              aria-label="Scoring breakdown"
+              onClick={(e) => {
+                e.stopPropagation();
+                setBreakdownList(poll.options.filter((o) => o.statLine));
+              }}
+            >
+              <LeaderboardIcon />
+            </button>
+          )}
           <SportIcon sport={poll.sport} className="poll-card__sport" />
           <StatusBadge status={poll.status} />
         </span>
@@ -100,42 +136,81 @@ export function PollCard({ poll, pick }: Props) {
           scoringPreset={poll.scoringPreset}
           scoringFormat={poll.scoringFormat}
         />
-        <PollCountdown lockAt={poll.lockAt} status={poll.status} />
+        {/* On phones the countdown moves down to the footer (bottom-right). */}
+        {!isMobile && (
+          <PollCountdown lockAt={poll.lockAt} status={poll.status} />
+        )}
       </div>
 
       <ul className="poll-card__options">
         {poll.options.map((o) => {
           const votes = o._count?.votes ?? 0;
           const pct = totalVotes ? Math.round((votes / totalVotes) * 100) : 0;
+          const points = resolved ? o.actualPoints : o.projectedPoints;
+          // How the viewer's own vote graded.
+          const youWrong = resolved && voted === o.id && !o.isWinner;
+          const youRight = resolved && voted === o.id && o.isWinner;
+          // How the profile owner's pick graded (profile Picks tab).
+          const owned = pick?.optionId === o.id;
+          const pickWrong = resolved && owned && !o.isWinner;
+          const pickRight = resolved && owned && o.isWinner;
           const cls = ["poll-card__option"];
-          if (voted === o.id) cls.push("poll-card__option--voted");
+          if (voted === o.id) {
+            cls.push(
+              youWrong
+                ? "poll-card__option--voted-wrong"
+                : "poll-card__option--voted",
+            );
+          }
+          // The owner's losing pick gets the same red border as a wrong vote.
+          if (pickWrong) cls.push("poll-card__option--voted-wrong");
           if (pending === o.id) cls.push("poll-card__option--pending");
+          if (resolved && o.isWinner) cls.push("poll-card__option--winner");
           return (
             <li key={o.id}>
               <button
                 className={cls.join(" ")}
-                disabled={!canVote}
-                onClick={(e) => onOption(e, o.id)}
+                disabled={resolved ? !o.statLine : !canVote}
+                onClick={(e) => onOption(e, o)}
               >
                 <span className="poll-card__option-fill" style={{ width: `${pct}%` }} />
-                <span className="poll-card__option-label">{o.playerName}</span>
-                {o.projectedPoints != null && (
-                  <span className="poll-card__proj">{o.projectedPoints} pts</span>
-                )}
-                <span className="poll-card__option-right">
-                  {pick?.optionId === o.id && (
-                    <span className="poll-card__badge">
-                      <Avatar avatar={pick.avatar} size={16} />
+                <span className="poll-card__option-content">
+                  <span className="poll-card__option-label">
+                    {resolved && o.isWinner && (
+                      <EmojiEventsIcon className="poll-card__trophy" />
+                    )}
+                    <span className="poll-card__option-name">{o.playerName}</span>
+                  </span>
+                  <TeamTag abbr={o.player?.team} sport={poll.sport} />
+                  {!resolved && (
+                    <PlayerMeta
+                      className="poll-card__option-meta"
+                      game={o.game}
+                      injuryStatus={o.player?.injuryStatus}
+                    />
+                  )}
+                  {points != null && (
+                    <span className="poll-card__proj">{points} pts</span>
+                  )}
+                  <span className="poll-card__option-right">
+                  {owned && (
+                    <span
+                      className={`poll-card__badge${pickWrong ? " poll-card__badge--wrong" : pickRight ? " poll-card__badge--right" : ""}`}
+                    >
+                      <Avatar avatar={pick!.avatar} size={16} />
                       picked
                     </span>
                   )}
                   {voted === o.id && !pick?.isSelf && (
-                    <span className="poll-card__badge poll-card__badge--you">
+                    <span
+                      className={`poll-card__badge poll-card__badge--you${youWrong ? " poll-card__badge--wrong" : youRight ? " poll-card__badge--right" : ""}`}
+                    >
                       {me?.avatar && <Avatar avatar={me.avatar} size={16} />}
                       You
                     </span>
                   )}
                   <span className="poll-card__pct">{pct}%</span>
+                  </span>
                 </span>
               </button>
             </li>
@@ -171,9 +246,29 @@ export function PollCard({ poll, pick }: Props) {
       {error && <p className="poll-card__error">{error}</p>}
 
       <footer className="poll-card__foot">
-        {totalVotes} {totalVotes === 1 ? "vote" : "votes"}
-        {voted ? " · you voted" : ""}
+        <span>
+          {totalVotes} {totalVotes === 1 ? "vote" : "votes"}
+          {voted ? " · you voted" : ""}
+        </span>
+        {isMobile && <PollCountdown lockAt={poll.lockAt} status={poll.status} />}
       </footer>
+
+      {breakdownList && (
+        <ScoringBreakdownModal
+          rules={getPollRules(poll)}
+          scoringPreset={poll.scoringPreset}
+          scoringFormat={poll.scoringFormat}
+          options={breakdownList.map(
+            (o): BreakdownOption => ({
+              playerName: o.playerName,
+              statLine: o.statLine ?? {},
+              total: o.actualPoints,
+              isWinner: o.isWinner,
+            }),
+          )}
+          onClose={() => setBreakdownList(null)}
+        />
+      )}
     </article>
   );
 }

@@ -1,11 +1,17 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
 import "./LoginPage.scss";
+
+interface LoginResponse {
+  access_token: string;
+  refresh_token: string;
+}
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -14,10 +20,23 @@ export function LoginPage() {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setBusy(false);
-    if (error) return setError(error.message);
-    navigate("/home");
+    try {
+      // Resolve username-or-email server-side, then hydrate the client session.
+      const { access_token, refresh_token } = await api.post<LoginResponse>(
+        "/auth/login",
+        { identifier, password },
+      );
+      const { error } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
+      if (error) throw error;
+      navigate("/home");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid login credentials");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const oauth = async () => {
@@ -32,10 +51,12 @@ export function LoginPage() {
 
         <input
           className="auth-page__input"
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          type="text"
+          autoCapitalize="none"
+          autoCorrect="off"
+          placeholder="Email or username"
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
           required
         />
         <input
@@ -55,6 +76,9 @@ export function LoginPage() {
           Continue with Google
         </button>
 
+        <p className="auth-page__switch">
+          <Link to="/forgot-password">Forgot password?</Link>
+        </p>
         <p className="auth-page__switch">
           No account? <Link to="/register">Register</Link>
         </p>

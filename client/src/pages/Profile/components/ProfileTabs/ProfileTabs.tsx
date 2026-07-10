@@ -1,10 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useSetRightRail } from "@/context/RightRailContext";
 import { PollCard } from "@/components/PollCard/PollCard";
 import { UserRow } from "@/components/UserRow/UserRow";
 import { Loader } from "@/components/Loader/Loader";
+import {
+  PollFilters,
+  matchesPollFilters,
+  defaultPollFilters,
+  type PollFilterState,
+} from "@/components/PollFilters/PollFilters";
 import type { PollView, PickView, ProfileSummary } from "@/types";
 import "./ProfileTabs.scss";
 
@@ -24,8 +31,18 @@ interface Props {
 
 export function ProfileTabs({ username, counts, owner }: Props) {
   const [tab, setTab] = useState<Tab>("posts");
+  const [filters, setFilters] = useState<PollFilterState>(defaultPollFilters);
   const { session } = useAuth();
+  const setRail = useSetRightRail();
   const viewingOwn = !!session && session.user.id === owner?.id;
+
+  // The poll tabs (posts/picks) get the shared filter panel in the right rail;
+  // the people tabs (followers/following) don't filter, so clear it.
+  const showFilters = tab === "posts" || tab === "picks";
+  useEffect(() => {
+    setRail(showFilters ? <PollFilters value={filters} onChange={setFilters} /> : null);
+    return () => setRail(null);
+  }, [showFilters, filters, setRail]);
 
   const posts = useQuery({
     queryKey: ["profile-polls", username],
@@ -74,9 +91,16 @@ export function ProfileTabs({ username, counts, owner }: Props) {
       </div>
 
       <div className="profile-tabs__content">
-        {tab === "posts" && <PollList query={posts} empty="No posts yet." />}
+        {tab === "posts" && (
+          <PollList query={posts} filters={filters} empty="No posts yet." />
+        )}
         {tab === "picks" && (
-          <PickList query={picks} owner={owner} viewingOwn={viewingOwn} />
+          <PickList
+            query={picks}
+            filters={filters}
+            owner={owner}
+            viewingOwn={viewingOwn}
+          />
         )}
         {tab === "followers" && (
           <PeopleList query={followers} empty="No followers yet." />
@@ -101,12 +125,22 @@ function Empty({ text }: { text: string }) {
   return <p className="profile-tabs__msg">{text}</p>;
 }
 
-function PollList({ query, empty }: { query: QueryLike<PollView>; empty: string }) {
+function PollList({
+  query,
+  filters,
+  empty,
+}: {
+  query: QueryLike<PollView>;
+  filters: PollFilterState;
+  empty: string;
+}) {
   if (query.isLoading) return <Loading />;
   if (!query.data?.length) return <Empty text={empty} />;
+  const shown = query.data.filter((p) => matchesPollFilters(p, filters));
+  if (shown.length === 0) return <Empty text="No posts match these filters." />;
   return (
     <>
-      {query.data.map((poll) => (
+      {shown.map((poll) => (
         <PollCard key={poll.id} poll={poll} />
       ))}
     </>
@@ -115,18 +149,22 @@ function PollList({ query, empty }: { query: QueryLike<PollView>; empty: string 
 
 function PickList({
   query,
+  filters,
   owner,
   viewingOwn,
 }: {
   query: QueryLike<PickView>;
+  filters: PollFilterState;
   owner?: ProfileSummary;
   viewingOwn: boolean;
 }) {
   if (query.isLoading) return <Loading />;
   if (!query.data?.length) return <Empty text="No picks yet." />;
+  const shown = query.data.filter((pick) => matchesPollFilters(pick.poll, filters));
+  if (shown.length === 0) return <Empty text="No picks match these filters." />;
   return (
     <>
-      {query.data.map((pick) => (
+      {shown.map((pick) => (
         <PollCard
           key={pick.id}
           poll={pick.poll}

@@ -20,6 +20,10 @@
   &__panel {
     width: 100%;
     max-width: 420px;
+
+    &--wide {
+      max-width: 640px;
+    }
     max-height: 85vh;
     overflow-y: auto;
     background: var(--bg-primary);
@@ -40,6 +44,13 @@
     gap: $gap-md;
     padding: $gap-md;
     border-bottom: 1px solid var(--border-color);
+  }
+
+  &__heading {
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+    min-width: 0;
   }
 
   &__title {

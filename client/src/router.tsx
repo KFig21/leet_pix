@@ -3,8 +3,9 @@ import { AppLayout } from "@/components/AppLayout/AppLayout";
 import { ProtectedRoute } from "@/components/ProtectedRoute/ProtectedRoute";
 import { LoginPage } from "@/pages/Login/LoginPage";
 import { RegisterPage } from "@/pages/Register/RegisterPage";
+import { ForgotPasswordPage } from "@/pages/ForgotPassword/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/pages/ResetPassword/ResetPasswordPage";
 import { TimelinePage } from "@/pages/Timeline/TimelinePage";
-import { ExplorePage } from "@/pages/Explore/ExplorePage";
 import { NotificationsPage } from "@/pages/Notifications/NotificationsPage";
 import { ProfilePage } from "@/pages/Profile/ProfilePage";
 import { PollCreatePage } from "@/pages/PollCreate/PollCreatePage";
@@ -16,6 +17,8 @@ import { ScoringFormatCreatorPage } from "@/pages/ScoringFormatCreator/ScoringFo
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
   { path: "/register", element: <RegisterPage /> },
+  { path: "/forgot-password", element: <ForgotPasswordPage /> },
+  { path: "/reset-password", element: <ResetPasswordPage /> },
   {
     element: (
       <ProtectedRoute>
@@ -25,7 +28,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/home" replace /> },
       { path: "/home", element: <TimelinePage /> },
-      { path: "/explore", element: <ExplorePage /> },
+      { path: "/explore", element: <Navigate to="/search" replace /> },
       { path: "/notifications", element: <NotificationsPage /> },
       { path: "/search", element: <SearchPage /> },
       { path: "/create", element: <PollCreatePage /> },

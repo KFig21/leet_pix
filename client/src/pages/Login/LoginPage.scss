@@ -30,6 +30,13 @@
     text-align: center;
   }
 
+  // Inner form when the card also holds non-form content (e.g. reset states).
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-sm;
+  }
+
   &__input {
     padding: $gap-sm;
     border: 1px solid var(--border-color);

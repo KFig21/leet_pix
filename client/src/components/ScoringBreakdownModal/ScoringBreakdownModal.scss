@@ -1,0 +1,155 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+// ── Comparison columns (multiple options) ─────────────────────────────────────
+.breakdown-cols {
+  overflow-x: auto;
+
+  &__table {
+    width: 100%;
+    table-layout: fixed; // equal-width player columns
+    // Separate (not collapse) so the winner column's rounded highlight renders.
+    // Cells only carry a top border, so rows still read as single divider lines.
+    border-collapse: separate;
+    border-spacing: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__corner {
+    width: 132px; // fixed label column; player columns split the rest equally
+
+    @include mobile {
+      width: 84px; // give the player columns more room on phones
+    }
+  }
+
+  // Stays a real table cell (a flex/grid display here would break the columns).
+  // The trophy sits inline on its own line above the block-level name; both
+  // right-align to match the number cells via the cell's text-align.
+  &__player {
+    // Headroom above the name so the winner's tint has a rounded cap over it.
+    padding: $gap-sm $gap-sm;
+    // Centered so every player column reads symmetrically — a right-aligned
+    // neighbor would optically "lean" toward/away from the winner's tint.
+    text-align: center;
+    font-size: $font-size-sm;
+    font-weight: 400;
+    color: var(--text-secondary);
+    vertical-align: bottom;
+
+    white-space: nowrap; // names are abbreviated ("D. Henry"), so they fit
+
+    // Winner column: green name in its tinted, rounded-top cap.
+    &--winner {
+      color: var(--color-success);
+      font-weight: $font-weight-bold;
+      background: color-mix(in srgb, var(--color-success) 12%, transparent);
+      border-top-left-radius: $radius-sm;
+      border-top-right-radius: $radius-sm;
+    }
+
+    @include mobile {
+      font-size: 12px;
+      padding: $gap-sm 4px;
+    }
+  }
+
+  &__cat {
+    padding: $gap-sm $gap-md $gap-sm 0;
+    text-align: left;
+    font-weight: 400;
+    color: var(--text-primary);
+    white-space: nowrap;
+    border-top: 1px solid var(--border-color);
+
+    @include mobile {
+      font-size: 13px;
+      padding: $gap-sm $gap-sm $gap-sm 0;
+    }
+  }
+
+  &__cell {
+    padding: $gap-sm;
+    // Centered to match the player headers so all columns are balanced.
+    text-align: center;
+    color: var(--text-secondary);
+    border-top: 1px solid var(--border-color);
+
+    &--total {
+      color: var(--text-primary);
+      font-weight: $font-weight-bold;
+    }
+
+    // Winner column continues the tint down every row.
+    &--winner {
+      background: color-mix(in srgb, var(--color-success) 12%, transparent);
+      color: var(--text-primary);
+    }
+
+    @include mobile {
+      font-size: 13px;
+      padding: $gap-sm 4px;
+    }
+  }
+
+  // The winner's last cell caps the tinted column with a rounded bottom.
+  &__total-row {
+
+    .breakdown-cols__cat,
+    .breakdown-cols__cell {
+      border-top: 2px solid var(--border-color);
+      font-weight: $font-weight-bold;
+      color: var(--text-primary);
+    }
+
+    .breakdown-cols__cell--winner {
+      border-bottom-left-radius: $radius-sm;
+      border-bottom-right-radius: $radius-sm;
+    }
+  }
+}
+
+// ── Single option (detailed math) ─────────────────────────────────────────────
+.breakdown-single {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  &__row {
+    display: grid;
+    grid-template-columns: 1fr auto 56px;
+    align-items: center;
+    gap: $gap-sm;
+    padding: $gap-sm 0;
+    border-bottom: 1px solid var(--border-color);
+
+    &:nth-last-child(2) {
+      border-bottom: none;
+    }
+
+    &--total {
+      border-bottom: none;
+      border-top: 2px solid var(--border-color);
+    }
+  }
+
+  &__stat {
+    color: var(--text-primary);
+  }
+
+  &__calc {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__pts {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__empty {
+    margin: 0;
+    color: var(--text-secondary);
+  }
+}

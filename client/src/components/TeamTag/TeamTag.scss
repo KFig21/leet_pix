@@ -1,0 +1,21 @@
+@use "variables" as *;
+
+.team-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 18px;
+  // Fixed width so every 2- and 3-letter abbreviation occupies the same space.
+  width: 38px;
+  flex-shrink: 0;
+  padding: 0 4px;
+  border-radius: $radius-sm;
+  font-size: 11px;
+  font-weight: $font-weight-bold;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  // Neutral fallback for unknown teams.
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}

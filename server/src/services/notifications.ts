@@ -14,9 +14,19 @@ export function notifyVote(recipientId: string, actorId: string, pollId: string)
   });
 }
 
-// Fired once a poll resolves (used by the future resolution engine).
-export function notifyPollOutcome(recipientId: string, pollId: string) {
-  return prisma.notification.create({
-    data: { recipientId, type: "POLL_OUTCOME", pollId },
+// Fired once a poll resolves: notify the author and everyone who voted so they
+// know to come see how it graded. One POLL_OUTCOME per recipient (deduped).
+export function notifyPollResolved(
+  pollId: string,
+  authorId: string,
+  voterIds: string[],
+) {
+  const recipientIds = [...new Set([authorId, ...voterIds])];
+  return prisma.notification.createMany({
+    data: recipientIds.map((recipientId) => ({
+      recipientId,
+      type: "POLL_OUTCOME" as const,
+      pollId,
+    })),
   });
 }

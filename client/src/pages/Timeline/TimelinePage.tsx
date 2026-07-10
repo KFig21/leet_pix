@@ -41,7 +41,7 @@ export function TimelinePage() {
           <p className="timeline__msg">
             Your timeline is empty. Follow some people to see their polls.
           </p>
-          <Link to="/explore" className="timeline__cta">
+          <Link to="/search" className="timeline__cta">
             Explore accounts &amp; polls
           </Link>
         </div>

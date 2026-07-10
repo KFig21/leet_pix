@@ -1,5 +1,6 @@
 export * from "./constants";
 export * from "./enums";
+export * from "./teams";
 export * from "./scoring";
 export * from "./schemas/user";
 export * from "./schemas/poll";

@@ -12,11 +12,24 @@
   }
 }
 
+// Target phones (below the tablet breakpoint) for cramped-layout tweaks.
+@mixin mobile {
+  @media (max-width: ($bp-tablet - 1px)) {
+    @content;
+  }
+}
+
 // Standard card surface used by poll cards, panels, etc.
 @mixin card {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: $radius-md;
+}
+
+// Internal scroll regions: reserve gutter space so the (globally themed)
+// scrollbar sits in its own lane rather than overlapping content.
+@mixin scroll-area {
+  scrollbar-gutter: stable;
 }
 
 // Reset native button chrome. Includes `color: inherit` so button text follows

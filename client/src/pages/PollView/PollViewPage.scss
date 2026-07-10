@@ -2,6 +2,21 @@
 @use "mixins" as *;
 
 .poll-view {
+  // On tablet+ the poll card and voter filters stay pinned; only the voter
+  // list scrolls. (On phones the whole page scrolls normally.)
+  @include tablet {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    // The card and header keep their natural size and don't compress.
+    > .poll-card,
+    &__header {
+      flex-shrink: 0;
+    }
+  }
+
   &__header {
     padding: $gap-md;
     font-size: $font-size-xl;
@@ -11,6 +26,28 @@
 
   &__voters {
     padding-top: $gap-md;
+
+    @include tablet {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0; // let the list child own the scroll
+    }
+  }
+
+  &__title,
+  &__filters {
+    flex-shrink: 0;
+  }
+
+  // The only scrolling region on tablet+.
+  &__list {
+    @include tablet {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      @include scroll-area;
+    }
   }
 
   &__title {

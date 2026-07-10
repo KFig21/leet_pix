@@ -1,0 +1,133 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.mobile-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  background: var(--overlay-bg);
+  animation: drawer-fade 0.15s ease;
+
+  // Exit: fade the backdrop and slide the sheet back down (mirrors the open),
+  // before unmount. The descendant selector outranks the base &__sheet rule so
+  // the slide-down animation wins over the open animation.
+  &--closing {
+    animation: drawer-fade-out 0.2s ease forwards;
+
+    .mobile-drawer__sheet {
+      animation: drawer-down 0.2s ease forwards;
+    }
+  }
+
+  &__sheet {
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-md;
+    // Extra bottom room so the floating close button doesn't cover any item.
+    padding: $gap-sm $gap-md calc(64px + env(safe-area-inset-bottom, 0px));
+    background: var(--bg-primary);
+    border-top-left-radius: $radius-lg;
+    border-top-right-radius: $radius-lg;
+    border-top: 1px solid var(--border-color);
+    animation: drawer-up 0.2s ease;
+  }
+
+  // Floating close button, bottom-right (roughly above the "More" tab).
+  &__close {
+    @include button-reset;
+    position: fixed;
+    right: $gap-md;
+    bottom: calc(#{$gap-sm} + env(safe-area-inset-bottom, 0px));
+    z-index: 202;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-card);
+
+    svg {
+      font-size: 28px;
+    }
+  }
+
+  // Grab handle affordance.
+  &__handle {
+    align-self: center;
+    width: 36px;
+    height: 4px;
+    margin: $gap-xs 0;
+    border-radius: $radius-pill;
+    background: var(--border-color);
+  }
+
+  &__section-title {
+    display: flex;
+    align-items: center;
+    gap: $gap-xs;
+    margin-bottom: $gap-sm;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+  }
+
+  &__menu {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--border-color);
+    padding-top: $gap-sm;
+  }
+
+  &__item {
+    @include button-reset;
+    display: flex;
+    align-items: center;
+    gap: $gap-md;
+    width: 100%;
+    padding: $gap-md $gap-sm;
+    color: var(--text-primary);
+    font-size: $font-size-lg;
+    text-align: left;
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+
+    &--danger {
+      color: var(--color-danger);
+    }
+  }
+}
+
+@keyframes drawer-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes drawer-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes drawer-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes drawer-down {
+  to {
+    transform: translateY(100%);
+  }
+}

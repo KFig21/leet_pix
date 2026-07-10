@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import CancelIcon from "@mui/icons-material/Cancel";
 import { POLL_QUESTION_LABELS } from "@leetpix/shared";
 import { api } from "@/lib/api";
 import { timeAgo } from "@/lib/timeAgo";
@@ -85,14 +86,30 @@ function NotificationRow({ n }: { n: NotificationItem }) {
     );
   }
 
+  const question = <strong>{POLL_QUESTION_LABELS[n.poll.questionType]}</strong>;
   return (
     <Link to={`/polls/${n.poll.id}`} className={cls}>
-      <span className="notifications__icon">
-        <EmojiEventsIcon />
+      <span
+        className={`notifications__icon${
+          n.correct === true
+            ? " notifications__icon--correct"
+            : n.correct === false
+              ? " notifications__icon--wrong"
+              : ""
+        }`}
+      >
+        {n.correct === false ? <CancelIcon /> : <EmojiEventsIcon />}
       </span>
       <span className="notifications__text">
-        Your poll <strong>{POLL_QUESTION_LABELS[n.poll.questionType]}</strong> has
-        resolved
+        {n.isAuthor ? (
+          <>Your poll {question} has resolved</>
+        ) : n.correct === true ? (
+          <>You nailed your pick on {question}</>
+        ) : n.correct === false ? (
+          <>Your pick missed on {question}</>
+        ) : (
+          <>A poll you voted on has resolved: {question}</>
+        )}
       </span>
       <span className="notifications__time">{timeAgo(n.createdAt)}</span>
     </Link>

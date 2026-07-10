@@ -28,6 +28,34 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+// Themed scrollbars everywhere. The default OS bar is light-on-dark and clashes
+// with the dark theme; these use CSS vars so they follow the active theme.
+// (Internal scroll regions add `@include scroll-area` for a reserved gutter.)
+html {
+  // Firefox / standard.
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  // Transparent border + padding-box clip renders the thumb as a thin pill.
+  background: var(--border-color);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: $radius-pill;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+  background-clip: padding-box;
+}
+
 a {
   color: var(--accent);
   text-decoration: none;

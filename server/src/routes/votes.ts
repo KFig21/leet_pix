@@ -20,7 +20,11 @@ votesRouter.post(
       include: { options: { include: { _count: { select: { votes: true } } } } },
     });
     if (!poll) throw new HttpError(404, "Poll not found");
-    if (poll.status !== "OPEN") throw new HttpError(409, "Poll is locked");
+    // Locked if explicitly marked, or its lock time has passed (the lock job may
+    // not have flipped the status yet — enforce by time here regardless).
+    const locked =
+      poll.status !== "OPEN" || (poll.lockAt != null && poll.lockAt <= new Date());
+    if (locked) throw new HttpError(409, "Poll is locked");
     if (poll.authorId === req.userId) throw new HttpError(400, "Cannot vote on your own poll");
 
     // One vote per user per poll (also enforced by a DB unique constraint).

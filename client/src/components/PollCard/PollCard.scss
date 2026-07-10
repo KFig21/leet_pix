@@ -13,6 +13,15 @@
     background: var(--hover-overlay);
   }
 
+  // Static preview (create screen): no navigation affordance.
+  &--preview {
+    cursor: default;
+
+    &:hover {
+      background: none;
+    }
+  }
+
   &__head {
     display: flex;
     align-items: center;
@@ -89,6 +98,7 @@
     align-items: center;
     gap: $gap-sm;
     width: 100%;
+    min-height: 44px; // uniform height regardless of badges/trophy
     padding: $gap-sm;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -113,11 +123,37 @@
       }
     }
 
+    // The viewer's pick that turned out wrong (resolved poll).
+    &--voted-wrong {
+      border-color: var(--color-danger);
+
+      .poll-card__option-label {
+        font-weight: $font-weight-bold;
+      }
+    }
+
     // Selected-but-not-yet-confirmed (confirm-votes mode). Same clean 1px accent
     // border as the voted state; the Confirm/Cancel bar signals it's pending.
     &--pending {
       border-color: var(--accent);
     }
+
+    // The correct answer on a resolved poll (green = correct).
+    &--winner {
+      border-color: var(--color-success);
+
+      .poll-card__option-fill {
+        background: color-mix(in srgb, var(--color-success) 22%, var(--bg-secondary));
+      }
+      .poll-card__option-label {
+        font-weight: $font-weight-bold;
+      }
+    }
+  }
+
+  &__trophy {
+    font-size: 16px;
+    color: var(--color-success);
   }
 
   &__option-fill {
@@ -169,11 +205,47 @@
     font-size: $font-size-sm;
   }
 
-  &__option-label,
-  &__proj,
-  &__option-right {
+  // Single-line row above the vote-share fill. Nothing wraps: the player name
+  // ellipsizes, everything else keeps its size.
+  &__option-content {
     position: relative;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: $gap-sm;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__option-label {
+    display: inline-flex;
+    align-items: center;
+    gap: $gap-xs;
+    min-width: 0; // let the name shrink/ellipsize rather than wrap
+    flex-shrink: 1;
+  }
+
+  &__option-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // Everything after the name holds its width.
+  &__option-content .team-tag,
+  &__option-content .player-meta,
+  &__proj,
+  &__option-right {
+    flex-shrink: 0;
+  }
+
+  // On phones the option row is tight — drop the verbose matchup text (keep the
+  // team tag + injury pill) so the name and vote share stay readable.
+  @include mobile {
+    &__option-meta .player-meta__game {
+      display: none;
+    }
   }
 
   &__proj {
@@ -205,13 +277,41 @@
       color: var(--accent);
       border-color: var(--accent);
     }
+
+    // A pick that was wrong on a resolved poll (viewer's vote or profile owner's).
+    &--wrong {
+      color: var(--color-danger);
+      border-color: var(--color-danger);
+    }
+
+    // A pick that was correct on a resolved poll.
+    &--right {
+      color: var(--color-success);
+      border-color: var(--color-success);
+    }
   }
 
   &__pct {
     font-weight: $font-weight-bold;
   }
 
+  &__breakdown-icon {
+    @include button-reset;
+    display: inline-flex;
+    align-items: center;
+    color: var(--text-secondary);
+    font-size: 20px;
+
+    &:hover {
+      color: var(--accent);
+    }
+  }
+
   &__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $gap-sm;
     color: var(--text-secondary);
     font-size: $font-size-sm;
   }

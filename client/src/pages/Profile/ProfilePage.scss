@@ -2,12 +2,47 @@
 @use "mixins" as *;
 
 .profile {
+  // On tablet+ the profile header and tab bar stay pinned; the stats + poll
+  // list scroll beneath them. (On phones the whole page scrolls normally.)
+  @include tablet {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
   &__header {
     display: flex;
     align-items: center;
     gap: $gap-md;
     padding: $gap-md;
     border-bottom: 1px solid var(--border-color);
+
+    @include tablet {
+      flex-shrink: 0; // never scrolls off
+    }
+
+    // On phones the whole page scrolls, so pin the identity header to the top
+    // (compact) so the avatar + name stay visible while scrolling the feed.
+    @include mobile {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      gap: $gap-sm;
+      padding: $gap-sm $gap-md;
+      background: var(--bg-primary);
+    }
+  }
+
+  // The scrolling region beneath the pinned header. The tab bar inside sticks
+  // to its top, so it stays visible while the stats scroll away above it.
+  &__scroll {
+    @include tablet {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      @include scroll-area;
+    }
   }
 
   &__identity {
@@ -18,16 +53,29 @@
   &__name {
     margin: 0;
     font-size: $font-size-xl;
+
+    @include mobile {
+      font-size: $font-size-lg;
+    }
   }
 
   &__handle {
     color: var(--text-secondary);
+
+    @include mobile {
+      font-size: $font-size-sm;
+    }
   }
 
   &__bio {
     margin: $gap-xs 0 0;
     color: var(--text-primary);
     font-size: $font-size-sm;
+
+    // Keep the pinned mobile header compact.
+    @include mobile {
+      display: none;
+    }
   }
 
   &__action {

@@ -1,5 +1,8 @@
 import { useState } from "react";
+import GridOnIcon from "@mui/icons-material/GridOn";
 import type { ProfileStatsResponse, StatWindow } from "@leetpix/shared";
+import { Modal } from "@/components/Modal/Modal";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { Heatmap } from "../Heatmap/Heatmap";
 import "./ProfileStats.scss";
 
@@ -18,6 +21,8 @@ const WINDOWS: { key: StatWindow; label: string }[] = [
 // Always-visible stats block: window selector, accuracy/picks/streak, heat map.
 export function ProfileStats({ stats }: Props) {
   const [window, setWindow] = useState<StatWindow>("lifetime");
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const isMobile = useIsMobile();
   const acc = stats?.accuracyByWindow[window];
   const streak = stats?.streak;
 
@@ -39,6 +44,17 @@ export function ProfileStats({ stats }: Props) {
             {w.label}
           </button>
         ))}
+        {/* On phones the heatmap opens in a modal from this compact grid icon. */}
+        {isMobile && (
+          <button
+            className="profile-stats__heatmap-icon"
+            onClick={() => setShowHeatmap(true)}
+            aria-label="Participation activity"
+            title="Participation"
+          >
+            <GridOnIcon />
+          </button>
+        )}
       </div>
 
       <div className="profile-stats__figures">
@@ -49,10 +65,22 @@ export function ProfileStats({ stats }: Props) {
         <Figure value={streakLabel} label="Streak" />
       </div>
 
-      <div className="profile-stats__heatmap">
-        <span className="profile-stats__heatmap-label">Participation</span>
-        <Heatmap cells={stats?.heatmap ?? []} />
-      </div>
+      {!isMobile && (
+        <div className="profile-stats__heatmap">
+          <span className="profile-stats__heatmap-label">Participation</span>
+          <Heatmap cells={stats?.heatmap ?? []} />
+        </div>
+      )}
+
+      {showHeatmap && (
+        <Modal title="Participation" onClose={() => setShowHeatmap(false)} wide>
+          <div className="profile-stats__heatmap-scroll">
+            <div className="profile-stats__heatmap-wide">
+              <Heatmap cells={stats?.heatmap ?? []} />
+            </div>
+          </div>
+        </Modal>
+      )}
     </section>
   );
 }

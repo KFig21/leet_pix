@@ -12,6 +12,10 @@ interface Props {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  // Optional element rendered inline next to the title (e.g. a badge).
+  titleAccessory?: ReactNode;
+  // Wider panel (e.g. a comparison table).
+  wide?: boolean;
 }
 
 // Matches the fadeDownOut duration below so the exit animation finishes before
@@ -20,7 +24,7 @@ const CLOSE_MS = 400;
 
 // Lightweight centered modal with a backdrop. Animates in, and on close plays
 // the exit animation (via a "closing" state) before calling onClose to unmount.
-export function Modal({ title, onClose, children }: Props) {
+export function Modal({ title, onClose, children, titleAccessory, wide }: Props) {
   const [closing, setClosing] = useState(false);
 
   const requestClose = useCallback(() => {
@@ -50,13 +54,16 @@ export function Modal({ title, onClose, children }: Props) {
       onClick={close}
     >
       <div
-        className={`modal__panel${closing ? " modal__panel--closing" : ""}`}
+        className={`modal__panel${closing ? " modal__panel--closing" : ""}${wide ? " modal__panel--wide" : ""}`}
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="modal__header">
-          <h2 className="modal__title">{title}</h2>
+          <div className="modal__heading">
+            <h2 className="modal__title">{title}</h2>
+            {titleAccessory}
+          </div>
           <button className="modal__close" onClick={close} aria-label="Close">
             <CloseIcon />
           </button>

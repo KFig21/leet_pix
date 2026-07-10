@@ -2,12 +2,14 @@ import { Link } from "react-router-dom";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
 import { usePreferences } from "@/context/PreferencesContext";
 import { Toggle } from "@/components/Toggle/Toggle";
 import "./SettingsPage.scss";
 
 export function SettingsPage() {
   const { theme, toggle } = useTheme();
+  const { signOut } = useAuth();
   const { confirmVotes, setConfirmVotes } = usePreferences();
   const isDark = theme === "dark";
 
@@ -52,6 +54,13 @@ export function SettingsPage() {
         <Link to="/scoring/new" className="settings__row">
           Create a custom scoring format →
         </Link>
+      </section>
+
+      <section className="settings__section">
+        <h2>Account</h2>
+        <button className="settings__signout" onClick={signOut}>
+          Sign out
+        </button>
       </section>
     </div>
   );

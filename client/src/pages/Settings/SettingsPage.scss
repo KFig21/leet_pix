@@ -59,4 +59,17 @@
       color: var(--accent);
     }
   }
+
+  &__signout {
+    @include button-reset;
+    padding: $gap-sm $gap-lg;
+    border: 1px solid var(--color-danger);
+    border-radius: $radius-pill;
+    color: var(--color-danger);
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+    }
+  }
 }

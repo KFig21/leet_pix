@@ -6,10 +6,18 @@
     display: flex;
     position: sticky;
     top: 0;
-    z-index: 1;
+    // Above the poll cards scrolling behind it — their option rows use
+    // z-index:1, so the sticky bar must sit clearly on top or they bleed over it.
+    z-index: 5;
     background: color-mix(in srgb, var(--bg-primary) 85%, transparent);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border-color);
+
+    // On phones the identity header is the sticky element; let the tab bar
+    // scroll normally so the two don't stack at top:0 and overlap.
+    @include mobile {
+      position: static;
+    }
   }
 
   &__tab {
@@ -23,6 +31,13 @@
     color: var(--text-secondary);
     font-weight: $font-weight-bold;
     border-bottom: 2px solid transparent;
+
+    // Phones: tighten so the four tabs (incl. "Followers"/"Following") fit.
+    @include mobile {
+      gap: $gap-xs;
+      padding: $gap-sm $gap-xs;
+      font-size: $font-size-sm;
+    }
 
     &:hover {
       background: var(--bg-hover);
@@ -50,6 +65,13 @@
     background: var(--bg-hover);
     color: var(--text-primary);
     font-size: $font-size-sm;
+
+    @include mobile {
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      font-size: 11px;
+    }
   }
 
   &__msg {

@@ -9,6 +9,8 @@ import {
 } from "../middleware/auth";
 import { HttpError } from "../middleware/error";
 import { withMyVote } from "../lib/myVote";
+import { attachStatLines } from "../lib/statLines";
+import { attachPlayerContext } from "../lib/playerContext";
 import { notifyFollow } from "../services/notifications";
 
 export const profilesRouter = Router();
@@ -82,7 +84,11 @@ profilesRouter.get(
       take: 50,
       include: pollInclude,
     });
-    res.json(await withMyVote(polls, req.userId));
+    res.json(
+      await attachPlayerContext(
+        await attachStatLines(await withMyVote(polls, req.userId)),
+      ),
+    );
   }),
 );
 
@@ -99,9 +105,13 @@ profilesRouter.get(
       include: { poll: { include: pollInclude }, option: true },
     });
     // Tag each pick's poll with the viewer's own vote.
-    const polls = await withMyVote(
-      votes.map((v) => v.poll),
-      req.userId,
+    const polls = await attachPlayerContext(
+      await attachStatLines(
+        await withMyVote(
+          votes.map((v) => v.poll),
+          req.userId,
+        ),
+      ),
     );
     const byId = new Map(polls.map((p) => [p.id, p]));
     res.json(votes.map((v) => ({ ...v, poll: byId.get(v.poll.id) })));

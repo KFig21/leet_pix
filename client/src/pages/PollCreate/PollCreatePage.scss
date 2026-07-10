@@ -37,6 +37,18 @@
     color: var(--text-secondary);
   }
 
+  // Label paired with a live badge/icon reflecting the current selection.
+  &__label-row {
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+  }
+
+  &__label-icon {
+    font-size: 20px;
+    color: var(--text-secondary);
+  }
+
   &__link {
     align-self: flex-start;
     font-size: $font-size-sm;
@@ -59,6 +71,165 @@
     @include button-reset;
     align-self: flex-start;
     color: var(--accent);
+  }
+
+  // Read-only "when does this lock + who plays" summary for game-locked polls.
+  &__matchup {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-xs;
+    padding: $gap-sm $gap-md;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-md;
+    background: var(--bg-secondary);
+  }
+
+  &__matchup-head {
+    display: flex;
+    align-items: center;
+    gap: $gap-xs;
+    font-weight: $font-weight-bold;
+    color: var(--text-primary);
+  }
+
+  &__matchup-icon {
+    font-size: 18px !important;
+    color: var(--text-secondary);
+  }
+
+  &__matchup-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__matchup-row {
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+    font-size: $font-size-sm;
+  }
+
+  &__matchup-name {
+    // Ellipsize a long name instead of pushing the game to a new line.
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-primary);
+  }
+
+  &__matchup-game {
+    flex-shrink: 0;
+    white-space: nowrap;
+    color: var(--text-secondary);
+  }
+
+  &__filters {
+    display: flex;
+    gap: $gap-sm;
+
+    .multi-select {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  // Team option in the filter dropdown: brand pill + its next game.
+  &__team-opt {
+    display: inline-flex;
+    align-items: center;
+    gap: $gap-sm;
+    min-width: 0;
+  }
+
+  // Closable, colored bubbles for the active team/position filters.
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $gap-xs;
+  }
+
+  &__chip {
+    @include button-reset;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    height: 26px;
+    padding: 0 6px 0 8px;
+    border-radius: $radius-pill;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    // Neutral default (used by position chips / unknown teams).
+    background: var(--bg-hover);
+    color: var(--text-primary);
+
+    &--pos {
+      background: color-mix(in srgb, var(--accent) 16%, transparent);
+      color: var(--accent);
+    }
+
+    &:hover {
+      filter: brightness(0.94);
+    }
+  }
+
+  // Fixed-width label so 2- and 3-letter abbreviations line up uniformly.
+  &__chip-label {
+    min-width: 30px;
+    text-align: center;
+  }
+
+  &__chip-x {
+    font-size: 16px !important;
+    opacity: 0.8;
+  }
+
+  &__chip-clear {
+    @include button-reset;
+    margin-left: $gap-xs;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+
+    &:hover {
+      color: var(--text-primary);
+      text-decoration: underline;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: $gap-sm;
+    margin-top: $gap-xs;
+  }
+
+  &__preview-btn {
+    @include button-reset;
+    padding: $gap-sm $gap-lg;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-pill;
+    color: var(--text-primary);
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+
+  // Reset the card's own bottom border inside the preview modal.
+  &__preview .poll-card {
+    border-bottom: none;
   }
 
   &__error {
@@ -114,5 +285,29 @@
     &:hover {
       background: var(--accent-hover);
     }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+  }
+
+  // Full-screen blocking overlay while the poll is being posted.
+  &__submitting {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: $gap-md;
+    background: var(--overlay-bg);
+    backdrop-filter: blur(4px);
+  }
+
+  &__submitting-text {
+    color: var(--text-primary);
+    font-weight: $font-weight-bold;
   }
 }

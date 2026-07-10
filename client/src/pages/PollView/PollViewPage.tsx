@@ -52,22 +52,24 @@ export function PollViewPage() {
           ))}
         </div>
 
-        {rows.length === 0 ? (
-          <p className="poll-view__msg">No votes yet.</p>
-        ) : (
-          rows.map((r) => (
-            <UserRow
-              key={r.key}
-              profile={r.voter}
-              // In "All" view, show which option each person picked.
-              action={
-                filter === null ? (
-                  <span className="poll-view__picked">{r.option}</span>
-                ) : undefined
-              }
-            />
-          ))
-        )}
+        <div className="poll-view__list">
+          {rows.length === 0 ? (
+            <p className="poll-view__msg">No votes yet.</p>
+          ) : (
+            rows.map((r) => (
+              <UserRow
+                key={r.key}
+                profile={r.voter}
+                // In "All" view, show which option each person picked.
+                action={
+                  filter === null ? (
+                    <span className="poll-view__picked">{r.option}</span>
+                  ) : undefined
+                }
+              />
+            ))
+          )}
+        </div>
       </section>
     </div>
   );

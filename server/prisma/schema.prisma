@@ -16,6 +16,11 @@ enum Sport {
   BASEBALL
 }
 
+enum League {
+  NFL
+  MLB
+}
+
 enum PollStatus {
   OPEN
   LOCKED
@@ -41,6 +46,15 @@ enum NotificationType {
   FOLLOW // actor started following recipient
   VOTE // actor voted on recipient's poll
   POLL_OUTCOME // recipient's poll resolved
+}
+
+// Game lifecycle. Drives poll locking (first kickoff) and resolution (a poll
+// grades only once every game it depends on is FINAL).
+enum GameStatus {
+  SCHEDULED // not started
+  IN_PROGRESS // underway
+  FINAL // completed; stats are final
+  POSTPONED // called off / rescheduled — holds dependent polls open
 }
 
 // ── Users / social graph ───────────────────────────────────
@@ -104,16 +118,36 @@ model Poll {
   scoringFormatId String?        @db.Uuid
   scoringFormat   ScoringFormat? @relation(fields: [scoringFormatId], references: [id], onDelete: SetNull)
 
+  // The season/week the poll is graded against (add/drop spans week..week+N-1).
+  season Int?
+  week   Int?
+
   createdAt DateTime @default(now())
   resolvedAt DateTime?
 
   options       PollOption[]
   votes         Vote[]
   notifications Notification[]
+  // The specific games this poll depends on, captured at creation. The poll
+  // locks at the earliest kickoff and grades once all of these are FINAL.
+  games         PollGame[]
 
   @@index([authorId, createdAt])
   @@index([status, lockAt])
   @@map("polls")
+}
+
+// Join: which games gate a poll. Frozen at creation so trades don't drift the
+// dependency set. Many-to-many because a poll's players can span several games.
+model PollGame {
+  pollId String @db.Uuid
+  poll   Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  gameId String @db.Uuid
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([pollId, gameId])
+  @@index([gameId])
+  @@map("poll_games")
 }
 
 model PollOption {
@@ -190,6 +224,29 @@ model Notification {
   @@map("notifications")
 }
 
+// ── Teams ──────────────────────────────────────────────────
+// Canonical team registry (seeded from packages/shared). Players and games
+// reference a team by id; `abbreviation` stays denormalized on those rows as a
+// display cache. See @leetpix/shared `TEAMS`.
+
+model Team {
+  id           String  @id @default(uuid()) @db.Uuid
+  sport        Sport
+  league       League
+  abbreviation String // canonical (Sleeper for NFL, MLB Stats API for MLB)
+  location     String
+  name         String
+  primaryColor String
+  espnAbbr     String? // ESPN's abbreviation when it differs (schedule joins)
+
+  players   Player[]
+  homeGames Game[]   @relation("homeTeam")
+  awayGames Game[]   @relation("awayTeam")
+
+  @@unique([sport, abbreviation])
+  @@map("teams")
+}
+
 // ── Players ────────────────────────────────────────────────
 // Canonical player table. Poll options reference these by id (via a snapshot),
 // and external source ids let us join projections/stats later.
@@ -200,9 +257,14 @@ model Player {
   fullName  String
   firstName String?
   lastName  String?
+  // Denormalized team abbreviation cache; teamId is the canonical reference.
   team      String?
+  teamId    String? @db.Uuid
+  teamRef   Team?   @relation(fields: [teamId], references: [id], onDelete: SetNull)
   position  String?
   active    Boolean @default(true)
+  // Latest injury designation from the source (Questionable/Out/IR/…). Null = healthy.
+  injuryStatus String?
 
   // External source ids (for future projections / live stats).
   sleeperId String? @unique
@@ -213,9 +275,77 @@ model Player {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  stats PlayerStat[]
+
   @@index([sport, active, fullName])
   @@index([fullName])
+  @@index([teamId])
   @@map("players")
+}
+
+enum PlayerStatKind {
+  ACTUAL
+  PROJECTION
+}
+
+// A player's stat line for one period (NFL: season+week), normalized to our
+// canonical stat keys. `ACTUAL` grades polls; `PROJECTION` powers projected pts.
+model PlayerStat {
+  id       String         @id @default(uuid()) @db.Uuid
+  playerId String         @db.Uuid
+  player   Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  season   Int
+  week     Int
+  kind     PlayerStatKind
+  stats    Json // canonical stat line, e.g. { passingYards: 305, passingTd: 2 }
+  source   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([playerId, season, week, kind])
+  @@index([season, week, kind])
+  @@map("player_stats")
+}
+
+// ── Schedule ───────────────────────────────────────────────
+// Upcoming/played games, used to (a) derive real GAME_START lock times and
+// (b) show players' opponent + kickoff on polls. Imported from ESPN (NFL) and
+// the MLB Stats API. Teams are stored as the same abbreviations as Player.team.
+
+model Game {
+  id       String @id @default(uuid()) @db.Uuid
+  sport    Sport
+  season   Int
+  // NFL game week. Null for sports without a weekly structure (MLB).
+  week     Int?
+  // Denormalized team abbreviation caches; the *Id fields are canonical refs.
+  homeTeam String
+  awayTeam String
+  homeTeamId String? @db.Uuid
+  awayTeamId String? @db.Uuid
+  homeTeamRef Team?  @relation("homeTeam", fields: [homeTeamId], references: [id])
+  awayTeamRef Team?  @relation("awayTeam", fields: [awayTeamId], references: [id])
+  kickoff  DateTime
+  // Normalized lifecycle status (from the source's status).
+  status   GameStatus @default(SCHEDULED)
+  // Set once this game's box scores have been imported. Lets the status sync
+  // import a period's stats exactly once per FINAL game (and retry on failure).
+  statsImportedAt DateTime?
+  source   String // "espn" | "mlb"
+  sourceId String // stable id within a source (ESPN event id / MLB gamePk)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  polls PollGame[]
+
+  @@unique([source, sourceId])
+  @@index([sport, season, week])
+  @@index([sport, kickoff])
+  @@index([homeTeamId])
+  @@index([awayTeamId])
+  @@map("games")
 }
 
 // ── Custom scoring formats ─────────────────────────────────
@@ -234,4 +364,18 @@ model ScoringFormat {
 
   @@unique([ownerId, name])
   @@map("scoring_formats")
+}
+
+// ── Scheduler coordination ─────────────────────────────────
+
+// A short-lived lease per scheduled job so that, if multiple server instances
+// run, only one executes a given job at a time. Pool-safe (unlike session
+// advisory locks) and self-healing (a crashed holder's lease simply expires).
+model JobLock {
+  name        String   @id
+  lockedUntil DateTime
+  instanceId  String
+  updatedAt   DateTime @updatedAt
+
+  @@map("job_locks")
 }

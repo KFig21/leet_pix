@@ -8,10 +8,22 @@
   padding: $gap-md;
   border-bottom: 1px solid var(--border-color);
 
+  @include mobile {
+    gap: $gap-sm;
+    padding: $gap-sm $gap-md;
+  }
+
   &__windows {
     display: flex;
     gap: $gap-xs;
     flex-wrap: wrap;
+
+    // Phones: keep all ranges on one line (+ the activity grid icon at the end).
+    @include mobile {
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: 2px;
+    }
   }
 
   &__window {
@@ -30,12 +42,42 @@
       background: var(--accent);
       color: var(--accent-contrast);
     }
+
+    @include mobile {
+      padding: 3px 7px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+  }
+
+  // Grid icon at the end of the windows row (phones) — opens the heatmap modal.
+  &__heatmap-icon {
+    @include button-reset;
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    color: var(--text-secondary);
+
+    &:hover {
+      color: var(--accent);
+    }
+
+    svg {
+      font-size: 22px;
+    }
   }
 
   &__figures {
     display: flex;
     gap: $gap-lg;
     flex-wrap: wrap;
+
+    @include mobile {
+      gap: $gap-md;
+      justify-content: space-between;
+    }
   }
 
   &__figure {
@@ -49,6 +91,15 @@
       color: var(--text-secondary);
       font-size: $font-size-sm;
     }
+
+    @include mobile {
+      strong {
+        font-size: $font-size-base;
+      }
+      span {
+        font-size: 11px;
+      }
+    }
   }
 
   &__heatmap-label {
@@ -57,5 +108,15 @@
     color: var(--text-secondary);
     font-size: $font-size-sm;
     font-weight: $font-weight-bold;
+  }
+
+  // Inside the modal: keep the grid readable and scroll it horizontally.
+  &__heatmap-scroll {
+    overflow-x: auto;
+    @include scroll-area;
+  }
+
+  &__heatmap-wide {
+    min-width: 640px;
   }
 }

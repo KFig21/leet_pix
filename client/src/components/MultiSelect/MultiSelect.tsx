@@ -12,7 +12,7 @@ import "./MultiSelect.scss";
 
 export interface Option {
   value: string;
-  label: string;
+  label: ReactNode;
   icon?: ReactNode;
   color?: string;
 }
@@ -22,12 +22,22 @@ interface Props {
   options: Option[];
   selected: string[];
   onToggle: (value: string) => void;
+  // Let the menu break out to (near) full screen width on phones — useful when
+  // options carry extra content (e.g. a team's next game). Assumes the trigger
+  // sits at the left edge of the content column.
+  wideMenu?: boolean;
 }
 
 // Dropdown multi-select with full keyboard support:
 //   ArrowDown on the trigger opens; Up/Down move between options; Home/End jump;
 //   Enter/Space toggle; Esc closes and returns focus; Tab closes and moves on.
-export function MultiSelect({ label, options, selected, onToggle }: Props) {
+export function MultiSelect({
+  label,
+  options,
+  selected,
+  onToggle,
+  wideMenu,
+}: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -123,7 +133,7 @@ export function MultiSelect({ label, options, selected, onToggle }: Props) {
 
       {open && (
         <div
-          className="multi-select__menu"
+          className={`multi-select__menu${wideMenu ? " multi-select__menu--wide" : ""}`}
           role="listbox"
           aria-multiselectable="true"
           ref={menuRef}

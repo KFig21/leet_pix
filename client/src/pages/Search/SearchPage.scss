@@ -1,21 +1,46 @@
 @use "variables" as *;
+@use "mixins" as *;
 
 .search {
   &__header {
-    padding: $gap-md;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: $gap-sm $gap-md;
+    background: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+    backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border-color);
   }
 
-  &__input {
-    width: 100%;
-    padding: $gap-sm $gap-md;
+  &__box {
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+    padding: $gap-xs $gap-md;
     border: 1px solid var(--border-color);
     border-radius: $radius-pill;
     background: var(--bg-secondary);
+
+    &:focus-within {
+      border-color: var(--accent);
+    }
+  }
+
+  &__icon {
+    color: var(--text-secondary);
+    font-size: 20px;
+  }
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: none;
     color: var(--text-primary);
+    font: inherit;
 
     &:focus {
-      outline: 2px solid var(--accent);
+      outline: none;
     }
   }
 
@@ -31,6 +56,36 @@
 
     &:hover {
       background: var(--bg-hover);
+    }
+  }
+
+  &__section {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: $gap-sm;
+  }
+
+  &__title {
+    margin: 0;
+    padding: $gap-md;
+    font-size: $font-size-lg;
+  }
+
+  &__msg {
+    padding: 0 $gap-md $gap-md;
+    color: var(--text-secondary);
+  }
+
+  &__more {
+    @include button-reset;
+    display: block;
+    width: 100%;
+    padding: $gap-md;
+    color: var(--accent);
+    font-weight: $font-weight-bold;
+    text-align: left;
+
+    &:hover {
+      background: var(--hover-overlay);
     }
   }
 }

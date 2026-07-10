@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { useAuth } from "@/context/AuthContext";
 import { Avatar } from "@/components/Avatar/Avatar";
 import { FollowButton } from "@/components/FollowButton/FollowButton";
@@ -28,6 +29,7 @@ export function ProfilePage() {
   const navigate = useNavigate();
   const { session } = useAuth();
   const [editing, setEditing] = useState(false);
+  const isMobile = useIsMobile();
 
   const profile = useQuery({
     queryKey: ["profile", username],
@@ -44,7 +46,9 @@ export function ProfilePage() {
   return (
     <div className="profile">
       <header className="profile__header">
-        {profile.data && <Avatar avatar={profile.data.avatar} size={64} />}
+        {profile.data && (
+          <Avatar avatar={profile.data.avatar} size={isMobile ? 48 : 64} />
+        )}
         <div className="profile__identity">
           <h1 className="profile__name">
             {profile.data?.displayName ?? username}
@@ -83,14 +87,16 @@ export function ProfilePage() {
           />
         </section>
       ) : (
-        <>
+        // Scroll region: the header stays pinned above it, and the tab bar
+        // (sticky within this container) stays pinned below the header.
+        <div className="profile__scroll">
           <ProfileStats stats={stats.data} />
           <ProfileTabs
             username={username}
             counts={profile.data?._count}
             owner={profile.data}
           />
-        </>
+        </div>
       )}
     </div>
   );

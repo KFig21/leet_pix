@@ -23,8 +23,18 @@
     border-color: var(--accent);
   }
 
+  &__selected-main {
+    display: inline-flex;
+    align-items: center;
+    gap: $gap-sm;
+    min-width: 0;
+  }
+
   &__selected-name {
     font-weight: $font-weight-bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__clear {
@@ -39,7 +49,8 @@
 
   &__menu {
     position: absolute;
-    z-index: 10;
+    // Above the fixed bottom nav (100) + compose FAB (101); below modals (1000).
+    z-index: 120;
     top: calc(100% + 4px);
     left: 0;
     right: 0;
@@ -81,9 +92,34 @@
 
   &__name {
     font-weight: $font-weight-bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  &__meta {
+  // Leading group: the game schedule sits to the LEFT of the player's name.
+  &__lead {
+    display: flex;
+    align-items: baseline;
+    gap: $gap-sm;
+    min-width: 0;
+  }
+
+  &__game {
+    // Roughly align names by giving the schedule a consistent leading column.
+    min-width: 150px;
+    justify-content: flex-start;
+
+    @include mobile {
+      min-width: 0;
+    }
+  }
+
+  &__pos-team {
+    display: inline-flex;
+    align-items: center;
+    gap: $gap-xs;
+    flex-shrink: 0;
     color: var(--text-secondary);
     font-size: $font-size-sm;
     white-space: nowrap;

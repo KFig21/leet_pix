@@ -9,6 +9,8 @@ import {
   type AuthedRequest,
 } from "../middleware/auth";
 import { withMyVote } from "../lib/myVote";
+import { attachStatLines } from "../lib/statLines";
+import { attachPlayerContext } from "../lib/playerContext";
 
 export const exploreRouter = Router();
 
@@ -35,7 +37,11 @@ exploreRouter.get(
       take: 25,
       include: pollInclude,
     });
-    res.json(await withMyVote(polls, req.userId));
+    res.json(
+      await attachPlayerContext(
+        await attachStatLines(await withMyVote(polls, req.userId)),
+      ),
+    );
   }),
 );
 

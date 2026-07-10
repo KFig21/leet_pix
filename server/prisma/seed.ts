@@ -1,10 +1,25 @@
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
+import { SCORING_PRESET_RULES } from "@leetpix/shared";
+import {
+  gameStartLockAt,
+  baseballStartInfo,
+  pollGameIds,
+} from "../src/lib/schedule";
+import { projectedPointsByPlayer } from "../src/services/projections";
+import { resolvePoll } from "../src/services/resolution";
 
 const prisma = new PrismaClient();
 
-// Demo accounts (not real auth users — they exist purely as discoverable
-// content so Explore / the timeline aren't empty during development).
+// The season/week new football polls are tagged with (matches getNflState in the
+// offseason) and the completed week we grade the resolved demo poll against.
+const OPEN_SEASON = 2026;
+const OPEN_WEEK = 1;
+const RESOLVED_SEASON = 2025;
+const RESOLVED_WEEK = 1;
+
+// Demo accounts (not real auth users — they exist purely as discoverable content
+// so Explore / the timeline aren't empty during development).
 const DEMO_USERS = [
   { username: "gridiron_gary", displayName: "Gridiron Gary", bio: "RB truther. Zero RB skeptic.", avatar: { bgColor: "#2fa84f", shape: "circle", icon: "football", iconColor: "#ffffff" } },
   { username: "dinger_dana", displayName: "Dinger Dana", bio: "Baseball nerd, spreadsheet enjoyer.", avatar: { bgColor: "#1d9bf0", shape: "rounded", icon: "baseball", iconColor: "#ffffff" } },
@@ -14,25 +29,74 @@ const DEMO_USERS = [
   { username: "keeper_kim", displayName: "Keeper Kim", bio: "Dynasty for life.", avatar: { bgColor: "#f5a623", shape: "rounded", icon: "helmet", iconColor: "#111111" } },
 ] as const;
 
-// author username -> polls
-const DEMO_POLLS: {
+type Sport = "FOOTBALL" | "BASEBALL";
+interface PlayerPick {
+  id: string;
+  fullName: string;
+}
+
+// Find real players for a demo poll: honor the preferred names (in order) that
+// exist, then top up with any other active players of that position/sport.
+async function pickPlayers(
+  sport: Sport,
+  count: number,
+  preferred: string[],
+  position?: string,
+): Promise<PlayerPick[]> {
+  const base = { sport, active: true, ...(position ? { position } : {}) };
+  const named = await prisma.player.findMany({
+    where: { ...base, fullName: { in: preferred } },
+    select: { id: true, fullName: true },
+  });
+  const picks: PlayerPick[] = [];
+  for (const name of preferred) {
+    const p = named.find((x) => x.fullName === name);
+    if (p && !picks.some((f) => f.id === p.id)) picks.push(p);
+  }
+  if (picks.length < count) {
+    const more = await prisma.player.findMany({
+      where: { ...base, team: { not: null }, id: { notIn: picks.map((p) => p.id) } },
+      orderBy: { fullName: "asc" },
+      take: count * 4,
+      select: { id: true, fullName: true },
+    });
+    for (const p of more) {
+      if (picks.length >= count) break;
+      picks.push(p);
+    }
+  }
+  return picks.slice(0, count);
+}
+
+// Open football poll specs (tagged the upcoming week → real lock times).
+const OPEN_FOOTBALL: {
   author: string;
-  sport: "FOOTBALL" | "BASEBALL";
-  questionType: "START" | "ADD" | "DROP" | "TRADE_FOR" | "TRADE_AWAY" | "BUY_LOW";
-  players: string[];
+  questionType: "START" | "BENCH";
+  position: string;
+  preferred: string[];
+  count: number;
 }[] = [
-  { author: "gridiron_gary", sport: "FOOTBALL", questionType: "START", players: ["Christian McCaffrey", "Bijan Robinson"] },
-  { author: "gridiron_gary", sport: "FOOTBALL", questionType: "TRADE_FOR", players: ["Ja'Marr Chase", "Justin Jefferson", "CeeDee Lamb"] },
-  { author: "dinger_dana", sport: "BASEBALL", questionType: "START", players: ["Aaron Judge", "Shohei Ohtani"] },
-  { author: "dinger_dana", sport: "BASEBALL", questionType: "ADD", players: ["Bobby Witt Jr.", "Gunnar Henderson"] },
-  { author: "waiver_wanda", sport: "FOOTBALL", questionType: "ADD", players: ["Jaylen Warren", "Tyjae Spears", "Rico Dowdle"] },
-  { author: "trade_tony", sport: "FOOTBALL", questionType: "TRADE_AWAY", players: ["Davante Adams", "Mike Evans"] },
-  { author: "start_sit_sam", sport: "FOOTBALL", questionType: "START", players: ["Jalen Hurts", "Lamar Jackson"] },
-  { author: "keeper_kim", sport: "FOOTBALL", questionType: "BUY_LOW", players: ["Breece Hall", "Jonathan Taylor"] },
+  { author: "gridiron_gary", questionType: "START", position: "QB", preferred: ["Josh Allen", "Joe Burrow", "Jalen Hurts"], count: 3 },
+  { author: "start_sit_sam", questionType: "START", position: "RB", preferred: ["Bijan Robinson", "Saquon Barkley", "Jahmyr Gibbs"], count: 3 },
+  { author: "waiver_wanda", questionType: "BENCH", position: "WR", preferred: ["Ja'Marr Chase", "CeeDee Lamb", "Amon-Ra St. Brown"], count: 3 },
+  { author: "keeper_kim", questionType: "START", position: "TE", preferred: ["Brock Bowers", "Trey McBride", "George Kittle"], count: 2 },
+];
+
+// Open baseball "who should I start" polls (votable now; baseball grading/lock
+// isn't wired yet, so these stay open with no lock time).
+const OPEN_BASEBALL: { author: string; preferred: string[]; count: number }[] = [
+  { author: "dinger_dana", preferred: ["Aaron Judge", "Shohei Ohtani", "Juan Soto"], count: 3 },
+  { author: "waiver_wanda", preferred: ["Bobby Witt Jr.", "Gunnar Henderson", "Elly De La Cruz"], count: 3 },
+  { author: "keeper_kim", preferred: ["Mookie Betts", "Freddie Freeman"], count: 2 },
 ];
 
 async function main() {
-  console.log("Seeding demo data…");
+  console.log("Seeding demo data (real players)…");
+
+  // Fresh slate: clear polls (cascades options/votes/results) + notifications +
+  // demo follows. Keep accounts, scoring formats, players, games, and stats.
+  await prisma.notification.deleteMany({});
+  await prisma.poll.deleteMany({});
 
   // Upsert demo profiles (idempotent by username).
   const idByUsername = new Map<string, string>();
@@ -45,102 +109,171 @@ async function main() {
     idByUsername.set(u.username, profile.id);
   }
   const demoIds = [...idByUsername.values()];
+  const author = (username: string) => idByUsername.get(username)!;
 
-  // Only build demo polls the FIRST time. On reruns we reuse the existing ones
-  // so we never cascade-delete real users' votes (picks) on demo polls.
-  let createdPolls = await prisma.poll.findMany({
-    where: { authorId: { in: demoIds } },
-    include: { options: true },
-  });
+  const rules = SCORING_PRESET_RULES.FOOTBALL_PPR;
+  const createdPolls: { id: string; authorId: string; options: { id: string }[] }[] = [];
 
-  if (createdPolls.length === 0) {
-    for (const p of DEMO_POLLS) {
-      const poll = await prisma.poll.create({
-        data: {
-          authorId: idByUsername.get(p.author)!,
-          sport: p.sport,
-          questionType: p.questionType,
-          lockType: "GAME_START",
-          scoringPreset: p.sport === "BASEBALL" ? "BASEBALL_STANDARD" : "FOOTBALL_PPR",
-          options: { create: p.players.map((playerName, i) => ({ playerId: `demo-${i}`, playerName })) },
+  // ── Open football polls: real players, real lock times from the schedule ──
+  for (const spec of OPEN_FOOTBALL) {
+    const players = await pickPlayers("FOOTBALL", spec.count, spec.preferred, spec.position);
+    if (players.length < 2) {
+      console.warn(`Skipping ${spec.author} ${spec.position} poll — not enough players.`);
+      continue;
+    }
+    const ids = players.map((p) => p.id);
+    const lockAt = await gameStartLockAt("FOOTBALL", OPEN_SEASON, OPEN_WEEK, ids);
+    const projected = await projectedPointsByPlayer(ids, OPEN_SEASON, [OPEN_WEEK], rules);
+    const gameIds = await pollGameIds("FOOTBALL", OPEN_SEASON, OPEN_WEEK, ids);
+
+    const poll = await prisma.poll.create({
+      data: {
+        authorId: author(spec.author),
+        sport: "FOOTBALL",
+        questionType: spec.questionType,
+        lockType: "GAME_START",
+        lockAt,
+        season: OPEN_SEASON,
+        week: OPEN_WEEK,
+        scoringPreset: "FOOTBALL_PPR",
+        options: {
+          create: players.map((p) => ({
+            playerId: p.id,
+            playerName: p.fullName,
+            projectedPoints: projected.get(p.id) ?? null,
+          })),
         },
-        include: { options: true },
-      });
-      createdPolls.push(poll);
-    }
-
-    // Spread votes: each demo user votes on a few polls they didn't author.
-    for (const voterId of demoIds) {
-      const votable = createdPolls.filter((poll) => poll.authorId !== voterId);
-      for (const poll of votable.slice(0, 4)) {
-        const option = poll.options[Math.floor(Math.random() * poll.options.length)];
-        await prisma.vote.create({
-          data: { pollId: poll.id, optionId: option.id, voterId, consensusAtVote: 0 },
-        });
-      }
-    }
-
-    // Follows: make the first two accounts "popular" so who-to-follow has signal.
-    const popular = demoIds.slice(0, 2);
-    for (const followerId of demoIds) {
-      for (const followingId of popular) {
-        if (followerId === followingId) continue;
-        await prisma.follow.create({ data: { followerId, followingId } });
-      }
-    }
-  } else {
-    console.log(`Reusing ${createdPolls.length} existing demo polls (votes preserved).`);
+        games: { create: gameIds.map((gameId) => ({ gameId })) },
+      },
+      include: { options: true },
+    });
+    createdPolls.push(poll);
   }
 
+  // ── Open baseball "who should I start" polls (real hitters) ──
+  for (const spec of OPEN_BASEBALL) {
+    const players = await pickPlayers("BASEBALL", spec.count, spec.preferred);
+    if (players.length < 2) {
+      console.warn(`Skipping ${spec.author} baseball poll — not enough players.`);
+      continue;
+    }
+    const info = await baseballStartInfo(players.map((p) => p.id));
+    const gameIds = info
+      ? await pollGameIds("BASEBALL", info.season, info.week, players.map((p) => p.id))
+      : [];
+    const poll = await prisma.poll.create({
+      data: {
+        authorId: author(spec.author),
+        sport: "BASEBALL",
+        questionType: "START",
+        lockType: "GAME_START",
+        lockAt: info?.lockAt ?? null,
+        season: info?.season ?? null,
+        week: info?.week ?? null,
+        scoringPreset: "BASEBALL_STANDARD",
+        options: { create: players.map((p) => ({ playerId: p.id, playerName: p.fullName })) },
+        games: { create: gameIds.map((gameId) => ({ gameId })) },
+      },
+      include: { options: true },
+    });
+    createdPolls.push(poll);
+  }
+
+  // ── Baseball opinion poll (no schedule/stats pipeline yet) ──
+  const ballplayers = await pickPlayers("BASEBALL", 3, ["Aaron Judge", "Shohei Ohtani", "Bobby Witt Jr."]);
+  if (ballplayers.length >= 2) {
+    const poll = await prisma.poll.create({
+      data: {
+        authorId: author("dinger_dana"),
+        sport: "BASEBALL",
+        questionType: "TRADE_FOR",
+        lockType: "FIXED_TIME",
+        lockAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // closes in 2 days
+        scoringPreset: "BASEBALL_STANDARD",
+        options: { create: ballplayers.map((p) => ({ playerId: p.id, playerName: p.fullName })) },
+      },
+      include: { options: true },
+    });
+    createdPolls.push(poll);
+  }
+
+  // Spread votes: every demo user votes on each poll they didn't author, so all
+  // polls (football + baseball) show vote signal for you to vote against.
+  for (const voterId of demoIds) {
+    const votable = createdPolls.filter((p) => p.authorId !== voterId);
+    for (const poll of votable) {
+      const option = poll.options[Math.floor(Math.random() * poll.options.length)];
+      await prisma.vote.create({
+        data: { pollId: poll.id, optionId: option.id, voterId, consensusAtVote: 0 },
+      });
+    }
+  }
+
+  // ── Resolved football poll: real 2025 wk1 players, graded against actuals ──
+  const resolvedPlayers = await pickPlayers("FOOTBALL", 3, ["Saquon Barkley", "Derrick Henry", "Jahmyr Gibbs"], "RB");
+  if (resolvedPlayers.length >= 2) {
+    const rIds = resolvedPlayers.map((p) => p.id);
+    const past = await gameStartLockAt("FOOTBALL", RESOLVED_SEASON, RESOLVED_WEEK, rIds);
+    const gameIds = await pollGameIds("FOOTBALL", RESOLVED_SEASON, RESOLVED_WEEK, rIds);
+    const poll = await prisma.poll.create({
+      data: {
+        authorId: author("trade_tony"),
+        sport: "FOOTBALL",
+        questionType: "START",
+        lockType: "GAME_START",
+        lockAt: past,
+        season: RESOLVED_SEASON,
+        week: RESOLVED_WEEK,
+        scoringPreset: "FOOTBALL_PPR",
+        options: { create: resolvedPlayers.map((p) => ({ playerId: p.id, playerName: p.fullName })) },
+        games: { create: gameIds.map((gameId) => ({ gameId })) },
+      },
+      include: { options: true },
+    });
+    // Demo users vote, then grade against the imported 2025 wk1 actuals.
+    for (const voterId of demoIds.filter((id) => id !== poll.authorId).slice(0, 4)) {
+      const option = poll.options[Math.floor(Math.random() * poll.options.length)];
+      await prisma.vote.create({
+        data: { pollId: poll.id, optionId: option.id, voterId, consensusAtVote: 0 },
+      });
+    }
+    try {
+      await resolvePoll(poll.id, RESOLVED_SEASON, RESOLVED_WEEK);
+      createdPolls.push(poll);
+    } catch (e) {
+      console.warn("Could not resolve demo poll (missing 2025 wk1 stats?):", e);
+    }
+  }
+
+  // Follows: make the first two accounts "popular" so who-to-follow has signal.
+  const popular = demoIds.slice(0, 2);
+  const follows = demoIds.flatMap((followerId) =>
+    popular
+      .filter((followingId) => followingId !== followerId)
+      .map((followingId) => ({ followerId, followingId })),
+  );
+  await prisma.follow.createMany({ data: follows, skipDuplicates: true });
+
   // Give real (non-demo) users inbound activity so notifications/followers
-  // populate: demo accounts follow them and vote on their polls.
+  // populate: demo accounts follow them (and vote on any polls they have).
   const realProfiles = await prisma.profile.findMany({
     where: { username: { notIn: DEMO_USERS.map((u) => u.username) } },
   });
   for (const real of realProfiles) {
-    // Reset demo-generated inbound data for idempotency.
-    await prisma.notification.deleteMany({
-      where: { recipientId: real.id, actorId: { in: demoIds } },
-    });
     await prisma.follow.deleteMany({
       where: { followerId: { in: demoIds }, followingId: real.id },
     });
-    await prisma.vote.deleteMany({
-      where: { voterId: { in: demoIds }, poll: { authorId: real.id } },
-    });
-
-    // 4 demo accounts follow the real user (→ follow notifications).
     for (const actorId of demoIds.slice(0, 4)) {
-      await prisma.follow.create({
-        data: { followerId: actorId, followingId: real.id },
-      });
+      await prisma.follow.create({ data: { followerId: actorId, followingId: real.id } });
       await prisma.notification.create({
         data: { recipientId: real.id, actorId, type: "FOLLOW" },
       });
     }
-
-    // Demo accounts vote on the real user's polls (→ grouped vote notifications).
-    const realPolls = await prisma.poll.findMany({
-      where: { authorId: real.id },
-      include: { options: true },
-    });
-    for (const poll of realPolls) {
-      for (const actorId of demoIds) {
-        const opt = poll.options[Math.floor(Math.random() * poll.options.length)];
-        if (!opt) continue;
-        await prisma.vote.create({
-          data: { pollId: poll.id, optionId: opt.id, voterId: actorId, consensusAtVote: 0 },
-        });
-        await prisma.notification.create({
-          data: { recipientId: real.id, actorId, type: "VOTE", pollId: poll.id },
-        });
-      }
-    }
   }
 
   console.log(
-    `Seeded ${DEMO_USERS.length} demo users, ${createdPolls.length} polls, ` +
-      `inbound activity for ${realProfiles.length} real user(s).`,
+    `Seeded ${DEMO_USERS.length} demo users, ${createdPolls.length} polls ` +
+      `(real players), inbound activity for ${realProfiles.length} real user(s).`,
   );
 }
 

@@ -16,7 +16,10 @@
     "db:migrate": "npm run db:migrate -w server",
     "db:studio": "npm run db:studio -w server",
     "db:seed": "npm run db:seed -w server",
-    "import:players": "npm run import:players -w server"
+    "import:players": "npm run import:players -w server",
+    "import:stats": "npm run import:stats -w server",
+    "resolve:poll": "npm run resolve:poll -w server",
+    "resolve:due": "npm run resolve:due -w server"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

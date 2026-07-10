@@ -55,6 +55,9 @@ notificationsRouter.get(
           kind: "outcome",
           id: n.id,
           poll: n.poll,
+          // Author sees "your poll resolved"; voters see how their pick graded.
+          isAuthor: n.poll?.authorId === req.userId,
+          correct: null as boolean | null,
           read: n.read,
           createdAt: n.createdAt,
         });
@@ -75,6 +78,25 @@ notificationsRouter.get(
     }
     for (const i of items) {
       if (i.kind === "follow") i.youFollow = i.actor ? backSet.has(i.actor.id) : false;
+    }
+
+    // For poll-outcome notifications where the viewer voted, attach how their
+    // pick graded (correct/incorrect) so the row can read "you nailed it" etc.
+    const outcomePollIds = items
+      .filter((i) => i.kind === "outcome" && !i.isAuthor && i.poll)
+      .map((i) => i.poll.id as string);
+    if (outcomePollIds.length) {
+      const myVotes = await prisma.vote.findMany({
+        where: { voterId: req.userId, pollId: { in: outcomePollIds } },
+        select: { pollId: true, result: { select: { correct: true } } },
+      });
+      const correctByPoll = new Map<string, boolean | null>();
+      myVotes.forEach((v) => correctByPoll.set(v.pollId, v.result?.correct ?? null));
+      for (const i of items) {
+        if (i.kind === "outcome" && !i.isAuthor && i.poll) {
+          i.correct = correctByPoll.get(i.poll.id) ?? null;
+        }
+      }
     }
 
     res.json(items);

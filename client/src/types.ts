@@ -21,11 +21,29 @@ export interface ProfileSummary {
   avatar: Avatar;
 }
 
+// A player's game this week (football), attached to poll options + search results.
+export interface PlayerGame {
+  opponent: string;
+  atHome: boolean;
+  kickoff: string;
+  status?: string;
+}
+
 export interface PollOptionView {
   id: string;
   playerName: string;
   projectedPoints: number | null;
+  actualPoints: number | null;
   isWinner: boolean;
+  // Merged actual stat line (resolved polls, detail view only) — for the breakdown.
+  statLine?: Record<string, number>;
+  // Player meta + upcoming game (attached server-side).
+  player?: {
+    team: string | null;
+    position: string | null;
+    injuryStatus: string | null;
+  } | null;
+  game?: PlayerGame | null;
   _count?: { votes: number };
 }
 
@@ -84,6 +102,10 @@ export interface VoteNotification extends NotificationBase {
 export interface OutcomeNotification extends NotificationBase {
   kind: "outcome";
   poll: { id: string; questionType: PollQuestionType };
+  // True when the viewer authored the poll; otherwise they voted on it.
+  isAuthor: boolean;
+  // For voters: whether their pick was correct (null if not scored/available).
+  correct: boolean | null;
 }
 export type NotificationItem =
   | FollowNotification

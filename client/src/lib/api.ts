@@ -1,6 +1,8 @@
 import { supabase } from "./supabase";
 
-const BASE = import.meta.env.VITE_API_URL;
+// Trailing slashes are stripped so a VITE_API_URL like "https://api.example.com/"
+// doesn't produce a malformed "https://api.example.com//api/..." (which 404s).
+const BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "");
 
 // Carries the HTTP status so callers can react to specific failures (e.g. 429).
 export class ApiError extends Error {

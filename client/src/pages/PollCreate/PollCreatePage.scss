@@ -14,10 +14,12 @@
     flex-direction: column;
     gap: $gap-sm;
     padding: $gap-md;
+    // Breathing room so the last fields (and any open dropdown) can scroll up
+    // clear of the viewport bottom instead of hard-stopping.
+    padding-bottom: 40vh;
   }
 
   &__question,
-  &__option,
   &__select {
     padding: $gap-sm;
     border: 1px solid var(--border-color);
@@ -74,20 +76,19 @@
   }
 
   // One player slot: the search dropdown plus (keeper polls only) a round-cost input.
-  &__option {
+  &__player-slot {
     display: flex;
     flex-direction: column;
     gap: $gap-xs;
   }
 
+  // Grouping wrapper only — the inputs carry the borders, so no border here
+  // (avoids a box-in-a-box double border).
   &__keeper {
     display: flex;
     flex-direction: column;
     gap: $gap-xs;
-    padding: $gap-sm;
-    border: 1px dashed var(--border-color);
-    border-radius: $radius-sm;
-    background: var(--bg-secondary);
+    padding-left: $gap-sm;
   }
 
   &__keeper-title {

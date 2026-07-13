@@ -4,7 +4,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import { POLL_QUESTION_LABELS, formatKeeperCost } from "@leetpix/shared";
+import {
+  POLL_QUESTION_LABELS,
+  PollQuestionType,
+  formatKeeperCost,
+} from "@leetpix/shared";
 import type { Avatar as AvatarData } from "@leetpix/shared";
 import { api } from "@/lib/api";
 import { getPollRules } from "@/lib/pollRules";
@@ -64,6 +68,9 @@ export function PollCard({ poll, pick, preview }: Props) {
   const isOwn = session?.user.id === poll.author.id;
   const resolved = poll.status === "RESOLVED";
   const canVote = poll.status === "OPEN" && !voted && !isOwn;
+  // Keeper polls are about season/dynasty value, so the next scheduled game is
+  // just clutter — suppress it (injury designations still show).
+  const isKeeper = poll.questionType === PollQuestionType.KEEP;
   const totalVotes = poll.options.reduce((n, o) => n + (o._count?.votes ?? 0), 0);
 
   // Projected favorite: the single option with the highest projected points
@@ -230,7 +237,7 @@ export function PollCard({ poll, pick, preview }: Props) {
                   {!resolved && (
                     <PlayerMeta
                       className="poll-card__option-meta"
-                      game={o.game}
+                      game={isKeeper ? null : o.game}
                       injuryStatus={o.player?.injuryStatus}
                     />
                   )}

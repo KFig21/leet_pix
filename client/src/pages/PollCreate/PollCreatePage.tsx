@@ -464,7 +464,7 @@ export function PollCreatePage() {
           </div>
         )}
         {options.map((opt, i) => (
-          <div key={i} className="poll-create__option">
+          <div key={i} className="poll-create__player-slot">
             <PlayerSelect
               sport={sport}
               value={opt}

@@ -65,11 +65,10 @@ export function PollCard({ poll, pick, preview }: Props) {
   const canVote = poll.status === "OPEN" && !voted && !isOwn;
   const totalVotes = poll.options.reduce((n, o) => n + (o._count?.votes ?? 0), 0);
 
-  // Projected favorite (unresolved polls only): the single option with the
-  // highest projected points. A tie leaves no favorite, so we never call one
-  // arbitrarily. Purely from data already on the options — no extra fetch.
+  // Projected favorite: the single option with the highest projected points
+  // (frozen at lock). A tie leaves no favorite, so we never call one arbitrarily.
+  // Purely from data already on the options — no extra fetch.
   const projFavoriteId = (() => {
-    if (resolved) return null;
     const vals = poll.options
       .map((o) => o.projectedPoints)
       .filter((p): p is number => p != null);
@@ -78,6 +77,10 @@ export function PollCard({ poll, pick, preview }: Props) {
     const leaders = poll.options.filter((o) => o.projectedPoints === top);
     return leaders.length === 1 ? leaders[0].id : null;
   })();
+  // Upset: the poll resolved and the winner isn't who the projections favored.
+  const winnerId = poll.options.find((o) => o.isWinner)?.id ?? null;
+  const isUpset =
+    resolved && projFavoriteId != null && winnerId != null && projFavoriteId !== winnerId;
 
   const vote = useMutation({
     mutationFn: (optionId: string) =>
@@ -152,6 +155,14 @@ export function PollCard({ poll, pick, preview }: Props) {
           scoringPreset={poll.scoringPreset}
           scoringFormat={poll.scoringFormat}
         />
+        {isUpset && (
+          <span
+            className="poll-card__upset"
+            title="The winner wasn't the projected favorite"
+          >
+            Upset
+          </span>
+        )}
         {/* On phones the countdown moves down to the footer (bottom-right). */}
         {!isMobile && (
           <PollCountdown lockAt={poll.lockAt} status={poll.status} />
@@ -206,23 +217,29 @@ export function PollCard({ poll, pick, preview }: Props) {
                       injuryStatus={o.player?.injuryStatus}
                     />
                   )}
-                  {points != null && (
-                    <span
-                      className={`poll-card__proj${projFavoriteId === o.id ? " poll-card__proj--favorite" : ""}`}
-                      title={
-                        projFavoriteId === o.id
-                          ? "Projected to win"
-                          : resolved
-                            ? undefined
+                  {points != null &&
+                    (resolved ? (
+                      // Actual, final points.
+                      <span className="poll-card__pts-actual" title="Final points">
+                        {points} pts
+                      </span>
+                    ) : (
+                      // Projection — labeled so it's never mistaken for a result.
+                      <span
+                        className={`poll-card__proj${projFavoriteId === o.id ? " poll-card__proj--favorite" : ""}`}
+                        title={
+                          projFavoriteId === o.id
+                            ? "Projected to win"
                             : "Projected points"
-                      }
-                    >
-                      {projFavoriteId === o.id && (
-                        <TrendingUpIcon className="poll-card__proj-icon" />
-                      )}
-                      {points} pts
-                    </span>
-                  )}
+                        }
+                      >
+                        {projFavoriteId === o.id && (
+                          <TrendingUpIcon className="poll-card__proj-icon" />
+                        )}
+                        <span className="poll-card__proj-tag">PROJ</span>
+                        {points}
+                      </span>
+                    ))}
                   <span className="poll-card__option-right">
                   {owned && (
                     <span

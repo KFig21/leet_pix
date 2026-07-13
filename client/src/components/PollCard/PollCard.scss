@@ -236,6 +236,7 @@
   &__option-content .team-tag,
   &__option-content .player-meta,
   &__proj,
+  &__pts-actual,
   &__option-right {
     flex-shrink: 0;
   }
@@ -251,7 +252,7 @@
   &__proj {
     display: inline-flex;
     align-items: center;
-    gap: 2px;
+    gap: 3px;
     color: var(--text-secondary);
     font-size: $font-size-sm;
 
@@ -263,8 +264,40 @@
     }
   }
 
+  // Small uppercase "PROJ" tag so a projection is never read as a final score.
+  &__proj-tag {
+    padding: 0 4px;
+    border-radius: $radius-sm;
+    background: color-mix(in srgb, currentColor 16%, transparent);
+    font-size: 9px;
+    font-weight: $font-weight-bold;
+    letter-spacing: 0.04em;
+    line-height: 14px;
+  }
+
   &__proj-icon {
     font-size: 15px;
+  }
+
+  // Final (actual) points read as a solid result — full-strength text, no tag.
+  &__pts-actual {
+    color: var(--text-primary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+  }
+
+  &__upset {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 8px;
+    border-radius: $radius-pill;
+    background: color-mix(in srgb, var(--color-warning) 18%, transparent);
+    color: var(--color-warning);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
   }
 
   &__option-right {

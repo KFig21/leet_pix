@@ -475,6 +475,7 @@ export function PollCreatePage() {
               excludeIds={options
                 .filter((o, idx): o is PlayerPick => o !== null && idx !== i)
                 .map((o) => o.playerId)}
+              hideGame={keeper}
             />
             {/* Keeper polls: capture the draft slot forfeited for this player. */}
             {keeper && opt && (

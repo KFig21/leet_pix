@@ -17,15 +17,16 @@ export function overallPickNumber(c: KeeperCost): number | null {
 }
 
 /**
- * Short display label for a keeper cost, or null when no round is set:
- *   round + pick + leagueSize → "Pick #47"
+ * Short display label for a keeper cost, or null when no round is set. Shows the
+ * round & pick, with the true overall pick in parens when it can be computed:
+ *   round + pick + leagueSize → "R5 · P7 (#47)"
  *   round + pick              → "R5 · P7"
  *   round only                → "Round 5"
  */
 export function formatKeeperCost(c: KeeperCost): string | null {
   if (!c.round) return null;
   const overall = overallPickNumber(c);
-  if (overall != null) return `Pick #${overall}`;
+  if (c.pick && overall != null) return `R${c.round} · P${c.pick} (#${overall})`;
   if (c.pick) return `R${c.round} · P${c.pick}`;
   return `Round ${c.round}`;
 }

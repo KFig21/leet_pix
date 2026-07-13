@@ -45,6 +45,8 @@ interface Props {
   // Player ids already chosen in other option slots — hidden from this menu so a
   // player can't be picked twice.
   excludeIds?: string[];
+  // Suppress the next-game line (e.g. keeper polls, where schedule is irrelevant).
+  hideGame?: boolean;
 }
 
 // Searchable player dropdown backed by our own /players endpoint. Type to filter
@@ -57,6 +59,7 @@ export function PlayerSelect({
   teams = [],
   positions = [],
   excludeIds = [],
+  hideGame = false,
 }: Props) {
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -104,7 +107,10 @@ export function PlayerSelect({
           <span className="player-select__selected-main">
             <TeamTag abbr={value.team} sport={sport} />
             <span className="player-select__selected-name">{value.playerName}</span>
-            <PlayerMeta injuryStatus={value.injuryStatus} game={value.game} />
+            <PlayerMeta
+              injuryStatus={value.injuryStatus}
+              game={hideGame ? null : value.game}
+            />
           </span>
           <button
             type="button"
@@ -169,7 +175,7 @@ export function PlayerSelect({
                   <PlayerMeta
                     className="player-select__game"
                     injuryStatus={p.injuryStatus}
-                    game={p.game}
+                    game={hideGame ? null : p.game}
                   />
                 </span>
                 <span className="player-select__pos-team">

@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma";
 import { asyncHandler } from "../lib/asyncHandler";
 import { requireAuth } from "../middleware/auth";
 import { upcomingGameByTeam } from "../lib/schedule";
+import { streaksByPlayer } from "../services/streaks";
 
 export const playersRouter = Router();
 
@@ -106,6 +107,8 @@ playersRouter.get(
       sport && resultTeams.length
         ? await upcomingGameByTeam(sport, resultTeams)
         : null;
+    // Recent-form (hot/cold) badge per result, batched.
+    const streaks = await streaksByPlayer(players.map((p) => p.id));
 
     res.json(
       players.map((p) => {
@@ -117,6 +120,7 @@ playersRouter.get(
           : null;
         return {
           ...p,
+          streak: streaks.get(p.id) ?? null,
           game: opponent
             ? { opponent: opponent.abbr, atHome: opponent.atHome, kickoff: g!.kickoff }
             : null,

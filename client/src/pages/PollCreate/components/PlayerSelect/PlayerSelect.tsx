@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { Sport } from "@leetpix/shared";
+import type { Sport, PlayerStreak } from "@leetpix/shared";
 import { api } from "@/lib/api";
 import { Loader } from "@/components/Loader/Loader";
 import { PlayerMeta } from "@/components/PlayerMeta/PlayerMeta";
 import { TeamTag } from "@/components/TeamTag/TeamTag";
+import { StreakBadge } from "@/components/StreakBadge/StreakBadge";
 import type { PlayerGame } from "@/types";
 import "./PlayerSelect.scss";
 
@@ -15,6 +16,7 @@ interface PlayerResult {
   position: string | null;
   sport: Sport;
   injuryStatus: string | null;
+  streak: PlayerStreak | null;
   game: PlayerGame | null;
 }
 
@@ -168,6 +170,7 @@ export function PlayerSelect({
                   />
                 </span>
                 <span className="player-select__pos-team">
+                  <StreakBadge streak={p.streak} />
                   {p.position && <span>{p.position}</span>}
                   <TeamTag abbr={p.team} sport={sport} />
                 </span>

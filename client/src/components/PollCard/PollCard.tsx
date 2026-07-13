@@ -13,6 +13,7 @@ import { useIsMobile } from "@/hooks/useMediaQuery";
 import { Avatar } from "@/components/Avatar/Avatar";
 import { PlayerMeta } from "@/components/PlayerMeta/PlayerMeta";
 import { TeamTag } from "@/components/TeamTag/TeamTag";
+import { StreakBadge } from "@/components/StreakBadge/StreakBadge";
 import { SportIcon } from "@/components/SportIcon/SportIcon";
 import { ScoringBadge } from "@/components/ScoringBadge/ScoringBadge";
 import { ResolutionBadge } from "@/components/ResolutionBadge/ResolutionBadge";
@@ -182,6 +183,7 @@ export function PollCard({ poll, pick, preview }: Props) {
                     <span className="poll-card__option-name">{o.playerName}</span>
                   </span>
                   <TeamTag abbr={o.player?.team} sport={poll.sport} />
+                  {!resolved && <StreakBadge streak={o.player?.streak} />}
                   {!resolved && (
                     <PlayerMeta
                       className="poll-card__option-meta"

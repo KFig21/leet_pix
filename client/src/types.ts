@@ -6,6 +6,7 @@ import type {
   PollStatus,
   PollQuestionType,
   ScoringPreset,
+  PlayerStreak,
 } from "@leetpix/shared";
 
 export interface ScoringFormatSummary {
@@ -42,6 +43,8 @@ export interface PollOptionView {
     team: string | null;
     position: string | null;
     injuryStatus: string | null;
+    // Recent-form badge (hot/cold), or null when there's no clear streak.
+    streak?: PlayerStreak | null;
   } | null;
   game?: PlayerGame | null;
   _count?: { votes: number };

@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { isUuid } from "./uuid";
 import { mlbPeriod } from "./mlbPeriod";
+import { streaksByPlayer } from "../services/streaks";
 
 interface OptionLike {
   playerId: string;
@@ -35,6 +36,8 @@ export async function attachPlayerContext<T extends PollLike>(
         })
       : [];
   const pById = new Map(players.map((p) => [p.id, p]));
+  // Recent-form (hot/cold) badge per option player, batched for the whole list.
+  const streaks = await streaksByPlayer([...playerIds]);
 
   interface GameCtx {
     opponent: string;
@@ -135,7 +138,12 @@ export async function attachPlayerContext<T extends PollLike>(
       const pl = pById.get(o.playerId);
       const opt = o as OptionLike & { player?: unknown; game?: unknown };
       opt.player = pl
-        ? { team: pl.team, position: pl.position, injuryStatus: pl.injuryStatus }
+        ? {
+            team: pl.team,
+            position: pl.position,
+            injuryStatus: pl.injuryStatus,
+            streak: streaks.get(pl.id) ?? null,
+          }
         : null;
       if (!pl?.team) {
         opt.game = null;

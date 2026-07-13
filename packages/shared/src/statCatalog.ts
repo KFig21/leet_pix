@@ -29,6 +29,9 @@ export interface StatCategory {
   defaultPer?: number; // rate only, e.g. 25 → "1 pt per 25 yds"
   // Whether the category is enabled by default when starting a fresh format.
   defaultOn: boolean;
+  // Advanced/uncommon categories are hidden behind a "show advanced" reveal in
+  // the wizard so the common set stays scannable. Defaults to common (false).
+  advanced?: boolean;
   // Player positions that may carry their own per-position rate for this stat
   // (stored as the override key "<key>.<POS>"). e.g. rushing TDs valued
   // differently for a QB. See scoreStatLine's position handling.
@@ -40,21 +43,26 @@ const FOOTBALL_CATALOG: StatCategory[] = [
   { key: "passingYards", label: "Passing yards", group: "Passing", kind: "rate", unit: "yard", defaultPoints: 1, defaultPer: 25, defaultOn: true },
   { key: "passingTd", label: "Passing TD", group: "Passing", kind: "count", defaultPoints: 4, defaultOn: true },
   { key: "interception", label: "Interception", group: "Passing", kind: "count", defaultPoints: -2, defaultOn: true },
-  { key: "bonusPassYd300", label: "300+ passing yards bonus", group: "Passing", kind: "count", defaultPoints: 3, defaultOn: false },
-  { key: "passingTd40_49", label: "Passing TD 40–49 yds bonus", group: "Passing", kind: "count", defaultPoints: 2, defaultOn: false },
-  { key: "passingTd50p", label: "Passing TD 50+ yds bonus", group: "Passing", kind: "count", defaultPoints: 2, defaultOn: false },
+  // Milestone bonuses — exclusive per-game yardage tiers derived from raw yards
+  // at import (see normalizeSleeperStats), so a 420-yd game hits only 400+.
+  { key: "bonusPassYd300_399", label: "300–399 passing yard game", group: "Passing", kind: "count", defaultPoints: 2, defaultOn: false, advanced: true },
+  { key: "bonusPassYd400p", label: "400+ passing yard game", group: "Passing", kind: "count", defaultPoints: 3, defaultOn: false, advanced: true },
+  { key: "passingTd40_49", label: "Passing TD 40–49 yds bonus", group: "Passing", kind: "count", defaultPoints: 2, defaultOn: false, advanced: true },
+  { key: "passingTd50p", label: "Passing TD 50+ yds bonus", group: "Passing", kind: "count", defaultPoints: 2, defaultOn: false, advanced: true },
   // ── Rushing ────────────────────────────────────────────────────────────────
   { key: "rushingYards", label: "Rushing yards", group: "Rushing", kind: "rate", unit: "yard", defaultPoints: 1, defaultPer: 10, defaultOn: true },
   // Rushing TDs can carry a QB-specific rate (many leagues value QB rush TDs less).
   { key: "rushingTd", label: "Rushing TD", group: "Rushing", kind: "count", defaultPoints: 6, defaultOn: true, overridePositions: ["QB"] },
-  { key: "bonusRushYd100", label: "100+ rushing yards bonus", group: "Rushing", kind: "count", defaultPoints: 3, defaultOn: false },
+  { key: "bonusRushYd100_199", label: "100–199 rushing yard game", group: "Rushing", kind: "count", defaultPoints: 2, defaultOn: false, advanced: true },
+  { key: "bonusRushYd200p", label: "200+ rushing yard game", group: "Rushing", kind: "count", defaultPoints: 3, defaultOn: false, advanced: true },
   // ── Receiving ──────────────────────────────────────────────────────────────
   { key: "reception", label: "Reception", group: "Receiving", kind: "count", defaultPoints: 1, defaultOn: true },
   { key: "receivingYards", label: "Receiving yards", group: "Receiving", kind: "rate", unit: "yard", defaultPoints: 1, defaultPer: 10, defaultOn: true },
   { key: "receivingTd", label: "Receiving TD", group: "Receiving", kind: "count", defaultPoints: 6, defaultOn: true },
-  { key: "bonusRecYd100", label: "100+ receiving yards bonus", group: "Receiving", kind: "count", defaultPoints: 3, defaultOn: false },
-  { key: "receivingTd40_49", label: "Receiving TD 40–49 yds bonus", group: "Receiving", kind: "count", defaultPoints: 2, defaultOn: false },
-  { key: "receivingTd50p", label: "Receiving TD 50+ yds bonus", group: "Receiving", kind: "count", defaultPoints: 2, defaultOn: false },
+  { key: "bonusRecYd100_199", label: "100–199 receiving yard game", group: "Receiving", kind: "count", defaultPoints: 2, defaultOn: false, advanced: true },
+  { key: "bonusRecYd200p", label: "200+ receiving yard game", group: "Receiving", kind: "count", defaultPoints: 3, defaultOn: false, advanced: true },
+  { key: "receivingTd40_49", label: "Receiving TD 40–49 yds bonus", group: "Receiving", kind: "count", defaultPoints: 2, defaultOn: false, advanced: true },
+  { key: "receivingTd50p", label: "Receiving TD 50+ yds bonus", group: "Receiving", kind: "count", defaultPoints: 2, defaultOn: false, advanced: true },
   // ── Miscellaneous ──────────────────────────────────────────────────────────
   { key: "fumbleLost", label: "Fumble lost", group: "Miscellaneous", kind: "count", defaultPoints: -2, defaultOn: true },
   // ── Kicking ────────────────────────────────────────────────────────────────
@@ -65,14 +73,14 @@ const FOOTBALL_CATALOG: StatCategory[] = [
   { key: "fgMade50p", label: "FG made 50+ yds", group: "Kicking", kind: "count", defaultPoints: 5, defaultOn: false },
   { key: "fgMiss", label: "FG missed", group: "Kicking", kind: "count", defaultPoints: -1, defaultOn: false },
   { key: "xpMade", label: "Extra point made", group: "Kicking", kind: "count", defaultPoints: 1, defaultOn: false },
-  { key: "xpMiss", label: "Extra point missed", group: "Kicking", kind: "count", defaultPoints: -1, defaultOn: false },
+  { key: "xpMiss", label: "Extra point missed", group: "Kicking", kind: "count", defaultPoints: -1, defaultOn: false, advanced: true },
   // ── Team defense (DST) ─────────────────────────────────────────────────────
   { key: "dstSack", label: "Sack", group: "Team defense", kind: "count", defaultPoints: 1, defaultOn: false },
   { key: "dstInt", label: "Interception", group: "Team defense", kind: "count", defaultPoints: 2, defaultOn: false },
   { key: "dstFumRec", label: "Fumble recovery", group: "Team defense", kind: "count", defaultPoints: 2, defaultOn: false },
-  { key: "dstForcedFumble", label: "Forced fumble", group: "Team defense", kind: "count", defaultPoints: 1, defaultOn: false },
   { key: "dstTd", label: "Defensive TD", group: "Team defense", kind: "count", defaultPoints: 6, defaultOn: false },
-  { key: "dstSpecialTeamsTd", label: "Special teams TD", group: "Team defense", kind: "count", defaultPoints: 6, defaultOn: false },
+  { key: "dstForcedFumble", label: "Forced fumble", group: "Team defense", kind: "count", defaultPoints: 1, defaultOn: false, advanced: true },
+  { key: "dstSpecialTeamsTd", label: "Special teams TD", group: "Team defense", kind: "count", defaultPoints: 6, defaultOn: false, advanced: true },
   // Points-allowed tiers are exclusive (a game falls in exactly one).
   { key: "dstPtsAllow0", label: "0 points allowed", group: "Team defense", kind: "count", defaultPoints: 10, defaultOn: false },
   { key: "dstPtsAllow1_6", label: "1–6 points allowed", group: "Team defense", kind: "count", defaultPoints: 7, defaultOn: false },
@@ -86,14 +94,14 @@ const FOOTBALL_CATALOG: StatCategory[] = [
   { key: "idpTackleAst", label: "Assisted tackle", group: "IDP", kind: "count", defaultPoints: 0.5, defaultOn: false },
   { key: "idpSack", label: "Sack", group: "IDP", kind: "count", defaultPoints: 2, defaultOn: false },
   { key: "idpInt", label: "Interception", group: "IDP", kind: "count", defaultPoints: 3, defaultOn: false },
-  { key: "idpForcedFumble", label: "Forced fumble", group: "IDP", kind: "count", defaultPoints: 2, defaultOn: false },
-  { key: "idpFumRec", label: "Fumble recovery", group: "IDP", kind: "count", defaultPoints: 2, defaultOn: false },
-  { key: "idpPassDefended", label: "Pass defended", group: "IDP", kind: "count", defaultPoints: 1, defaultOn: false },
   { key: "idpTd", label: "Defensive TD", group: "IDP", kind: "count", defaultPoints: 6, defaultOn: false },
-  { key: "idpSafety", label: "Safety", group: "IDP", kind: "count", defaultPoints: 2, defaultOn: false },
-  { key: "idpTackleForLoss", label: "Tackle for loss", group: "IDP", kind: "count", defaultPoints: 1, defaultOn: false },
-  { key: "idpQbHit", label: "QB hit", group: "IDP", kind: "count", defaultPoints: 1, defaultOn: false },
-  { key: "idpBlockedKick", label: "Blocked kick", group: "IDP", kind: "count", defaultPoints: 2, defaultOn: false },
+  { key: "idpForcedFumble", label: "Forced fumble", group: "IDP", kind: "count", defaultPoints: 2, defaultOn: false, advanced: true },
+  { key: "idpFumRec", label: "Fumble recovery", group: "IDP", kind: "count", defaultPoints: 2, defaultOn: false, advanced: true },
+  { key: "idpPassDefended", label: "Pass defended", group: "IDP", kind: "count", defaultPoints: 1, defaultOn: false, advanced: true },
+  { key: "idpSafety", label: "Safety", group: "IDP", kind: "count", defaultPoints: 2, defaultOn: false, advanced: true },
+  { key: "idpTackleForLoss", label: "Tackle for loss", group: "IDP", kind: "count", defaultPoints: 1, defaultOn: false, advanced: true },
+  { key: "idpQbHit", label: "QB hit", group: "IDP", kind: "count", defaultPoints: 1, defaultOn: false, advanced: true },
+  { key: "idpBlockedKick", label: "Blocked kick", group: "IDP", kind: "count", defaultPoints: 2, defaultOn: false, advanced: true },
 ];
 
 const BASEBALL_CATALOG: StatCategory[] = [

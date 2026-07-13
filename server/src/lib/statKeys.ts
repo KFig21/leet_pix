@@ -13,10 +13,7 @@ export const SLEEPER_STAT_MAP: Record<string, string> = {
   rec_yd: "receivingYards",
   rec_td: "receivingTd",
   fum_lost: "fumbleLost",
-  // ── Bonuses (milestone flags + top long-TD tier; 40–49 tiers derived) ──────
-  bonus_pass_yd_300: "bonusPassYd300",
-  bonus_rush_yd_100: "bonusRushYd100",
-  bonus_rec_yd_100: "bonusRecYd100",
+  // ── Bonuses (top long-TD tier; yardage milestones + 40–49 tiers derived) ───
   pass_td_50p: "passingTd50p",
   rec_td_50p: "receivingTd50p",
   // ── Kicking (XP made + FG miss; made-FG tiers derived to avoid stacking) ───
@@ -83,7 +80,21 @@ export function normalizeSleeperStats(
   set("passingTd40_49", num("pass_td_40p") - num("pass_td_50p"));
   set("receivingTd40_49", num("rec_td_40p") - num("rec_td_50p"));
 
-  // 4. Team-defense shutout (Sleeper only buckets from 1–6 upward).
+  // 4. Yardage milestone bonuses — exclusive per-game tiers derived from the raw
+  //    yards we already have (so we aren't limited to Sleeper's fixed flags; a
+  //    420-yd passing game fires only the 400+ tier, matching ESPN's P300/P400).
+  const inRange = (v: number, lo: number, hi: number) => (v >= lo && v < hi ? 1 : 0);
+  const py = num("pass_yd");
+  const ry = num("rush_yd");
+  const rey = num("rec_yd");
+  set("bonusPassYd300_399", inRange(py, 300, 400));
+  set("bonusPassYd400p", py >= 400 ? 1 : 0);
+  set("bonusRushYd100_199", inRange(ry, 100, 200));
+  set("bonusRushYd200p", ry >= 200 ? 1 : 0);
+  set("bonusRecYd100_199", inRange(rey, 100, 200));
+  set("bonusRecYd200p", rey >= 200 ? 1 : 0);
+
+  // 5. Team-defense shutout (Sleeper only buckets from 1–6 upward).
   if (typeof raw["pts_allow"] === "number" && raw["pts_allow"] === 0) {
     out["dstPtsAllow0"] = 1;
   }

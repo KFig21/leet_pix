@@ -213,6 +213,22 @@
     color: var(--accent);
   }
 
+  &__advanced-toggle {
+    @include button-reset;
+    align-self: flex-start;
+    padding: $gap-sm $gap-md;
+    border-top: 1px solid var(--border-color);
+    width: 100%;
+    text-align: left;
+    color: var(--accent);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+  }
+
   &__error {
     margin: 0;
     color: var(--color-danger);

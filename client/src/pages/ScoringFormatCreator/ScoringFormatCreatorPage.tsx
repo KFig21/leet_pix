@@ -59,6 +59,7 @@ export function ScoringFormatCreatorPage() {
   const [openGroups, setOpenGroups] = useState<Set<string>>(() =>
     openGroupsFor(Sport.FOOTBALL),
   );
+  const [showAdvanced, setShowAdvanced] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,6 +81,7 @@ export function ScoringFormatCreatorPage() {
     setSport(next);
     setFields(defaultsFor(next));
     setOpenGroups(openGroupsFor(next));
+    setShowAdvanced(new Set());
   };
 
   const setField = (key: string, patch: Partial<Field>) =>
@@ -93,6 +95,13 @@ export function ScoringFormatCreatorPage() {
 
   const toggleGroup = (group: string) =>
     setOpenGroups((prev) => {
+      const next = new Set(prev);
+      next.has(group) ? next.delete(group) : next.add(group);
+      return next;
+    });
+
+  const toggleAdvanced = (group: string) =>
+    setShowAdvanced((prev) => {
       const next = new Set(prev);
       next.has(group) ? next.delete(group) : next.add(group);
       return next;
@@ -135,6 +144,76 @@ export function ScoringFormatCreatorPage() {
     }
   };
 
+  // One category row: enable toggle, base value (count or rate), and any
+  // per-position override inputs.
+  const renderCat = (c: StatCategory) => {
+    const f = fields[c.key] ?? { on: false, points: 0, per: 1, overrides: {} };
+    return (
+      <div key={c.key} className={`scoring__cat${f.on ? "" : " scoring__cat--off"}`}>
+        <div className="scoring__cat-main">
+          <label className="scoring__cat-toggle">
+            <input
+              type="checkbox"
+              checked={f.on}
+              onChange={(e) => setField(c.key, { on: e.target.checked })}
+            />
+            <span className="scoring__cat-label">{c.label}</span>
+          </label>
+
+          <div className="scoring__cat-value">
+            <input
+              className="scoring__pts"
+              type="number"
+              step="0.01"
+              value={f.points}
+              disabled={!f.on}
+              aria-label={`${c.label} points`}
+              onChange={(e) => setField(c.key, { points: Number(e.target.value) })}
+            />
+            {c.kind === "rate" ? (
+              <span className="scoring__per">
+                pt per
+                <input
+                  className="scoring__per-input"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={f.per}
+                  disabled={!f.on}
+                  aria-label={`${c.label} per units`}
+                  onChange={(e) => setField(c.key, { per: Number(e.target.value) })}
+                />
+                {c.unit}s
+              </span>
+            ) : (
+              <span className="scoring__per">pts</span>
+            )}
+          </div>
+        </div>
+
+        {/* Per-position overrides (e.g. QB rushing TDs). */}
+        {f.on && (c.overridePositions?.length ?? 0) > 0 && (
+          <div className="scoring__overrides">
+            {c.overridePositions!.map((pos) => (
+              <label key={pos} className="scoring__override">
+                <span className="scoring__override-pos">{pos}</span>
+                <input
+                  className="scoring__pts"
+                  type="number"
+                  step="0.01"
+                  value={f.overrides[pos] ?? f.points}
+                  aria-label={`${c.label} for ${pos}`}
+                  onChange={(e) => setOverride(c.key, pos, Number(e.target.value))}
+                />
+                <span className="scoring__per">pts</span>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="scoring">
       <header className="scoring__header">New scoring format</header>
@@ -168,6 +247,12 @@ export function ScoringFormatCreatorPage() {
         {groups.map(([group, cats]) => {
           const open = openGroups.has(group);
           const nOn = enabledInGroup(cats);
+          const common = cats.filter((c) => !c.advanced);
+          const advanced = cats.filter((c) => c.advanced);
+          // Reveal advanced when asked, or when an advanced category is already
+          // enabled (so a chosen category is never hidden).
+          const advOpen =
+            showAdvanced.has(group) || advanced.some((c) => fields[c.key]?.on);
           return (
             <section key={group} className="scoring__group">
               <button
@@ -185,87 +270,19 @@ export function ScoringFormatCreatorPage() {
 
               {open && (
                 <div className="scoring__group-body">
-                  {cats.map((c) => {
-                    const f = fields[c.key] ?? {
-                      on: false,
-                      points: 0,
-                      per: 1,
-                      overrides: {},
-                    };
-                    return (
-                      <div
-                        key={c.key}
-                        className={`scoring__cat${f.on ? "" : " scoring__cat--off"}`}
+                  {common.map(renderCat)}
+                  {advanced.length > 0 &&
+                    (advOpen ? (
+                      advanced.map(renderCat)
+                    ) : (
+                      <button
+                        type="button"
+                        className="scoring__advanced-toggle"
+                        onClick={() => toggleAdvanced(group)}
                       >
-                        <div className="scoring__cat-main">
-                          <label className="scoring__cat-toggle">
-                            <input
-                              type="checkbox"
-                              checked={f.on}
-                              onChange={(e) => setField(c.key, { on: e.target.checked })}
-                            />
-                            <span className="scoring__cat-label">{c.label}</span>
-                          </label>
-
-                          <div className="scoring__cat-value">
-                            <input
-                              className="scoring__pts"
-                              type="number"
-                              step="0.01"
-                              value={f.points}
-                              disabled={!f.on}
-                              aria-label={`${c.label} points`}
-                              onChange={(e) =>
-                                setField(c.key, { points: Number(e.target.value) })
-                              }
-                            />
-                            {c.kind === "rate" ? (
-                              <span className="scoring__per">
-                                pt per
-                                <input
-                                  className="scoring__per-input"
-                                  type="number"
-                                  min="1"
-                                  step="1"
-                                  value={f.per}
-                                  disabled={!f.on}
-                                  aria-label={`${c.label} per units`}
-                                  onChange={(e) =>
-                                    setField(c.key, { per: Number(e.target.value) })
-                                  }
-                                />
-                                {c.unit}s
-                              </span>
-                            ) : (
-                              <span className="scoring__per">pts</span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Per-position overrides (e.g. QB rushing TDs). */}
-                        {f.on && (c.overridePositions?.length ?? 0) > 0 && (
-                          <div className="scoring__overrides">
-                            {c.overridePositions!.map((pos) => (
-                              <label key={pos} className="scoring__override">
-                                <span className="scoring__override-pos">{pos}</span>
-                                <input
-                                  className="scoring__pts"
-                                  type="number"
-                                  step="0.01"
-                                  value={f.overrides[pos] ?? f.points}
-                                  aria-label={`${c.label} for ${pos}`}
-                                  onChange={(e) =>
-                                    setOverride(c.key, pos, Number(e.target.value))
-                                  }
-                                />
-                                <span className="scoring__per">pts</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                        Show {advanced.length} advanced
+                      </button>
+                    ))}
                 </div>
               )}
             </section>

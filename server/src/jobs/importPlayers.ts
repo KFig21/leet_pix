@@ -1,8 +1,15 @@
 import { prisma } from "../lib/prisma";
 import { teamIdByAbbr } from "./importTeams";
 
-// Fantasy-relevant positions (skip practice-squad noise, etc.).
-const POSITIONS = new Set(["QB", "RB", "WR", "TE", "K", "DEF"]);
+// Fantasy-relevant positions (skip practice-squad noise, etc.). Includes IDP
+// defensive positions (DL/LB/DB families) so individual defenders can be poll
+// options in IDP leagues; their idp_* stats score position-agnostically.
+const POSITIONS = new Set([
+  // Offense + kicker + team defense
+  "QB", "RB", "WR", "TE", "K", "DEF",
+  // IDP — Sleeper's granular defensive positions
+  "DL", "DE", "DT", "NT", "LB", "ILB", "OLB", "MLB", "DB", "CB", "S", "SS", "FS",
+]);
 
 interface SleeperPlayer {
   player_id: string;

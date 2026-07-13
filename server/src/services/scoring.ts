@@ -1,20 +1,10 @@
-import type { ScoringRules } from "@leetpix/shared";
-
-// Preset rules live in the shared package so the client (badge modal) and server
-// (projections/scoring) use one source of truth.
-export { SCORING_PRESET_RULES as SCORING_PRESETS } from "@leetpix/shared";
-
-/** Applies a scoring format to a player's raw stat line -> fantasy points. */
-export function scoreStatLine(
-  stats: Record<string, number>,
-  rules: ScoringRules,
-): number {
-  let total = 0;
-  for (const [key, perUnit] of Object.entries(rules)) {
-    total += (stats[key] ?? 0) * perUnit;
-  }
-  return Math.round(total * 100) / 100;
-}
+// Preset rules and the scoring function live in the shared package so the client
+// (badge/breakdown modal) and server (projections/scoring) use one source of
+// truth — including the position-aware override logic (see scoreStatLine).
+export {
+  SCORING_PRESET_RULES as SCORING_PRESETS,
+  scoreStatLine,
+} from "@leetpix/shared";
 
 /**
  * Risk-adjusted score for a correct pick. Picking the low-consensus option and

@@ -17,6 +17,7 @@ async function optionPoints(
   season: number,
   weeks: number[],
   rules: ScoringRules,
+  position?: string | null,
 ): Promise<number> {
   const lines = await prisma.playerStat.findMany({
     where: { playerId, season, week: { in: weeks }, kind: "ACTUAL" },
@@ -24,7 +25,7 @@ async function optionPoints(
   });
   let total = 0;
   for (const l of lines) {
-    total += scoreStatLine(l.stats as Record<string, number>, rules);
+    total += scoreStatLine(l.stats as Record<string, number>, rules, position);
   }
   return Math.round(total * 100) / 100;
 }
@@ -56,10 +57,24 @@ export async function resolvePoll(
     ? Array.from({ length: poll.evaluationWeeks }, (_, i) => startWeek + i)
     : [startWeek];
 
+  // Player positions drive position-specific scoring overrides (e.g. a format
+  // that values QB rushing TDs differently). Batched so we hit players once.
+  const players = await prisma.player.findMany({
+    where: { id: { in: poll.options.map((o) => o.playerId) } },
+    select: { id: true, position: true },
+  });
+  const positionById = new Map(players.map((p) => [p.id, p.position]));
+
   const scored = await Promise.all(
     poll.options.map(async (o) => ({
       option: o,
-      points: await optionPoints(o.playerId, season, weeks, rules),
+      points: await optionPoints(
+        o.playerId,
+        season,
+        weeks,
+        rules,
+        positionById.get(o.playerId),
+      ),
     })),
   );
 

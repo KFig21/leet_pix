@@ -12,34 +12,229 @@
   &__form {
     display: flex;
     flex-direction: column;
-    gap: $gap-sm;
+    gap: $gap-md;
     padding: $gap-md;
   }
 
-  &__name,
-  &__row input {
+  &__name {
     padding: $gap-sm;
     border: 1px solid var(--border-color);
     border-radius: $radius-sm;
     background: var(--bg-primary);
     color: var(--text-primary);
+    font: inherit;
   }
 
-  &__row {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
+  // ── Sport selector (segmented tabs) ────────────────────────────────────────
+  &__sport {
+    display: flex;
+    gap: $gap-xs;
+    padding: $gap-xs;
+    background: var(--bg-secondary);
+    border-radius: $radius-pill;
+  }
+
+  &__sport-tab {
+    @include button-reset;
+    flex: 1;
+    padding: $gap-sm;
+    border-radius: $radius-pill;
+    color: var(--text-secondary);
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      color: var(--text-primary);
+    }
+
+    &--on {
+      background: var(--bg-primary);
+      color: var(--accent);
+      box-shadow: var(--shadow-card);
+    }
+  }
+
+  // ── Category groups (collapsible) ──────────────────────────────────────────
+  &__group {
+    border: 1px solid var(--border-color);
+    border-radius: $radius-sm;
+    overflow: hidden;
+  }
+
+  &__group-toggle {
+    @include button-reset;
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+    width: 100%;
+    padding: $gap-sm $gap-md;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+  }
+
+  &__chevron {
+    display: inline-flex;
+    color: var(--text-secondary);
+    transition: transform 0.15s ease;
+
+    &--open {
+      transform: rotate(90deg);
+    }
+  }
+
+  &__group-title {
+    flex: 1;
+    text-align: left;
+    font-size: $font-size-sm;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__group-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: $radius-pill;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-size: $font-size-sm;
+  }
+
+  &__group-body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__cat {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-xs;
+    padding: $gap-sm $gap-md;
+    border-top: 1px solid var(--border-color);
+
+    // Dim a disabled category but keep it in place so the group reads as a full
+    // menu of what's available, not just what's chosen.
+    &--off {
+      opacity: 0.55;
+    }
+  }
+
+  &__cat-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: $gap-sm;
   }
 
-  &__add {
-    @include button-reset;
-    align-self: flex-start;
+  &__cat-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: $gap-sm;
+    min-width: 0;
+    cursor: pointer;
+
+    input {
+      accent-color: var(--accent);
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+  }
+
+  &__cat-label {
+    color: var(--text-primary);
+  }
+
+  &__cat-value {
+    display: inline-flex;
+    align-items: center;
+    gap: $gap-xs;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    white-space: nowrap;
+  }
+
+  &__pts,
+  &__per-input {
+    padding: $gap-xs $gap-sm;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-sm;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font: inherit;
+    text-align: right;
+
+    &:disabled {
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+    }
+  }
+
+  &__pts {
+    width: 64px;
+  }
+
+  &__per {
+    display: inline-flex;
+    align-items: center;
+    gap: $gap-xs;
+  }
+
+  &__per-input {
+    width: 52px;
+  }
+
+  // ── Per-position overrides (e.g. QB rushing TDs) ───────────────────────────
+  &__overrides {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $gap-md;
+    padding-left: 26px; // align under the label, past the checkbox
+  }
+
+  &__override {
+    display: inline-flex;
+    align-items: center;
+    gap: $gap-xs;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  &__override-pos {
+    font-weight: $font-weight-bold;
     color: var(--accent);
+  }
+
+  &__error {
+    margin: 0;
+    color: var(--color-danger);
+    font-size: $font-size-sm;
+  }
+
+  // ── Footer ─────────────────────────────────────────────────────────────────
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: $gap-sm;
+    border-top: 1px solid var(--border-color);
+  }
+
+  &__count {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
   }
 
   &__save {
     @include button-reset;
-    align-self: flex-end;
     padding: $gap-sm $gap-lg;
     border-radius: $radius-pill;
     background: var(--accent);
@@ -48,6 +243,10 @@
 
     &:hover {
       background: var(--accent-hover);
+    }
+
+    &:disabled {
+      opacity: 0.6;
     }
   }
 }

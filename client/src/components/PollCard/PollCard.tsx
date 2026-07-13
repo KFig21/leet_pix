@@ -261,6 +261,7 @@ export function PollCard({ poll, pick, preview }: Props) {
           options={breakdownList.map(
             (o): BreakdownOption => ({
               playerName: o.playerName,
+              position: o.player?.position ?? null,
               statLine: o.statLine ?? {},
               total: o.actualPoints,
               isWinner: o.isWinner,

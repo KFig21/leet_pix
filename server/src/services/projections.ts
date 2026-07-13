@@ -26,12 +26,24 @@ export async function projectedPointsByPlayer(
   const totals = new Map<string, number>();
   if (ids.length === 0) return totals;
 
+  // Positions drive scoring overrides (e.g. QB rushing TDs), so projections
+  // match how the poll will actually resolve.
+  const players = await prisma.player.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, position: true },
+  });
+  const positionById = new Map(players.map((p) => [p.id, p.position]));
+
   const lines = await prisma.playerStat.findMany({
     where: { playerId: { in: ids }, season, week: { in: weeks }, kind: "PROJECTION" },
     select: { playerId: true, stats: true },
   });
   for (const l of lines) {
-    const pts = scoreStatLine(l.stats as Record<string, number>, rules);
+    const pts = scoreStatLine(
+      l.stats as Record<string, number>,
+      rules,
+      positionById.get(l.playerId),
+    );
     totals.set(l.playerId, (totals.get(l.playerId) ?? 0) + pts);
   }
   for (const [k, v] of totals) totals.set(k, Math.round(v * 100) / 100);

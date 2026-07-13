@@ -1,4 +1,7 @@
 import {
+  baseCategoryKeys,
+  categoryPoints,
+  effectiveRate,
   statLabel,
   type ScoringPreset,
   type ScoringRules,
@@ -10,6 +13,8 @@ import "./ScoringBreakdownModal.scss";
 
 export interface BreakdownOption {
   playerName: string;
+  // Drives position-specific scoring overrides (e.g. QB rushing TDs).
+  position?: string | null;
   statLine: Record<string, number>;
   total: number | null;
   isWinner?: boolean;
@@ -68,11 +73,13 @@ function Columns({
   options: BreakdownOption[];
   rules: ScoringRules;
 }) {
-  const cats = Object.keys(rules).filter((k) =>
+  // Base categories (position-override suffixes collapsed), keeping only those
+  // any option actually recorded.
+  const cats = baseCategoryKeys(rules).filter((k) =>
     options.some((o) => (o.statLine[k] ?? 0) !== 0),
   );
   const points = (o: BreakdownOption, k: string) =>
-    Math.round((o.statLine[k] ?? 0) * (rules[k] ?? 0) * 100) / 100;
+    categoryPoints(o.statLine, rules, k, o.position);
 
   return (
     <div className="breakdown-cols">
@@ -129,9 +136,11 @@ function Single({
   rules: ScoringRules;
 }) {
   if (!option) return null;
-  const lines = Object.entries(rules)
-    .map(([key, perUnit]) => {
+  // Per base category, using the rate that applies to this player's position.
+  const lines = baseCategoryKeys(rules)
+    .map((key) => {
       const value = option.statLine[key] ?? 0;
+      const perUnit = effectiveRate(rules, key, option.position);
       return { key, value, perUnit, points: Math.round(value * perUnit * 100) / 100 };
     })
     .filter((l) => l.value !== 0);

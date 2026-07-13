@@ -127,6 +127,10 @@ model Poll {
   // single game (start/bench) or not scored (opinion).
   evaluationWeeks Int?
 
+  // Keeper polls only: number of teams in the league. Lets a per-option keeper
+  // cost (round + pick) resolve to an overall pick number. Null otherwise.
+  leagueSize Int?
+
   // Scoring: exactly one of preset/customFormat applies.
   scoringPreset   String?
   scoringFormatId String?        @db.Uuid
@@ -173,6 +177,9 @@ model PollOption {
   // Keeper polls only: the draft round forfeited to keep this player (the cost
   // side of a keeper decision). Null for every other question type.
   keeperRound Int?
+  // Optional pick within that round; with the poll's leagueSize this yields the
+  // true overall pick number (e.g. 10-team R5 P7 → pick 47).
+  keeperPick Int?
   // Projected fantasy points under the poll's scoring format (filled at lock).
   projectedPoints Float?
   // Set when the poll resolves: the actual scored points for this option.

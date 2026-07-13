@@ -34,8 +34,10 @@ export interface PlayerGame {
 export interface PollOptionView {
   id: string;
   playerName: string;
-  // Keeper polls: the draft round forfeited to keep this player. Null otherwise.
+  // Keeper polls: the draft round (and optional pick) forfeited to keep this
+  // player. Null otherwise.
   keeperRound?: number | null;
+  keeperPick?: number | null;
   projectedPoints: number | null;
   actualPoints: number | null;
   isWinner: boolean;
@@ -70,6 +72,8 @@ export interface PollView {
   scoringFormat: ScoringFormatSummary | null;
   // Weeks the outcome is tallied over (add/drop); null otherwise.
   evaluationWeeks: number | null;
+  // Keeper polls: number of teams in the league (for overall pick number).
+  leagueSize?: number | null;
 }
 
 // Detailed poll (in-depth view) also carries each option's voters.

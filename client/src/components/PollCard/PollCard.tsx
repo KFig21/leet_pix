@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import { POLL_QUESTION_LABELS } from "@leetpix/shared";
+import { POLL_QUESTION_LABELS, formatKeeperCost } from "@leetpix/shared";
 import type { Avatar as AvatarData } from "@leetpix/shared";
 import { api } from "@/lib/api";
 import { getPollRules } from "@/lib/pollRules";
@@ -211,14 +211,21 @@ export function PollCard({ poll, pick, preview }: Props) {
                     <span className="poll-card__option-name">{o.playerName}</span>
                   </span>
                   <TeamTag abbr={o.player?.team} sport={poll.sport} />
-                  {o.keeperRound != null && (
-                    <span
-                      className="poll-card__keeper"
-                      title="Draft round given up to keep this player"
-                    >
-                      Rd {o.keeperRound}
-                    </span>
-                  )}
+                  {(() => {
+                    const cost = formatKeeperCost({
+                      round: o.keeperRound,
+                      pick: o.keeperPick,
+                      leagueSize: poll.leagueSize,
+                    });
+                    return cost ? (
+                      <span
+                        className="poll-card__keeper"
+                        title="Keeper cost — the draft slot given up to keep this player"
+                      >
+                        {cost}
+                      </span>
+                    ) : null;
+                  })()}
                   {!resolved && <StreakBadge streak={o.player?.streak} />}
                   {!resolved && (
                     <PlayerMeta

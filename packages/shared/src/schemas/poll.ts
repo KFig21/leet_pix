@@ -17,6 +17,9 @@ export const pollOptionInputSchema = z.object({
   // Keeper polls: the draft round forfeited to keep this player. Optional; only
   // meaningful for KEEP questions (ignored otherwise).
   keeperRound: z.number().int().min(1).max(30).optional(),
+  // Optional pick within that round (needs keeperRound; overall pick uses the
+  // poll's leagueSize).
+  keeperPick: z.number().int().min(1).max(32).optional(),
 });
 export type PollOptionInput = z.infer<typeof pollOptionInputSchema>;
 
@@ -39,6 +42,8 @@ export const createPollSchema = z
     scoringFormatId: z.string().uuid().optional(),
     // Weeks the outcome is tallied over (add/drop only).
     evaluationWeeks: z.number().int().min(1).max(18).optional(),
+    // Keeper polls: number of teams in the league (enables overall pick number).
+    leagueSize: z.number().int().min(2).max(32).optional(),
   })
   .refine((d) => d.lockType !== PollLockType.FIXED_TIME || !!d.lockAt, {
     message: "lockAt is required for fixed-time polls",
@@ -55,5 +60,10 @@ export const createPollSchema = z
   .refine((d) => isQuestionForHorizon(d.horizon, d.questionType), {
     message: "This question isn't available for the selected horizon",
     path: ["questionType"],
-  });
+  })
+  // A pick within a round is meaningless without the round itself.
+  .refine(
+    (d) => d.options.every((o) => o.keeperPick == null || o.keeperRound != null),
+    { message: "A keeper pick also needs a round", path: ["options"] },
+  );
 export type CreatePollInput = z.infer<typeof createPollSchema>;

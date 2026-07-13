@@ -11,6 +11,7 @@ import {
   POLL_HORIZON_HINTS,
   HORIZON_QUESTIONS,
   groupFootballPositions,
+  overallPickNumber,
   SPORT_PRESETS,
   SCORING_PRESET_LABELS,
   GAME_LOCK_LEAD_MS,
@@ -30,6 +31,7 @@ import { ScoringBadge } from "@/components/ScoringBadge/ScoringBadge";
 import { ResolutionBadge } from "@/components/ResolutionBadge/ResolutionBadge";
 import { HorizonBadge } from "@/components/HorizonBadge/HorizonBadge";
 import { MultiSelect, type Option } from "@/components/MultiSelect/MultiSelect";
+import { DateTimePicker } from "@/components/DateTimePicker/DateTimePicker";
 import { TeamTag } from "@/components/TeamTag/TeamTag";
 import { PlayerMeta } from "@/components/PlayerMeta/PlayerMeta";
 import type {
@@ -66,9 +68,11 @@ export function PollCreatePage() {
   const [error, setError] = useState<string | null>(null);
   // Cooldown message (429) shown in a modal.
   const [cooldown, setCooldown] = useState<string | null>(null);
-  // Opinion polls close at an author-set deadline; add/drop tally over N weeks.
+  // Opinion polls close at an author-set deadline (ISO); add/drop tally over N weeks.
   const [deadline, setDeadline] = useState("");
   const [weeks, setWeeks] = useState(4);
+  // Keeper polls: optional league size (teams) → enables overall pick numbers.
+  const [leagueSize, setLeagueSize] = useState("");
   // Shared player-search filters (apply to every option's dropdown).
   const [teamFilters, setTeamFilters] = useState<string[]>([]);
   const [positionFilters, setPositionFilters] = useState<string[]>([]);
@@ -88,6 +92,8 @@ export function PollCreatePage() {
 
   const opinion = !isScoreablePoll(questionType);
   const windowed = isWindowedPoll(questionType);
+  const keeper = questionType === PollQuestionType.KEEP;
+  const leagueSizeNum = leagueSize ? Number(leagueSize) : undefined;
 
   const { data: customFormats } = useQuery({
     queryKey: ["scoring-formats"],
@@ -175,10 +181,12 @@ export function PollCreatePage() {
         sport,
         horizon,
         questionType,
-        // Opinion polls have no game to key off, so they close at a deadline.
+        // Opinion polls have no game to key off, so they close at a deadline
+        // (the picker already emits an ISO string).
         lockType: opinion ? PollLockType.FIXED_TIME : PollLockType.GAME_START,
-        lockAt: opinion ? new Date(deadline).toISOString() : undefined,
+        lockAt: opinion ? deadline : undefined,
         evaluationWeeks: windowed ? weeks : undefined,
+        leagueSize: keeper ? leagueSizeNum : undefined,
         scoringPreset: kind === "preset" ? (val as ScoringPreset) : undefined,
         scoringFormatId: kind === "custom" ? val : undefined,
         options: picks,
@@ -238,17 +246,19 @@ export function PollCreatePage() {
         horizon,
         questionType,
         status: "OPEN",
-        lockAt: opinion && deadline ? new Date(deadline).toISOString() : null,
+        lockAt: opinion && deadline ? deadline : null,
         createdAt: new Date().toISOString(),
         author: me,
         myVoteOptionId: null,
         scoringPreset,
         scoringFormat: scoringFormatSummary,
         evaluationWeeks: windowed ? weeks : null,
+        leagueSize: keeper ? (leagueSizeNum ?? null) : null,
         options: picks.map((o, i) => ({
           id: `preview-${i}`,
           playerName: o.playerName,
           keeperRound: o.keeperRound ?? null,
+          keeperPick: o.keeperPick ?? null,
           projectedPoints: null,
           actualPoints: null,
           isWinner: false,
@@ -345,12 +355,31 @@ export function PollCreatePage() {
         {opinion && (
           <>
             <label className="poll-create__label">Poll closes</label>
-            <input
-              type="datetime-local"
-              className="poll-create__select"
+            <DateTimePicker
               value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
+              onChange={setDeadline}
+              placeholder="Pick a closing date & time"
             />
+          </>
+        )}
+
+        {keeper && (
+          <>
+            <label className="poll-create__label">League size (teams)</label>
+            <input
+              type="number"
+              min={2}
+              max={32}
+              inputMode="numeric"
+              className="poll-create__select"
+              placeholder="Optional — e.g. 10"
+              value={leagueSize}
+              onChange={(e) => setLeagueSize(e.target.value)}
+            />
+            <p className="poll-create__hint">
+              Optional. Turns each keeper's round &amp; pick into the true overall
+              pick number.
+            </p>
           </>
         )}
 
@@ -447,27 +476,67 @@ export function PollCreatePage() {
                 .filter((o, idx): o is PlayerPick => o !== null && idx !== i)
                 .map((o) => o.playerId)}
             />
-            {/* Keeper polls: capture the draft round forfeited for this player. */}
-            {questionType === PollQuestionType.KEEP && opt && (
-              <label className="poll-create__keeper">
-                <span className="poll-create__keeper-label">Keeper cost</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={30}
-                  className="poll-create__keeper-input"
-                  placeholder="Round"
-                  value={opt.keeperRound ?? ""}
-                  onChange={(e) =>
-                    setOption(i, {
-                      ...opt,
-                      keeperRound: e.target.value
-                        ? Number(e.target.value)
-                        : null,
-                    })
-                  }
-                />
-              </label>
+            {/* Keeper polls: capture the draft slot forfeited for this player. */}
+            {keeper && opt && (
+              <div className="poll-create__keeper">
+                <span className="poll-create__keeper-title">
+                  Keeper cost{" "}
+                  <span className="poll-create__keeper-optional">(optional)</span>
+                </span>
+                <div className="poll-create__keeper-fields">
+                  <label className="poll-create__keeper-field">
+                    Round
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      className="poll-create__keeper-input"
+                      value={opt.keeperRound ?? ""}
+                      onChange={(e) =>
+                        setOption(i, {
+                          ...opt,
+                          keeperRound: e.target.value
+                            ? Number(e.target.value)
+                            : null,
+                          // A pick can't stand without a round.
+                          keeperPick: e.target.value ? opt.keeperPick ?? null : null,
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="poll-create__keeper-field">
+                    Pick
+                    <input
+                      type="number"
+                      min={1}
+                      max={leagueSizeNum ?? 32}
+                      className="poll-create__keeper-input"
+                      disabled={opt.keeperRound == null}
+                      value={opt.keeperPick ?? ""}
+                      onChange={(e) =>
+                        setOption(i, {
+                          ...opt,
+                          keeperPick: e.target.value
+                            ? Number(e.target.value)
+                            : null,
+                        })
+                      }
+                    />
+                  </label>
+                  {(() => {
+                    const overall = overallPickNumber({
+                      round: opt.keeperRound,
+                      pick: opt.keeperPick,
+                      leagueSize: leagueSizeNum,
+                    });
+                    return overall != null ? (
+                      <span className="poll-create__keeper-overall">
+                        = Pick #{overall}
+                      </span>
+                    ) : null;
+                  })()}
+                </div>
+              </div>
             )}
           </div>
         ))}

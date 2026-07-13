@@ -23,8 +23,9 @@ interface PlayerResult {
 export interface PlayerPick {
   playerId: string;
   playerName: string;
-  // Keeper polls: the draft round forfeited to keep this player.
+  // Keeper polls: the draft round (and optional pick) forfeited to keep this player.
   keeperRound?: number | null;
+  keeperPick?: number | null;
   // Extra context carried for the live preview (stripped server-side on create).
   team?: string | null;
   position?: string | null;

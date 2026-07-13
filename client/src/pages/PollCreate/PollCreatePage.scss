@@ -82,21 +82,58 @@
 
   &__keeper {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: $gap-xs;
+    padding: $gap-sm;
+    border: 1px dashed var(--border-color);
+    border-radius: $radius-sm;
+    background: var(--bg-secondary);
+  }
+
+  &__keeper-title {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: var(--text-primary);
+  }
+
+  &__keeper-optional {
+    font-weight: normal;
+    color: var(--text-secondary);
+  }
+
+  &__keeper-fields {
+    display: flex;
+    align-items: flex-end;
     gap: $gap-sm;
-    padding-left: $gap-sm;
+  }
+
+  &__keeper-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     font-size: $font-size-sm;
     color: var(--text-secondary);
   }
 
   &__keeper-input {
-    width: 80px;
+    width: 72px;
     padding: $gap-xs $gap-sm;
     border: 1px solid var(--border-color);
     border-radius: $radius-sm;
     background: var(--bg-primary);
     color: var(--text-primary);
     font: inherit;
+
+    &:disabled {
+      opacity: 0.5;
+    }
+  }
+
+  &__keeper-overall {
+    padding-bottom: $gap-xs;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: var(--accent);
   }
 
   &__add {

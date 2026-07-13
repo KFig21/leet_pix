@@ -5,6 +5,7 @@ export * from "./statCatalog";
 export * from "./scoring";
 export * from "./streaks";
 export * from "./positions";
+export * from "./keeper";
 export * from "./schemas/user";
 export * from "./schemas/poll";
 export * from "./schemas/vote";

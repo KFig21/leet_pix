@@ -4,8 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Sport,
   PollLockType,
+  PollHorizon,
   PollQuestionType,
   POLL_QUESTION_LABELS,
+  POLL_HORIZON_LABELS,
+  POLL_HORIZON_HINTS,
+  HORIZON_QUESTIONS,
   SPORT_PRESETS,
   SCORING_PRESET_LABELS,
   GAME_LOCK_LEAD_MS,
@@ -23,6 +27,7 @@ import { PollCard } from "@/components/PollCard/PollCard";
 import { SportIcon } from "@/components/SportIcon/SportIcon";
 import { ScoringBadge } from "@/components/ScoringBadge/ScoringBadge";
 import { ResolutionBadge } from "@/components/ResolutionBadge/ResolutionBadge";
+import { HorizonBadge } from "@/components/HorizonBadge/HorizonBadge";
 import { MultiSelect } from "@/components/MultiSelect/MultiSelect";
 import { TeamTag } from "@/components/TeamTag/TeamTag";
 import { PlayerMeta } from "@/components/PlayerMeta/PlayerMeta";
@@ -48,6 +53,7 @@ interface ScoringFormat {
 export function PollCreatePage() {
   const navigate = useNavigate();
   const [sport, setSport] = useState<Sport>(Sport.FOOTBALL);
+  const [horizon, setHorizon] = useState<PollHorizon>(PollHorizon.SEASON);
   const [questionType, setQuestionType] = useState<PollQuestionType>(
     PollQuestionType.START,
   );
@@ -124,6 +130,14 @@ export function PollCreatePage() {
   const setOption = (i: number, pick: PlayerPick | null) =>
     setOptions((prev) => prev.map((o, idx) => (idx === i ? pick : o)));
 
+  // Switching horizon re-scopes the question list; keep the current question if
+  // it's valid for the new horizon, else fall back to that horizon's default.
+  const changeHorizon = (next: PollHorizon) => {
+    setHorizon(next);
+    const allowed = HORIZON_QUESTIONS[next];
+    if (!allowed.includes(questionType)) setQuestionType(allowed[0]);
+  };
+
   const changeSport = (next: Sport) => {
     setSport(next);
     setOptions([null, null]); // picks are sport-specific
@@ -153,6 +167,7 @@ export function PollCreatePage() {
     try {
       const poll = await api.post<{ id: string }>("/polls", {
         sport,
+        horizon,
         questionType,
         // Opinion polls have no game to key off, so they close at a deadline.
         lockType: opinion ? PollLockType.FIXED_TIME : PollLockType.GAME_START,
@@ -214,6 +229,7 @@ export function PollCreatePage() {
     ? {
         id: "preview",
         sport,
+        horizon,
         questionType,
         status: "OPEN",
         lockAt: opinion && deadline ? new Date(deadline).toISOString() : null,
@@ -258,6 +274,23 @@ export function PollCreatePage() {
         </select>
 
         <div className="poll-create__label-row">
+          <label className="poll-create__label">Horizon</label>
+          <HorizonBadge horizon={horizon} />
+        </div>
+        <select
+          className="poll-create__select"
+          value={horizon}
+          onChange={(e) => changeHorizon(e.target.value as PollHorizon)}
+        >
+          {Object.values(PollHorizon).map((h) => (
+            <option key={h} value={h}>
+              {POLL_HORIZON_LABELS[h]}
+            </option>
+          ))}
+        </select>
+        <p className="poll-create__hint">{POLL_HORIZON_HINTS[horizon]}</p>
+
+        <div className="poll-create__label-row">
           <label className="poll-create__label">Question</label>
           <ResolutionBadge
             questionType={questionType}
@@ -269,9 +302,9 @@ export function PollCreatePage() {
           value={questionType}
           onChange={(e) => setQuestionType(e.target.value as PollQuestionType)}
         >
-          {Object.entries(POLL_QUESTION_LABELS).map(([value, label]) => (
+          {HORIZON_QUESTIONS[horizon].map((value) => (
             <option key={value} value={value}>
-              {label}
+              {POLL_QUESTION_LABELS[value]}
             </option>
           ))}
         </select>

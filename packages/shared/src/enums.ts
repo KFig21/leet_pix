@@ -40,6 +40,7 @@ export const PollQuestionType = {
   TRADE_FOR: "TRADE_FOR",
   TRADE_AWAY: "TRADE_AWAY",
   BUY_LOW: "BUY_LOW",
+  KEEP: "KEEP",
 } as const;
 export type PollQuestionType =
   (typeof PollQuestionType)[keyof typeof PollQuestionType];
@@ -53,7 +54,60 @@ export const POLL_QUESTION_LABELS: Record<PollQuestionType, string> = {
   TRADE_FOR: "Who should I target in a trade?",
   TRADE_AWAY: "Who should I trade away?",
   BUY_LOW: "Who's a good buy-low?",
+  KEEP: "Who should I keep?",
 };
+
+// The time horizon / league context a poll is framed in. Orthogonal to the
+// question type — it gates which questions the creator offers and shows as a
+// badge. Keep in sync with prisma schema (PollHorizon).
+export const PollHorizon = {
+  DAILY: "DAILY",
+  SEASON: "SEASON",
+  DYNASTY: "DYNASTY",
+} as const;
+export type PollHorizon = (typeof PollHorizon)[keyof typeof PollHorizon];
+
+export const POLL_HORIZON_LABELS: Record<PollHorizon, string> = {
+  DAILY: "Daily",
+  SEASON: "Season",
+  DYNASTY: "Dynasty",
+};
+
+// One-line description of each horizon (creator helper text / tooltips).
+export const POLL_HORIZON_HINTS: Record<PollHorizon, string> = {
+  DAILY: "One slate — who scores more this game (DFS-style).",
+  SEASON: "Rest-of-season — lineup, waivers, and trades.",
+  DYNASTY: "Multi-year value — keepers and long-term trades.",
+};
+
+// Which question types each horizon offers. A question can appear in more than
+// one horizon (a start/bench call fits both daily and season). The first entry
+// is the horizon's default question in the creator.
+export const HORIZON_QUESTIONS: Record<PollHorizon, PollQuestionType[]> = {
+  DAILY: [PollQuestionType.START, PollQuestionType.BENCH],
+  SEASON: [
+    PollQuestionType.START,
+    PollQuestionType.BENCH,
+    PollQuestionType.ADD,
+    PollQuestionType.DROP,
+    PollQuestionType.TRADE_FOR,
+    PollQuestionType.TRADE_AWAY,
+  ],
+  DYNASTY: [
+    PollQuestionType.KEEP,
+    PollQuestionType.BUY_LOW,
+    PollQuestionType.TRADE_FOR,
+    PollQuestionType.TRADE_AWAY,
+  ],
+};
+
+/** Whether a question type is valid for a given horizon. */
+export function isQuestionForHorizon(
+  horizon: PollHorizon,
+  q: PollQuestionType,
+): boolean {
+  return HORIZON_QUESTIONS[horizon].includes(q);
+}
 
 // How a poll is graded once it locks:
 //  HIGH    → correct answer is the option that scores the MOST points
@@ -78,6 +132,7 @@ export const QUESTION_RESOLUTION: Record<
   TRADE_FOR: "OPINION",
   TRADE_AWAY: "OPINION",
   BUY_LOW: "OPINION",
+  KEEP: "OPINION",
 };
 
 /** Whether a poll type produces a correct/incorrect outcome (affects stats). */

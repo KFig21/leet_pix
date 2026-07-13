@@ -187,6 +187,7 @@ pollsRouter.post(
         authorId: req.userId!,
         sport: input.sport,
         questionType: input.questionType,
+        horizon: input.horizon,
         lockType: input.lockType,
         lockAt,
         evaluationWeeks: input.evaluationWeeks ?? null,

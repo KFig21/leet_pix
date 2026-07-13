@@ -5,6 +5,7 @@ import type {
   Sport,
   PollStatus,
   PollQuestionType,
+  PollHorizon,
   ScoringPreset,
   PlayerStreak,
 } from "@leetpix/shared";
@@ -54,6 +55,7 @@ export interface PollView {
   id: string;
   sport: Sport;
   questionType: PollQuestionType;
+  horizon: PollHorizon;
   status: PollStatus;
   lockAt: string | null;
   createdAt: string;

@@ -67,6 +67,12 @@
     }
   }
 
+  &__hint {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: var(--text-secondary);
+  }
+
   &__add {
     @include button-reset;
     align-self: flex-start;

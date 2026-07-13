@@ -40,6 +40,18 @@ enum PollQuestionType {
   TRADE_FOR
   TRADE_AWAY
   BUY_LOW
+  KEEP
+}
+
+// The time horizon / league context a poll is framed in. Orthogonal to the
+// question: gates which question types the creator offers and shows as a badge.
+//  DAILY   → one slate/game (DFS-style)
+//  SEASON  → rest-of-season (redraft: lineup, waivers, trades)
+//  DYNASTY → multi-year value (keepers, long-term trades) — opinion only
+enum PollHorizon {
+  DAILY
+  SEASON
+  DYNASTY
 }
 
 enum NotificationType {
@@ -105,6 +117,8 @@ model Poll {
   author   Profile      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   sport        Sport
   questionType PollQuestionType
+  // Framing/league context (default backfills existing rows as season-long).
+  horizon      PollHorizon      @default(SEASON)
   status       PollStatus       @default(OPEN)
   lockType PollLockType
   lockAt   DateTime? // resolved lock time (set explicitly or derived from game start)

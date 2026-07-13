@@ -2,9 +2,11 @@ import { z } from "zod";
 import {
   Sport,
   PollLockType,
+  PollHorizon,
   ScoringPreset,
   PollQuestionType,
   isWindowedPoll,
+  isQuestionForHorizon,
 } from "../enums";
 import { MIN_POLL_OPTIONS, MAX_POLL_OPTIONS } from "../constants";
 
@@ -18,6 +20,8 @@ export type PollOptionInput = z.infer<typeof pollOptionInputSchema>;
 export const createPollSchema = z
   .object({
     sport: z.nativeEnum(Sport),
+    // Framing/league context (daily / season / dynasty).
+    horizon: z.nativeEnum(PollHorizon),
     // Preset prompt (no free text). Display label from POLL_QUESTION_LABELS.
     questionType: z.nativeEnum(PollQuestionType),
     options: z
@@ -44,5 +48,9 @@ export const createPollSchema = z
   .refine((d) => !isWindowedPoll(d.questionType) || d.evaluationWeeks != null, {
     message: "Add/drop polls need an evaluation window (weeks)",
     path: ["evaluationWeeks"],
+  })
+  .refine((d) => isQuestionForHorizon(d.horizon, d.questionType), {
+    message: "This question isn't available for the selected horizon",
+    path: ["questionType"],
   });
 export type CreatePollInput = z.infer<typeof createPollSchema>;

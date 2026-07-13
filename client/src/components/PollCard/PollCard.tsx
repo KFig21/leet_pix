@@ -18,6 +18,7 @@ import { StreakBadge } from "@/components/StreakBadge/StreakBadge";
 import { SportIcon } from "@/components/SportIcon/SportIcon";
 import { ScoringBadge } from "@/components/ScoringBadge/ScoringBadge";
 import { ResolutionBadge } from "@/components/ResolutionBadge/ResolutionBadge";
+import { HorizonBadge } from "@/components/HorizonBadge/HorizonBadge";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import { PollCountdown } from "@/components/PollCountdown/PollCountdown";
 import {
@@ -147,6 +148,7 @@ export function PollCard({ poll, pick, preview }: Props) {
       </p>
 
       <div className="poll-card__badges">
+        <HorizonBadge horizon={poll.horizon} />
         <ResolutionBadge
           questionType={poll.questionType}
           evaluationWeeks={poll.evaluationWeeks}

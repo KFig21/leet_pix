@@ -112,11 +112,10 @@
     flex-direction: column;
   }
 
+  // Each category stacks its main row plus any per-position override sub-rows.
   &__cat {
     display: flex;
     flex-direction: column;
-    gap: $gap-xs;
-    padding: $gap-sm $gap-md;
     border-top: 1px solid var(--border-color);
 
     // Dim a disabled category but keep it in place so the group reads as a full
@@ -126,40 +125,37 @@
     }
   }
 
+  // Row layout: [✓] description ……… [points]
   &__cat-main {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: $gap-sm;
-  }
+    padding: $gap-sm $gap-md;
 
-  &__cat-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: $gap-sm;
-    min-width: 0;
-    cursor: pointer;
-
-    input {
-      accent-color: var(--accent);
-      width: 16px;
-      height: 16px;
-      flex-shrink: 0;
+    // Indented, muted sub-row for a per-position override (e.g. QB rushing TDs).
+    &--override {
+      padding-left: 42px;
+      color: var(--text-secondary);
     }
   }
 
-  &__cat-label {
-    color: var(--text-primary);
+  &__check {
+    accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
   }
 
-  &__cat-value {
-    display: inline-flex;
+  // Grows to fill the row so the points box aligns to the right edge.
+  &__desc {
+    flex: 1;
+    display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: $gap-xs;
-    flex-shrink: 0;
-    color: var(--text-secondary);
-    font-size: $font-size-sm;
-    white-space: nowrap;
+    min-width: 0;
+    color: var(--text-primary);
+    cursor: default;
   }
 
   &__pts,
@@ -180,37 +176,12 @@
 
   &__pts {
     width: 64px;
-  }
-
-  &__per {
-    display: inline-flex;
-    align-items: center;
-    gap: $gap-xs;
+    flex-shrink: 0;
   }
 
   &__per-input {
-    width: 52px;
-  }
-
-  // ── Per-position overrides (e.g. QB rushing TDs) ───────────────────────────
-  &__overrides {
-    display: flex;
-    flex-wrap: wrap;
-    gap: $gap-md;
-    padding-left: 26px; // align under the label, past the checkbox
-  }
-
-  &__override {
-    display: inline-flex;
-    align-items: center;
-    gap: $gap-xs;
-    color: var(--text-secondary);
-    font-size: $font-size-sm;
-  }
-
-  &__override-pos {
-    font-weight: $font-weight-bold;
-    color: var(--accent);
+    width: 56px;
+    text-align: center;
   }
 
   &__advanced-toggle {

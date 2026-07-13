@@ -144,72 +144,74 @@ export function ScoringFormatCreatorPage() {
     }
   };
 
-  // One category row: enable toggle, base value (count or rate), and any
-  // per-position override inputs.
-  const renderCat = (c: StatCategory) => {
+  // One category row, laid out like a league scoring sheet:
+  //   [✓]  Every [25] passing yards            [ 1 ]
+  //   [✓]  TD Pass                             [ 4 ]
+  // Rate stats carry the "Every N <unit>" clause; count stats just a label. The
+  // points box is always right-aligned. Per-position overrides (e.g. QB rushing
+  // TDs) render as indented sub-rows and only appear with the advanced set.
+  const renderCat = (c: StatCategory, advOpen: boolean) => {
     const f = fields[c.key] ?? { on: false, points: 0, per: 1, overrides: {} };
+    const id = `cat-${c.key}`;
     return (
       <div key={c.key} className={`scoring__cat${f.on ? "" : " scoring__cat--off"}`}>
         <div className="scoring__cat-main">
-          <label className="scoring__cat-toggle">
-            <input
-              type="checkbox"
-              checked={f.on}
-              onChange={(e) => setField(c.key, { on: e.target.checked })}
-            />
-            <span className="scoring__cat-label">{c.label}</span>
-          </label>
-
-          <div className="scoring__cat-value">
-            <input
-              className="scoring__pts"
-              type="number"
-              step="0.01"
-              value={f.points}
-              disabled={!f.on}
-              aria-label={`${c.label} points`}
-              onChange={(e) => setField(c.key, { points: Number(e.target.value) })}
-            />
-            {c.kind === "rate" ? (
-              <span className="scoring__per">
-                pt per
-                <input
-                  className="scoring__per-input"
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={f.per}
-                  disabled={!f.on}
-                  aria-label={`${c.label} per units`}
-                  onChange={(e) => setField(c.key, { per: Number(e.target.value) })}
-                />
-                {c.unit}s
-              </span>
-            ) : (
-              <span className="scoring__per">pts</span>
-            )}
-          </div>
+          <input
+            id={id}
+            type="checkbox"
+            className="scoring__check"
+            checked={f.on}
+            aria-label={c.label}
+            onChange={(e) => setField(c.key, { on: e.target.checked })}
+          />
+          {c.kind === "rate" ? (
+            <span className="scoring__desc">
+              Every{" "}
+              <input
+                className="scoring__per-input"
+                type="number"
+                min="1"
+                step="1"
+                value={f.per}
+                disabled={!f.on}
+                aria-label={`${c.label} per`}
+                onChange={(e) => setField(c.key, { per: Number(e.target.value) })}
+              />{" "}
+              {c.label.toLowerCase()}
+            </span>
+          ) : (
+            <label htmlFor={id} className="scoring__desc">
+              {c.label}
+            </label>
+          )}
+          <input
+            className="scoring__pts"
+            type="number"
+            step="0.01"
+            value={f.points}
+            disabled={!f.on}
+            aria-label={`${c.label} points`}
+            onChange={(e) => setField(c.key, { points: Number(e.target.value) })}
+          />
         </div>
 
-        {/* Per-position overrides (e.g. QB rushing TDs). */}
-        {f.on && (c.overridePositions?.length ?? 0) > 0 && (
-          <div className="scoring__overrides">
-            {c.overridePositions!.map((pos) => (
-              <label key={pos} className="scoring__override">
-                <span className="scoring__override-pos">{pos}</span>
-                <input
-                  className="scoring__pts"
-                  type="number"
-                  step="0.01"
-                  value={f.overrides[pos] ?? f.points}
-                  aria-label={`${c.label} for ${pos}`}
-                  onChange={(e) => setOverride(c.key, pos, Number(e.target.value))}
-                />
-                <span className="scoring__per">pts</span>
-              </label>
-            ))}
-          </div>
-        )}
+        {advOpen &&
+          f.on &&
+          (c.overridePositions ?? []).map((pos) => (
+            <div key={pos} className="scoring__cat-main scoring__cat-main--override">
+              <span className="scoring__desc">
+                {c.label} ({pos})
+              </span>
+              <input
+                className="scoring__pts"
+                type="number"
+                step="0.01"
+                value={f.overrides[pos] ?? f.points}
+                aria-label={`${c.label} for ${pos}`}
+                onChange={(e) => setOverride(c.key, pos, Number(e.target.value))}
+              />
+            </div>
+          ))}
       </div>
     );
   };
@@ -249,10 +251,10 @@ export function ScoringFormatCreatorPage() {
           const nOn = enabledInGroup(cats);
           const common = cats.filter((c) => !c.advanced);
           const advanced = cats.filter((c) => c.advanced);
-          // Reveal advanced when asked, or when an advanced category is already
-          // enabled (so a chosen category is never hidden).
-          const advOpen =
-            showAdvanced.has(group) || advanced.some((c) => fields[c.key]?.on);
+          // Force advanced open when an advanced category is already enabled, so
+          // a chosen category is never hidden (and can't be hidden away).
+          const forced = advanced.some((c) => fields[c.key]?.on);
+          const advOpen = showAdvanced.has(group) || forced;
           return (
             <section key={group} className="scoring__group">
               <button
@@ -270,19 +272,27 @@ export function ScoringFormatCreatorPage() {
 
               {open && (
                 <div className="scoring__group-body">
-                  {common.map(renderCat)}
-                  {advanced.length > 0 &&
-                    (advOpen ? (
-                      advanced.map(renderCat)
-                    ) : (
-                      <button
-                        type="button"
-                        className="scoring__advanced-toggle"
-                        onClick={() => toggleAdvanced(group)}
-                      >
-                        Show {advanced.length} advanced
-                      </button>
-                    ))}
+                  {common.map((c) => renderCat(c, advOpen))}
+                  {advanced.length > 0 && !advOpen && (
+                    <button
+                      type="button"
+                      className="scoring__advanced-toggle"
+                      onClick={() => toggleAdvanced(group)}
+                    >
+                      Show {advanced.length} advanced
+                    </button>
+                  )}
+                  {advOpen && advanced.map((c) => renderCat(c, advOpen))}
+                  {/* Only offer Hide when nothing enabled is forcing advanced open. */}
+                  {advOpen && !forced && (
+                    <button
+                      type="button"
+                      className="scoring__advanced-toggle"
+                      onClick={() => toggleAdvanced(group)}
+                    >
+                      Hide advanced
+                    </button>
+                  )}
                 </div>
               )}
             </section>

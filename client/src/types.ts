@@ -34,6 +34,8 @@ export interface PlayerGame {
 export interface PollOptionView {
   id: string;
   playerName: string;
+  // Keeper polls: the draft round forfeited to keep this player. Null otherwise.
+  keeperRound?: number | null;
   projectedPoints: number | null;
   actualPoints: number | null;
   isWinner: boolean;

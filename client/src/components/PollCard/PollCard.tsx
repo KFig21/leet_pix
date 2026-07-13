@@ -211,6 +211,14 @@ export function PollCard({ poll, pick, preview }: Props) {
                     <span className="poll-card__option-name">{o.playerName}</span>
                   </span>
                   <TeamTag abbr={o.player?.team} sport={poll.sport} />
+                  {o.keeperRound != null && (
+                    <span
+                      className="poll-card__keeper"
+                      title="Draft round given up to keep this player"
+                    >
+                      Rd {o.keeperRound}
+                    </span>
+                  )}
                   {!resolved && <StreakBadge streak={o.player?.streak} />}
                   {!resolved && (
                     <PlayerMeta

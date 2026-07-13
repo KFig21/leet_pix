@@ -10,6 +10,7 @@ import {
   POLL_HORIZON_LABELS,
   POLL_HORIZON_HINTS,
   HORIZON_QUESTIONS,
+  groupFootballPositions,
   SPORT_PRESETS,
   SCORING_PRESET_LABELS,
   GAME_LOCK_LEAD_MS,
@@ -28,7 +29,7 @@ import { SportIcon } from "@/components/SportIcon/SportIcon";
 import { ScoringBadge } from "@/components/ScoringBadge/ScoringBadge";
 import { ResolutionBadge } from "@/components/ResolutionBadge/ResolutionBadge";
 import { HorizonBadge } from "@/components/HorizonBadge/HorizonBadge";
-import { MultiSelect } from "@/components/MultiSelect/MultiSelect";
+import { MultiSelect, type Option } from "@/components/MultiSelect/MultiSelect";
 import { TeamTag } from "@/components/TeamTag/TeamTag";
 import { PlayerMeta } from "@/components/PlayerMeta/PlayerMeta";
 import type {
@@ -122,10 +123,15 @@ export function PollCreatePage() {
       ),
     };
   });
-  const positionOptions = (facets?.positions ?? []).map((p) => ({
-    value: p,
-    label: p,
-  }));
+  // Football has many positions now (offense + IDP), so group them under headers
+  // — offense/kicker/team-D first, then IDP. Baseball stays a flat sorted list.
+  const positionOptions: Option[] =
+    sport === Sport.FOOTBALL
+      ? groupFootballPositions(facets?.positions ?? []).flatMap((g) => [
+          { value: `__grp:${g.label}`, label: g.label, heading: true },
+          ...g.positions.map((p) => ({ value: p, label: p })),
+        ])
+      : (facets?.positions ?? []).map((p) => ({ value: p, label: p }));
 
   const setOption = (i: number, pick: PlayerPick | null) =>
     setOptions((prev) => prev.map((o, idx) => (idx === i ? pick : o)));
@@ -242,6 +248,7 @@ export function PollCreatePage() {
         options: picks.map((o, i) => ({
           id: `preview-${i}`,
           playerName: o.playerName,
+          keeperRound: o.keeperRound ?? null,
           projectedPoints: null,
           actualPoints: null,
           isWinner: false,
@@ -428,18 +435,41 @@ export function PollCreatePage() {
           </div>
         )}
         {options.map((opt, i) => (
-          <PlayerSelect
-            key={i}
-            sport={sport}
-            value={opt}
-            onChange={(pick) => setOption(i, pick)}
-            placeholder={`Player ${i + 1}`}
-            teams={teamFilters}
-            positions={positionFilters}
-            excludeIds={options
-              .filter((o, idx): o is PlayerPick => o !== null && idx !== i)
-              .map((o) => o.playerId)}
-          />
+          <div key={i} className="poll-create__option">
+            <PlayerSelect
+              sport={sport}
+              value={opt}
+              onChange={(pick) => setOption(i, pick)}
+              placeholder={`Player ${i + 1}`}
+              teams={teamFilters}
+              positions={positionFilters}
+              excludeIds={options
+                .filter((o, idx): o is PlayerPick => o !== null && idx !== i)
+                .map((o) => o.playerId)}
+            />
+            {/* Keeper polls: capture the draft round forfeited for this player. */}
+            {questionType === PollQuestionType.KEEP && opt && (
+              <label className="poll-create__keeper">
+                <span className="poll-create__keeper-label">Keeper cost</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={30}
+                  className="poll-create__keeper-input"
+                  placeholder="Round"
+                  value={opt.keeperRound ?? ""}
+                  onChange={(e) =>
+                    setOption(i, {
+                      ...opt,
+                      keeperRound: e.target.value
+                        ? Number(e.target.value)
+                        : null,
+                    })
+                  }
+                />
+              </label>
+            )}
+          </div>
         ))}
         {options.length < 4 && (
           <button

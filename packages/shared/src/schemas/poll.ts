@@ -14,6 +14,9 @@ import { MIN_POLL_OPTIONS, MAX_POLL_OPTIONS } from "../constants";
 export const pollOptionInputSchema = z.object({
   playerId: z.string().min(1),
   playerName: z.string().min(1).max(60),
+  // Keeper polls: the draft round forfeited to keep this player. Optional; only
+  // meaningful for KEEP questions (ignored otherwise).
+  keeperRound: z.number().int().min(1).max(30).optional(),
 });
 export type PollOptionInput = z.infer<typeof pollOptionInputSchema>;
 

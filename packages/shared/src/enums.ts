@@ -92,6 +92,9 @@ export const HORIZON_QUESTIONS: Record<PollHorizon, PollQuestionType[]> = {
     PollQuestionType.DROP,
     PollQuestionType.TRADE_FOR,
     PollQuestionType.TRADE_AWAY,
+    // Single-season keeper leagues keep a player from last year (forfeiting the
+    // draft round they were taken in); a complete redraft follows.
+    PollQuestionType.KEEP,
   ],
   DYNASTY: [
     PollQuestionType.KEEP,

@@ -80,6 +80,20 @@
     }
   }
 
+  &__group-heading {
+    padding: $gap-sm $gap-sm $gap-xs;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+
+    // Tighten the gap when a heading is the very first item in the menu.
+    &:first-child {
+      padding-top: $gap-xs;
+    }
+  }
+
   &__option {
     @include button-reset;
     display: flex;

@@ -237,8 +237,23 @@
   &__option-content .player-meta,
   &__proj,
   &__pts-actual,
+  &__keeper,
   &__option-right {
     flex-shrink: 0;
+  }
+
+  // Keeper cost pill ("Rd 5") — the draft round forfeited to keep the player.
+  &__keeper {
+    display: inline-flex;
+    align-items: center;
+    height: 16px;
+    padding: 0 6px;
+    border-radius: $radius-sm;
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: $font-weight-bold;
+    white-space: nowrap;
   }
 
   // On phones the option row is tight — drop the verbose matchup text (keep the

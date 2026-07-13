@@ -199,6 +199,7 @@ pollsRouter.post(
           create: input.options.map((o) => ({
             playerId: o.playerId,
             playerName: o.playerName,
+            keeperRound: o.keeperRound ?? null,
             projectedPoints: projected.get(o.playerId) ?? null,
           })),
         },

@@ -15,6 +15,9 @@ export interface Option {
   label: ReactNode;
   icon?: ReactNode;
   color?: string;
+  // Non-interactive section header (e.g. "Offense", "IDP"). Rendered as a label
+  // and skipped by selection + keyboard navigation.
+  heading?: boolean;
 }
 
 interface Props {
@@ -140,6 +143,13 @@ export function MultiSelect({
           onKeyDown={onMenuKeyDown}
         >
           {options.map((o) => {
+            if (o.heading) {
+              return (
+                <div key={o.value} className="multi-select__group-heading">
+                  {o.label}
+                </div>
+              );
+            }
             const checked = selected.includes(o.value);
             return (
               <button

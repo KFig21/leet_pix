@@ -73,6 +73,32 @@
     color: var(--text-secondary);
   }
 
+  // One player slot: the search dropdown plus (keeper polls only) a round-cost input.
+  &__option {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-xs;
+  }
+
+  &__keeper {
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+    padding-left: $gap-sm;
+    font-size: $font-size-sm;
+    color: var(--text-secondary);
+  }
+
+  &__keeper-input {
+    width: 80px;
+    padding: $gap-xs $gap-sm;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-sm;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font: inherit;
+  }
+
   &__add {
     @include button-reset;
     align-self: flex-start;

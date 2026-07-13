@@ -170,6 +170,9 @@ model PollOption {
   poll       Poll    @relation(fields: [pollId], references: [id], onDelete: Cascade)
   playerId   String // id from the stats source
   playerName String
+  // Keeper polls only: the draft round forfeited to keep this player (the cost
+  // side of a keeper decision). Null for every other question type.
+  keeperRound Int?
   // Projected fantasy points under the poll's scoring format (filled at lock).
   projectedPoints Float?
   // Set when the poll resolves: the actual scored points for this option.

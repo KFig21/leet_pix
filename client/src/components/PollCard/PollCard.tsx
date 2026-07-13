@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import { POLL_QUESTION_LABELS } from "@leetpix/shared";
 import type { Avatar as AvatarData } from "@leetpix/shared";
 import { api } from "@/lib/api";
@@ -63,6 +64,20 @@ export function PollCard({ poll, pick, preview }: Props) {
   const resolved = poll.status === "RESOLVED";
   const canVote = poll.status === "OPEN" && !voted && !isOwn;
   const totalVotes = poll.options.reduce((n, o) => n + (o._count?.votes ?? 0), 0);
+
+  // Projected favorite (unresolved polls only): the single option with the
+  // highest projected points. A tie leaves no favorite, so we never call one
+  // arbitrarily. Purely from data already on the options — no extra fetch.
+  const projFavoriteId = (() => {
+    if (resolved) return null;
+    const vals = poll.options
+      .map((o) => o.projectedPoints)
+      .filter((p): p is number => p != null);
+    if (vals.length < 2) return null;
+    const top = Math.max(...vals);
+    const leaders = poll.options.filter((o) => o.projectedPoints === top);
+    return leaders.length === 1 ? leaders[0].id : null;
+  })();
 
   const vote = useMutation({
     mutationFn: (optionId: string) =>
@@ -192,7 +207,21 @@ export function PollCard({ poll, pick, preview }: Props) {
                     />
                   )}
                   {points != null && (
-                    <span className="poll-card__proj">{points} pts</span>
+                    <span
+                      className={`poll-card__proj${projFavoriteId === o.id ? " poll-card__proj--favorite" : ""}`}
+                      title={
+                        projFavoriteId === o.id
+                          ? "Projected to win"
+                          : resolved
+                            ? undefined
+                            : "Projected points"
+                      }
+                    >
+                      {projFavoriteId === o.id && (
+                        <TrendingUpIcon className="poll-card__proj-icon" />
+                      )}
+                      {points} pts
+                    </span>
                   )}
                   <span className="poll-card__option-right">
                   {owned && (

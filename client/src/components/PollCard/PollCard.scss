@@ -249,8 +249,22 @@
   }
 
   &__proj {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
     color: var(--text-secondary);
     font-size: $font-size-sm;
+
+    // The projected favorite is tinted + weighted so voters can spot the pick
+    // the numbers favor at a glance.
+    &--favorite {
+      color: var(--accent);
+      font-weight: $font-weight-bold;
+    }
+  }
+
+  &__proj-icon {
+    font-size: 15px;
   }
 
   &__option-right {

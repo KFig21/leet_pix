@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma";
-import { normalizeMlbBatting } from "../lib/statKeys";
+import { normalizeMlbBatting, normalizeMlbPitching } from "../lib/statKeys";
 import { mlbPeriod } from "../lib/mlbPeriod";
 
 interface ScheduleGame {
@@ -9,7 +9,10 @@ interface ScheduleGame {
 }
 interface BoxscorePlayer {
   person?: { id?: number };
-  stats?: { batting?: Record<string, number> };
+  stats?: {
+    batting?: Record<string, number>;
+    pitching?: Record<string, number>;
+  };
 }
 
 // Import actual batting lines for all MLB games on a date (YYYY-MM-DD) from the
@@ -55,9 +58,13 @@ export async function importMlbStats(
         const playerId = entry.person?.id
           ? byMlbam.get(String(entry.person.id))
           : undefined;
-        const batting = entry.stats?.batting;
-        if (!playerId || !batting) continue;
-        const stats = normalizeMlbBatting(batting);
+        if (!playerId) continue;
+        // Merge batting + pitching into one line (a two-way player has both;
+        // their canonical keys are distinct so nothing collides).
+        const stats = {
+          ...(entry.stats?.batting ? normalizeMlbBatting(entry.stats.batting) : {}),
+          ...(entry.stats?.pitching ? normalizeMlbPitching(entry.stats.pitching) : {}),
+        };
         if (Object.keys(stats).length === 0) continue;
         await prisma.playerStat.upsert({
           where: {

@@ -127,5 +127,58 @@ export function normalizeMlbBatting(
   set("run", b.runs ?? 0);
   set("stolenBase", b.stolenBases ?? 0);
   set("walk", b.baseOnBalls ?? 0);
+  set("hitByPitch", b.hitByPitch ?? 0);
+  set("strikeout", b.strikeOuts ?? 0);
+  set("caughtStealing", b.caughtStealing ?? 0);
+  return out;
+}
+
+// MLB reports innings pitched as a decimal where the fractional part is outs,
+// not tenths ("6.1" = 6 innings + 1 out, "6.2" = 6 innings + 2 outs). Convert to
+// a true decimal (outs ÷ 3) so partial innings score fairly.
+function parseInningsPitched(ip: unknown): number {
+  const n = typeof ip === "number" ? ip : parseFloat(String(ip ?? "0"));
+  if (!Number.isFinite(n)) return 0;
+  const whole = Math.trunc(n);
+  const outs = Math.round((n - whole) * 10); // .1 → 1 out, .2 → 2 outs
+  return Math.round((whole + outs / 3) * 1000) / 1000;
+}
+
+/**
+ * Normalize an MLB boxscore pitching line to our canonical baseball keys. Counts
+ * are stored as positive occurrences (the point sign lives in the scoring rules).
+ * Quality starts and no-hitters aren't reported directly, so they're derived.
+ * Distinct keys from batting (e.g. strikeoutPitched, walkAllowed) let a two-way
+ * player's batting + pitching lines merge into one stat blob without colliding.
+ */
+export function normalizeMlbPitching(
+  p: Record<string, number>,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  const set = (k: string, v: number) => {
+    if (v) out[k] = v;
+  };
+  const ip = parseInningsPitched((p as Record<string, unknown>).inningsPitched);
+  const earnedRuns = p.earnedRuns ?? 0;
+  const hits = p.hits ?? 0;
+  const gamesStarted = p.gamesStarted ?? 0;
+  const completeGames = p.completeGames ?? 0;
+
+  set("inningsPitched", ip);
+  set("strikeoutPitched", p.strikeOuts ?? 0);
+  set("win", p.wins ?? 0);
+  set("loss", p.losses ?? 0);
+  set("save", p.saves ?? 0);
+  set("hold", p.holds ?? 0);
+  set("earnedRun", earnedRuns);
+  set("hitAllowed", hits);
+  set("walkAllowed", p.baseOnBalls ?? 0);
+  set("hitBatsman", p.hitByPitch ?? 0);
+  set("completeGame", completeGames);
+  set("shutout", p.shutouts ?? 0);
+  // Quality start: a starter going ≥6 IP with ≤3 earned runs.
+  if (gamesStarted >= 1 && ip >= 6 && earnedRuns <= 3) out["qualityStart"] = 1;
+  // No-hitter: a complete game surrendering no hits.
+  if (completeGames >= 1 && hits === 0) out["noHitter"] = 1;
   return out;
 }

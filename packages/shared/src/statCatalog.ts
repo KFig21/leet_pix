@@ -105,17 +105,35 @@ const FOOTBALL_CATALOG: StatCategory[] = [
 ];
 
 const BASEBALL_CATALOG: StatCategory[] = [
-  // Hitting
+  // ── Hitting ────────────────────────────────────────────────────────────────
   { key: "single", label: "Single", group: "Hitting", kind: "count", defaultPoints: 1, defaultOn: true },
   { key: "double", label: "Double", group: "Hitting", kind: "count", defaultPoints: 2, defaultOn: true },
   { key: "triple", label: "Triple", group: "Hitting", kind: "count", defaultPoints: 3, defaultOn: true },
   { key: "homeRun", label: "Home run", group: "Hitting", kind: "count", defaultPoints: 4, defaultOn: true },
-  // Production
-  { key: "rbi", label: "RBI", group: "Production", kind: "count", defaultPoints: 1, defaultOn: true },
-  { key: "run", label: "Run", group: "Production", kind: "count", defaultPoints: 1, defaultOn: true },
-  // Other
-  { key: "stolenBase", label: "Stolen base", group: "Other", kind: "count", defaultPoints: 2, defaultOn: true },
-  { key: "walk", label: "Walk", group: "Other", kind: "count", defaultPoints: 1, defaultOn: true },
+  { key: "rbi", label: "RBI", group: "Hitting", kind: "count", defaultPoints: 1, defaultOn: true },
+  { key: "run", label: "Run", group: "Hitting", kind: "count", defaultPoints: 1, defaultOn: true },
+  { key: "stolenBase", label: "Stolen base", group: "Hitting", kind: "count", defaultPoints: 2, defaultOn: true },
+  { key: "walk", label: "Walk", group: "Hitting", kind: "count", defaultPoints: 1, defaultOn: true },
+  { key: "hitByPitch", label: "Hit by pitch", group: "Hitting", kind: "count", defaultPoints: 1, defaultOn: false, advanced: true },
+  { key: "strikeout", label: "Strikeout (batter)", group: "Hitting", kind: "count", defaultPoints: -0.5, defaultOn: false, advanced: true },
+  { key: "caughtStealing", label: "Caught stealing", group: "Hitting", kind: "count", defaultPoints: -1, defaultOn: false, advanced: true },
+  // ── Pitching ───────────────────────────────────────────────────────────────
+  // Innings are stored as a decimal (outs ÷ 3) so a partial inning scores
+  // fairly (see normalizeMlbPitching); the wizard frames it as "per 1 inning".
+  { key: "inningsPitched", label: "Innings pitched", group: "Pitching", kind: "rate", unit: "inning", defaultPoints: 3, defaultPer: 1, defaultOn: true },
+  { key: "strikeoutPitched", label: "Strikeout (pitcher)", group: "Pitching", kind: "count", defaultPoints: 1, defaultOn: true },
+  { key: "win", label: "Win", group: "Pitching", kind: "count", defaultPoints: 5, defaultOn: true },
+  { key: "save", label: "Save", group: "Pitching", kind: "count", defaultPoints: 5, defaultOn: true },
+  { key: "earnedRun", label: "Earned run allowed", group: "Pitching", kind: "count", defaultPoints: -2, defaultOn: true },
+  { key: "hold", label: "Hold", group: "Pitching", kind: "count", defaultPoints: 3, defaultOn: false, advanced: true },
+  { key: "qualityStart", label: "Quality start", group: "Pitching", kind: "count", defaultPoints: 3, defaultOn: false, advanced: true },
+  { key: "loss", label: "Loss", group: "Pitching", kind: "count", defaultPoints: -3, defaultOn: false, advanced: true },
+  { key: "hitAllowed", label: "Hit allowed", group: "Pitching", kind: "count", defaultPoints: -1, defaultOn: false, advanced: true },
+  { key: "walkAllowed", label: "Walk allowed", group: "Pitching", kind: "count", defaultPoints: -1, defaultOn: false, advanced: true },
+  { key: "hitBatsman", label: "Hit batsman", group: "Pitching", kind: "count", defaultPoints: -1, defaultOn: false, advanced: true },
+  { key: "completeGame", label: "Complete game", group: "Pitching", kind: "count", defaultPoints: 3, defaultOn: false, advanced: true },
+  { key: "shutout", label: "Shutout", group: "Pitching", kind: "count", defaultPoints: 5, defaultOn: false, advanced: true },
+  { key: "noHitter", label: "No-hitter", group: "Pitching", kind: "count", defaultPoints: 10, defaultOn: false, advanced: true },
 ];
 
 export const STAT_CATALOG: Record<Sport, StatCategory[]> = {

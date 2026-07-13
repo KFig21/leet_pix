@@ -27,6 +27,7 @@ export const SCORING_PRESET_RULES: Record<ScoringPreset, ScoringRules> = {
   FOOTBALL_HALF_PPR: { ...FOOTBALL_BASE, reception: 0.5 },
   FOOTBALL_PPR: { ...FOOTBALL_BASE, reception: 1 },
   BASEBALL_STANDARD: {
+    // Hitting
     single: 1,
     double: 2,
     triple: 3,
@@ -35,6 +36,12 @@ export const SCORING_PRESET_RULES: Record<ScoringPreset, ScoringRules> = {
     run: 1,
     stolenBase: 2,
     walk: 1,
+    // Pitching
+    inningsPitched: 3,
+    strikeoutPitched: 1,
+    win: 5,
+    save: 5,
+    earnedRun: -2,
   },
 };
 

@@ -49,15 +49,36 @@ function openGroupsFor(sport: Sport): Set<string> {
   return open;
 }
 
-export function ScoringFormatCreatorPage() {
+// The saved-format shape the API returns (and onSaved hands back).
+export interface SavedScoringFormat {
+  id: string;
+  name: string;
+  sport: Sport;
+  rules: Record<string, number>;
+}
+
+interface Props {
+  // Embedded (modal) mode: hides the page header + sport tabs, and on save calls
+  // onSaved with the created format instead of navigating away.
+  embedded?: boolean;
+  onSaved?: (format: SavedScoringFormat) => void;
+  // Start on (and, when embedded, lock to) a specific sport.
+  initialSport?: Sport;
+}
+
+export function ScoringFormatCreatorPage({
+  embedded = false,
+  onSaved,
+  initialSport = Sport.FOOTBALL,
+}: Props = {}) {
   const navigate = useNavigate();
   const [name, setName] = useState("");
-  const [sport, setSport] = useState<Sport>(Sport.FOOTBALL);
+  const [sport, setSport] = useState<Sport>(initialSport);
   const [fields, setFields] = useState<Record<string, Field>>(() =>
-    defaultsFor(Sport.FOOTBALL),
+    defaultsFor(initialSport),
   );
   const [openGroups, setOpenGroups] = useState<Set<string>>(() =>
-    openGroupsFor(Sport.FOOTBALL),
+    openGroupsFor(initialSport),
   );
   const [showAdvanced, setShowAdvanced] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
@@ -136,8 +157,13 @@ export function ScoringFormatCreatorPage() {
 
     setSaving(true);
     try {
-      await api.post("/scoring-formats", { name, sport, rules });
-      navigate("/settings");
+      const created = await api.post<SavedScoringFormat>("/scoring-formats", {
+        name,
+        sport,
+        rules,
+      });
+      if (onSaved) onSaved(created);
+      else navigate("/settings");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save format.");
       setSaving(false);
@@ -218,7 +244,9 @@ export function ScoringFormatCreatorPage() {
 
   return (
     <div className="scoring">
-      <header className="scoring__header">New scoring format</header>
+      {!embedded && (
+        <header className="scoring__header">New scoring format</header>
+      )}
       <form className="scoring__form" onSubmit={save}>
         <input
           className="scoring__name"
@@ -229,22 +257,25 @@ export function ScoringFormatCreatorPage() {
           required
         />
 
-        <div className="scoring__sport" role="tablist" aria-label="Sport">
-          {SPORTS.map((s) => (
-            <button
-              key={s.value}
-              type="button"
-              role="tab"
-              aria-selected={sport === s.value}
-              className={`scoring__sport-tab${
-                sport === s.value ? " scoring__sport-tab--on" : ""
-              }`}
-              onClick={() => changeSport(s.value)}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
+        {/* Sport is locked in embedded mode (e.g. the football-only league builder). */}
+        {!embedded && (
+          <div className="scoring__sport" role="tablist" aria-label="Sport">
+            {SPORTS.map((s) => (
+              <button
+                key={s.value}
+                type="button"
+                role="tab"
+                aria-selected={sport === s.value}
+                className={`scoring__sport-tab${
+                  sport === s.value ? " scoring__sport-tab--on" : ""
+                }`}
+                onClick={() => changeSport(s.value)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {groups.map(([group, cats]) => {
           const open = openGroups.has(group);

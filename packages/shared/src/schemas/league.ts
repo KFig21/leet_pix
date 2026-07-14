@@ -13,6 +13,7 @@ export const lineupSlotsSchema = z.object({
   SUPERFLEX: z.number().int().min(0).max(3),
   K: z.number().int().min(0).max(3),
   DST: z.number().int().min(0).max(3),
+  IDP: z.number().int().min(0).max(10),
   BENCH: z.number().int().min(0).max(20),
 });
 export type LineupSlotsInput = z.infer<typeof lineupSlotsSchema>;
@@ -40,7 +41,8 @@ export const createLeagueSchema = z
         d.lineup.FLEX +
         d.lineup.SUPERFLEX +
         d.lineup.K +
-        d.lineup.DST >
+        d.lineup.DST +
+        d.lineup.IDP >
       0,
     { message: "Set at least one starting spot", path: ["lineup"] },
   );

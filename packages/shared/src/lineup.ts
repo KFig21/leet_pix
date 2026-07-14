@@ -11,6 +11,7 @@ export const LINEUP_SLOTS = [
   "SUPERFLEX",
   "K",
   "DST",
+  "IDP",
   "BENCH",
 ] as const;
 export type LineupSlot = (typeof LINEUP_SLOTS)[number];
@@ -25,16 +26,18 @@ export const LINEUP_SLOT_LABELS: Record<LineupSlot, string> = {
   SUPERFLEX: "SUPERFLEX",
   K: "K",
   DST: "D/ST",
+  IDP: "IDP",
   BENCH: "Bench",
 };
 
-// Short help text shown next to the flex-type slots in the builder.
+// Short help text shown next to the flex-type / IDP slots in the builder.
 export const LINEUP_SLOT_HINTS: Partial<Record<LineupSlot, string>> = {
   FLEX: "RB/WR/TE",
   SUPERFLEX: "QB/RB/WR/TE",
+  IDP: "DL/LB/DB",
 };
 
-// A conventional 1-QB redraft starting lineup + bench.
+// A conventional 1-QB redraft starting lineup + bench (no IDP by default).
 export const DEFAULT_FOOTBALL_LINEUP: LineupSlots = {
   QB: 1,
   RB: 2,
@@ -44,6 +47,7 @@ export const DEFAULT_FOOTBALL_LINEUP: LineupSlots = {
   SUPERFLEX: 0,
   K: 1,
   DST: 1,
+  IDP: 0,
   BENCH: 6,
 };
 

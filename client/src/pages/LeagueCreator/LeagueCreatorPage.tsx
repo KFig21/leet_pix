@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import RemoveIcon from "@mui/icons-material/Remove";
 import AddIcon from "@mui/icons-material/Add";
 import {
@@ -18,12 +18,20 @@ import {
   type ScoringPreset,
 } from "@leetpix/shared";
 import { api } from "@/lib/api";
+import { Modal } from "@/components/Modal/Modal";
+import { ScoringBadge } from "@/components/ScoringBadge/ScoringBadge";
+import {
+  ScoringFormatCreatorPage,
+  type SavedScoringFormat,
+} from "@/pages/ScoringFormatCreator/ScoringFormatCreatorPage";
+import type { ScoringFormatSummary } from "@/types";
 import "./LeagueCreatorPage.scss";
 
 interface ScoringFormat {
   id: string;
   name: string;
   sport: Sport;
+  rules: Record<string, number>;
 }
 
 // Per-slot max so counts stay sane (matches the shared zod bounds).
@@ -36,6 +44,7 @@ const SLOT_MAX: Record<LineupSlot, number> = {
   SUPERFLEX: 3,
   K: 3,
   DST: 3,
+  IDP: 10,
   BENCH: 20,
 };
 
@@ -43,6 +52,7 @@ const SLOT_MAX: Record<LineupSlot, number> = {
 // polls (attach one so voters see how valuable a position is). Football-only.
 export function LeagueCreatorPage() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [name, setName] = useState("");
   const [numTeams, setNumTeams] = useState(12);
   const [lineup, setLineup] = useState<LineupSlots>({ ...DEFAULT_FOOTBALL_LINEUP });
@@ -50,6 +60,8 @@ export function LeagueCreatorPage() {
   const [scoring, setScoring] = useState<string>(
     `preset:${SPORT_PRESETS[Sport.FOOTBALL][0]}`,
   );
+  // Opens the scoring wizard in a modal so league inputs aren't lost.
+  const [showScoringWizard, setShowScoringWizard] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,6 +73,29 @@ export function LeagueCreatorPage() {
     (f) => f.sport === Sport.FOOTBALL,
   );
   const presets = SPORT_PRESETS[Sport.FOOTBALL];
+
+  // Badge props for the currently selected scoring (preview on click).
+  const [scoringKind, scoringVal] = scoring.split(":");
+  const selectedFormat =
+    scoringKind === "custom"
+      ? customForSport.find((f) => f.id === scoringVal)
+      : undefined;
+  const scoringPreset: ScoringPreset | null =
+    scoringKind === "preset" ? (scoringVal as ScoringPreset) : null;
+  const scoringFormatSummary: ScoringFormatSummary | null = selectedFormat
+    ? { id: selectedFormat.id, name: selectedFormat.name, rules: selectedFormat.rules }
+    : null;
+
+  // A format just created in the modal: cache it, select it, close the modal.
+  const onScoringSaved = (fmt: SavedScoringFormat) => {
+    qc.setQueryData<ScoringFormat[]>(["scoring-formats"], (prev) => [
+      fmt,
+      ...(prev ?? []).filter((f) => f.id !== fmt.id),
+    ]);
+    qc.invalidateQueries({ queryKey: ["scoring-formats"] });
+    setScoring(`custom:${fmt.id}`);
+    setShowScoringWizard(false);
+  };
 
   const step = (slot: LineupSlot, delta: number) =>
     setLineup((prev) => ({
@@ -160,7 +195,13 @@ export function LeagueCreatorPage() {
           ))}
         </div>
 
-        <label className="league__label">Scoring format</label>
+        <div className="league__label-row">
+          <label className="league__label">Scoring format</label>
+          <ScoringBadge
+            scoringPreset={scoringPreset}
+            scoringFormat={scoringFormatSummary}
+          />
+        </div>
         <select
           className="league__input"
           value={scoring}
@@ -177,9 +218,13 @@ export function LeagueCreatorPage() {
             </option>
           ))}
         </select>
-        <Link to="/scoring/new" className="league__link">
+        <button
+          type="button"
+          className="league__link"
+          onClick={() => setShowScoringWizard(true)}
+        >
           + Create a custom scoring format
-        </Link>
+        </button>
 
         {error && <p className="league__error">{error}</p>}
 
@@ -189,6 +234,20 @@ export function LeagueCreatorPage() {
           </button>
         </div>
       </form>
+
+      {showScoringWizard && (
+        <Modal
+          title="New scoring format"
+          onClose={() => setShowScoringWizard(false)}
+          wide
+        >
+          <ScoringFormatCreatorPage
+            embedded
+            initialSport={Sport.FOOTBALL}
+            onSaved={onScoringSaved}
+          />
+        </Modal>
+      )}
     </div>
   );
 }

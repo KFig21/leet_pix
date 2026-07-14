@@ -3,7 +3,11 @@ import type {
   StatWindow,
   AccuracyStats,
 } from "@leetpix/shared";
-import { HOT_STREAK_THRESHOLD, COLD_STREAK_THRESHOLD } from "@leetpix/shared";
+import {
+  HOT_STREAK_THRESHOLD,
+  COLD_STREAK_THRESHOLD,
+  POLL_QUESTION_VERBS,
+} from "@leetpix/shared";
 import { prisma } from "../lib/prisma";
 import { HttpError } from "../middleware/error";
 
@@ -27,11 +31,22 @@ export async function computeProfileStats(
   const profile = await prisma.profile.findUnique({ where: { username } });
   if (!profile) throw new HttpError(404, "Not found");
 
-  // All graded results for this user, newest first.
+  // All graded results for this user, newest first. Pull the picked option +
+  // poll question so the heat-map day drill-down can list what they picked.
   const results = await prisma.pollResult.findMany({
     where: { vote: { voterId: profile.id } },
     orderBy: { resolvedAt: "desc" },
-    select: { correct: true, score: true, resolvedAt: true },
+    select: {
+      correct: true,
+      score: true,
+      resolvedAt: true,
+      vote: {
+        select: {
+          poll: { select: { id: true, questionType: true } },
+          option: { select: { playerName: true } },
+        },
+      },
+    },
   });
 
   const accuracyByWindow = Object.fromEntries(
@@ -68,10 +83,17 @@ export async function computeProfileStats(
   };
 }
 
-function accuracyFor(
-  results: { correct: boolean; score: number; resolvedAt: Date }[],
-  window: StatWindow,
-): AccuracyStats {
+interface ResultRow {
+  correct: boolean;
+  score: number;
+  resolvedAt: Date;
+  vote: {
+    poll: { id: string; questionType: string };
+    option: { playerName: string };
+  };
+}
+
+function accuracyFor(results: ResultRow[], window: StatWindow): AccuracyStats {
   const start = windowStart(window);
   const inWindow = start ? results.filter((r) => r.resolvedAt >= start) : results;
   const correct = inWindow.filter((r) => r.correct).length;
@@ -86,15 +108,26 @@ function accuracyFor(
   };
 }
 
-function buildHeatmap(
-  results: { correct: boolean; resolvedAt: Date }[],
-): ProfileStatsResponse["heatmap"] {
-  const byDay = new Map<string, { votes: number; correct: number }>();
+function buildHeatmap(results: ResultRow[]): ProfileStatsResponse["heatmap"] {
+  const byDay = new Map<
+    string,
+    { votes: number; correct: number; picks: HeatmapPickRow[] }
+  >();
+  // `results` is newest-first, so picks land newest-first per day too.
   for (const r of results) {
     const key = r.resolvedAt.toISOString().slice(0, 10);
-    const cell = byDay.get(key) ?? { votes: 0, correct: 0 };
+    const cell = byDay.get(key) ?? { votes: 0, correct: 0, picks: [] };
     cell.votes += 1;
     if (r.correct) cell.correct += 1;
+    cell.picks.push({
+      pollId: r.vote.poll.id,
+      question:
+        POLL_QUESTION_VERBS[
+          r.vote.poll.questionType as keyof typeof POLL_QUESTION_VERBS
+        ] ?? r.vote.poll.questionType,
+      player: r.vote.option.playerName,
+      correct: r.correct,
+    });
     byDay.set(key, cell);
   }
   return [...byDay.entries()].map(([date, c]) => ({
@@ -102,5 +135,8 @@ function buildHeatmap(
     votes: c.votes,
     correct: c.correct,
     intensity: c.votes ? (2 * c.correct) / c.votes - 1 : 0,
+    picks: c.picks,
   }));
 }
+
+type HeatmapPickRow = ProfileStatsResponse["heatmap"][number]["picks"][number];

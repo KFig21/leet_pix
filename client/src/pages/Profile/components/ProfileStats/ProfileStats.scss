@@ -102,12 +102,81 @@
     }
   }
 
-  &__heatmap-label {
-    display: block;
+  &__heatmap-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
     margin-bottom: $gap-sm;
+  }
+
+  &__heatmap-label {
     color: var(--text-secondary);
     font-size: $font-size-sm;
     font-weight: $font-weight-bold;
+  }
+
+  &__heatmap-span {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  // ── Day drill-down modal ───────────────────────────────────────────────────
+  &__day-summary {
+    margin: 0 0 $gap-sm;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  &__picks {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-xs;
+  }
+
+  &__pick {
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+    padding: $gap-xs $gap-sm;
+    border-radius: $radius-sm;
+    border-left: 3px solid transparent;
+
+    &--win {
+      background: color-mix(in srgb, rgb(47, 168, 79) 12%, transparent);
+      border-left-color: rgb(47, 168, 79);
+    }
+
+    &--loss {
+      background: color-mix(in srgb, rgb(244, 33, 46) 12%, transparent);
+      border-left-color: rgb(244, 33, 46);
+    }
+  }
+
+  &__pick-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+
+    .profile-stats__pick--win & {
+      color: rgb(47, 168, 79);
+    }
+    .profile-stats__pick--loss & {
+      color: rgb(244, 33, 46);
+    }
+  }
+
+  &__pick-q {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  &__pick-player {
+    min-width: 0;
+    font-weight: $font-weight-bold;
+    color: var(--text-primary);
   }
 
   // Inside the modal: keep the grid readable and scroll it horizontally.

@@ -29,6 +29,29 @@
 
   &__cell {
     min-width: 0;
+    padding: 0;
+    border: none;
     border-radius: 2px;
+    appearance: none;
+    transition: opacity 0.12s ease;
+
+    // Days outside the selected timeframe fade back so the active window reads
+    // as the focused region.
+    &--dim {
+      opacity: 0.25;
+    }
+
+    &--active {
+      cursor: pointer;
+
+      &:hover {
+        outline: 1.5px solid var(--text-primary);
+        outline-offset: 1px;
+      }
+    }
+
+    &:disabled {
+      cursor: default;
+    }
   }
 }

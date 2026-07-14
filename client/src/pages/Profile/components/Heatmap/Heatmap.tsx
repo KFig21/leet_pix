@@ -4,6 +4,11 @@ import "./Heatmap.scss";
 
 interface Props {
   cells: HeatmapCell[];
+  // Days before this date render dimmed (outside the selected window). Null or
+  // omitted = every day is in-window (lifetime).
+  activeSince?: Date | null;
+  // Fired when a day with activity is clicked.
+  onSelectDay?: (cell: HeatmapCell) => void;
 }
 
 const WEEKS = 53;
@@ -35,7 +40,7 @@ function cellStyle(cell?: HeatmapCell): React.CSSProperties {
   return { background: "var(--text-secondary)", opacity: 0.5 };
 }
 
-export function Heatmap({ cells }: Props) {
+export function Heatmap({ cells, activeSince, onSelectDay }: Props) {
   const { days, monthLabels } = useMemo(() => {
     const byDate = new Map(cells.map((c) => [c.date, c]));
     const today = new Date();
@@ -64,6 +69,8 @@ export function Heatmap({ cells }: Props) {
     return { days, monthLabels };
   }, [cells]);
 
+  const sinceKey = activeSince ? activeSince.toISOString().slice(0, 10) : null;
+
   return (
     <div
       className="heatmap"
@@ -89,18 +96,25 @@ export function Heatmap({ cells }: Props) {
         </span>
       ))}
 
-      {days.map((d) => (
-        <span
-          key={d.key}
-          className="heatmap__cell"
-          style={{ ...cellStyle(d.cell), gridColumn: d.week + 2, gridRow: d.dow + 2 }}
-          title={
-            d.cell
-              ? `${d.key}: ${d.cell.correct}/${d.cell.votes} correct`
-              : `${d.key}: no activity`
-          }
-        />
-      ))}
+      {days.map((d) => {
+        const active = d.cell && d.cell.votes > 0;
+        const dimmed = sinceKey != null && d.key < sinceKey;
+        return (
+          <button
+            key={d.key}
+            type="button"
+            className={`heatmap__cell${dimmed ? " heatmap__cell--dim" : ""}${active ? " heatmap__cell--active" : ""}`}
+            style={{ ...cellStyle(d.cell), gridColumn: d.week + 2, gridRow: d.dow + 2 }}
+            disabled={!active}
+            onClick={active ? () => onSelectDay?.(d.cell!) : undefined}
+            title={
+              d.cell
+                ? `${d.key}: ${d.cell.correct}/${d.cell.votes} correct`
+                : `${d.key}: no activity`
+            }
+          />
+        );
+      })}
     </div>
   );
 }

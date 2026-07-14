@@ -20,6 +20,14 @@ export interface StreakInfo {
   longestWin: number;
 }
 
+// A single graded pick within a day, for the heat-map day drill-down.
+export interface HeatmapPick {
+  pollId: string;
+  question: string; // compact verb, e.g. "Start"
+  player: string; // the player this user picked
+  correct: boolean;
+}
+
 // One cell of the GitHub-style participation heat map.
 export interface HeatmapCell {
   date: string; // YYYY-MM-DD
@@ -27,6 +35,8 @@ export interface HeatmapCell {
   correct: number;
   // Net hot/cold tint for the day: -1..1
   intensity: number;
+  // The day's graded picks (newest first), shown when a cell is clicked.
+  picks: HeatmapPick[];
 }
 
 export interface ProfileStatsResponse {

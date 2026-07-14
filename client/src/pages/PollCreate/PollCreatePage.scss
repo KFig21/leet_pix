@@ -3,10 +3,10 @@
 
 .poll-create {
   &__header {
+    @include sticky-header;
     padding: $gap-md;
     font-size: $font-size-xl;
     font-weight: $font-weight-bold;
-    border-bottom: 1px solid var(--border-color);
   }
 
   &__form {

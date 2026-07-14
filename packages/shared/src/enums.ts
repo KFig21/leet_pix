@@ -57,6 +57,18 @@ export const POLL_QUESTION_LABELS: Record<PollQuestionType, string> = {
   KEEP: "Who should I keep?",
 };
 
+// Compact verb form for tight spots (heat-map day pills, chips).
+export const POLL_QUESTION_VERBS: Record<PollQuestionType, string> = {
+  START: "Start",
+  BENCH: "Bench",
+  ADD: "Add",
+  DROP: "Drop",
+  TRADE_FOR: "Trade for",
+  TRADE_AWAY: "Trade away",
+  BUY_LOW: "Buy low",
+  KEEP: "Keep",
+};
+
 // The time horizon / league context a poll is framed in. Orthogonal to the
 // question type — it gates which questions the creator offers and shows as a
 // badge. Keep in sync with prisma schema (PollHorizon).

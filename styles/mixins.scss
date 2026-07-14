@@ -32,6 +32,17 @@
   scrollbar-gutter: stable;
 }
 
+// Page title bar that stays pinned to the top of its scroll container. The
+// translucent + blurred background lets content scroll faintly beneath it.
+@mixin sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border-color);
+}
+
 // Reset native button chrome. Includes `color: inherit` so button text follows
 // the theme instead of the browser's default (invisible in dark mode).
 @mixin button-reset {

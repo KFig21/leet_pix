@@ -50,19 +50,29 @@ export async function projectedPointsByPlayer(
   return totals;
 }
 
-// Resolve a poll's scoring rules from its preset or custom format.
-export function pollRules(poll: {
-  scoringFormatId: string | null;
+// Scoring source shared by polls and leagues.
+interface ScoringSource {
   scoringPreset: string | null;
   scoringFormat?: { rules: unknown } | null;
-}): ScoringRules | null {
-  if (poll.scoringFormatId && poll.scoringFormat) {
-    return poll.scoringFormat.rules as ScoringRules;
-  }
-  if (poll.scoringPreset) {
-    return SCORING_PRESET_RULES[poll.scoringPreset as ScoringPreset] ?? null;
+}
+
+function sourceRules(src: ScoringSource): ScoringRules | null {
+  if (src.scoringFormat) return src.scoringFormat.rules as ScoringRules;
+  if (src.scoringPreset) {
+    return SCORING_PRESET_RULES[src.scoringPreset as ScoringPreset] ?? null;
   }
   return null;
+}
+
+// Resolve a poll's scoring rules: from its attached league (which owns scoring),
+// else the poll's own preset/custom format.
+export function pollRules(poll: {
+  scoringPreset: string | null;
+  scoringFormat?: { rules: unknown } | null;
+  league?: ScoringSource | null;
+}): ScoringRules | null {
+  if (poll.league) return sourceRules(poll.league);
+  return sourceRules(poll);
 }
 
 // Recompute projectedPoints for every OPEN scoreable football poll from the
@@ -76,7 +86,11 @@ export async function refreshOpenPollProjections(): Promise<number> {
       season: { not: null },
       week: { not: null },
     },
-    include: { options: true, scoringFormat: true },
+    include: {
+      options: true,
+      scoringFormat: true,
+      league: { include: { scoringFormat: true } },
+    },
   });
 
   let updated = 0;

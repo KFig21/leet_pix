@@ -17,6 +17,7 @@ export const exploreRouter = Router();
 const pollInclude = {
   author: true,
   scoringFormat: true,
+  league: { include: { scoringFormat: true } },
   options: { include: { _count: { select: { votes: true } } } },
 } as const;
 

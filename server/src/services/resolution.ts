@@ -1,14 +1,13 @@
 import { PollQuestionType } from "@prisma/client";
 import {
   QUESTION_RESOLUTION,
-  SCORING_PRESET_RULES,
   isScoreablePoll,
-  type ScoringPreset,
   type ScoringRules,
 } from "@leetpix/shared";
 import { prisma } from "../lib/prisma";
 import { periodGamesFinal, pollGamesFinal } from "../lib/schedule";
 import { scoreStatLine, riskScore } from "./scoring";
+import { pollRules } from "./projections";
 import { notifyPollResolved } from "./notifications";
 
 // Sum an option's fantasy points across the target week(s) under `rules`.
@@ -41,7 +40,12 @@ export async function resolvePoll(
 ) {
   const poll = await prisma.poll.findUnique({
     where: { id: pollId },
-    include: { options: true, votes: true, scoringFormat: true },
+    include: {
+      options: true,
+      votes: true,
+      scoringFormat: true,
+      league: { include: { scoringFormat: true } },
+    },
   });
   if (!poll) throw new Error("Poll not found");
   if (!isScoreablePoll(poll.questionType)) {
@@ -49,9 +53,8 @@ export async function resolvePoll(
   }
 
   const mode = QUESTION_RESOLUTION[poll.questionType]; // HIGH | LOW
-  const rules: ScoringRules = poll.scoringFormatId
-    ? (poll.scoringFormat!.rules as ScoringRules)
-    : SCORING_PRESET_RULES[poll.scoringPreset as ScoringPreset];
+  const rules = pollRules(poll);
+  if (!rules) throw new Error("Poll has no scoring rules");
 
   const weeks = poll.evaluationWeeks
     ? Array.from({ length: poll.evaluationWeeks }, (_, i) => startWeek + i)

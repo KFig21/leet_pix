@@ -84,6 +84,7 @@ model Profile {
   polls          Poll[]
   votes          Vote[]
   scoringFormats ScoringFormat[]
+  leagues        FantasyLeague[]
 
   following Follow[] @relation("follower")
   followers Follow[] @relation("following")
@@ -131,10 +132,16 @@ model Poll {
   // cost (round + pick) resolve to an overall pick number. Null otherwise.
   leagueSize Int?
 
-  // Scoring: exactly one of preset/customFormat applies.
+  // Scoring: exactly one of preset/customFormat applies — unless a league is
+  // attached, in which case scoring comes from the league and both stay null.
   scoringPreset   String?
   scoringFormatId String?        @db.Uuid
   scoringFormat   ScoringFormat? @relation(fields: [scoringFormatId], references: [id], onDelete: SetNull)
+
+  // Optional league context (teams + starting lineup + scoring). Informs voters
+  // of positional value and supplies the keeper leagueSize.
+  leagueId String?        @db.Uuid
+  league   FantasyLeague? @relation(fields: [leagueId], references: [id], onDelete: SetNull)
 
   // The season/week the poll is graded against (add/drop spans week..week+N-1).
   season Int?
@@ -384,10 +391,38 @@ model ScoringFormat {
   rules    Json
   createdAt DateTime @default(now())
 
-  polls Poll[]
+  polls   Poll[]
+  leagues FantasyLeague[]
 
   @@unique([ownerId, name])
   @@map("scoring_formats")
+}
+
+// ── Leagues ────────────────────────────────────────────────
+// A reusable league profile (owned by a user): team count + starting lineup +
+// scoring. Attaching one to a poll tells voters how valuable a position is
+// (positional scarcity) and supplies the keeper leagueSize.
+
+model FantasyLeague {
+  id       String  @id @default(uuid()) @db.Uuid
+  ownerId  String  @db.Uuid
+  owner    Profile @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name     String
+  sport    Sport
+  numTeams Int
+  // Starting-lineup slot counts + bench, keyed by slot
+  // (QB/RB/WR/TE/FLEX/SUPERFLEX/K/DST/BENCH). See @leetpix/shared LineupSlots.
+  lineup   Json
+  // The league's scoring (exactly one), mirroring Poll.
+  scoringPreset   String?
+  scoringFormatId String?        @db.Uuid
+  scoringFormat   ScoringFormat? @relation(fields: [scoringFormatId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  polls Poll[]
+
+  @@unique([ownerId, name])
+  @@map("leagues")
 }
 
 // ── Scheduler coordination ─────────────────────────────────

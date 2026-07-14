@@ -51,6 +51,12 @@
     color: var(--text-secondary);
   }
 
+  &__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $gap-md;
+  }
+
   &__link {
     align-self: flex-start;
     font-size: $font-size-sm;

@@ -27,7 +27,12 @@ searchRouter.get(
         where: {
           options: { some: { playerName: { contains: q, mode: "insensitive" } } },
         },
-        include: { author: true, options: true },
+        include: {
+          author: true,
+          options: true,
+          scoringFormat: true,
+          league: { include: { scoringFormat: true } },
+        },
         take: 20,
       }),
       prisma.scoringFormat.findMany({

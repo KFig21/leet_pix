@@ -37,7 +37,9 @@ export const createPollSchema = z
     lockType: z.nativeEnum(PollLockType),
     // Required when lockType === FIXED_TIME.
     lockAt: z.string().datetime().optional(),
-    // Either a built-in preset or a saved custom format id (exactly one).
+    // Scoring source — exactly one of: a saved league (which carries its own
+    // scoring), a built-in preset, or a saved custom format id.
+    leagueId: z.string().uuid().optional(),
     scoringPreset: z.nativeEnum(ScoringPreset).optional(),
     scoringFormatId: z.string().uuid().optional(),
     // Weeks the outcome is tallied over (add/drop only).
@@ -49,10 +51,15 @@ export const createPollSchema = z
     message: "lockAt is required for fixed-time polls",
     path: ["lockAt"],
   })
-  .refine((d) => !!d.scoringPreset !== !!d.scoringFormatId, {
-    message: "Provide exactly one of scoringPreset or scoringFormatId",
-    path: ["scoringPreset"],
-  })
+  .refine(
+    (d) =>
+      [d.leagueId, d.scoringPreset, d.scoringFormatId].filter(Boolean).length ===
+      1,
+    {
+      message: "Provide exactly one scoring source (league, preset, or format)",
+      path: ["scoringPreset"],
+    },
+  )
   .refine((d) => !isWindowedPoll(d.questionType) || d.evaluationWeeks != null, {
     message: "Add/drop polls need an evaluation window (weeks)",
     path: ["evaluationWeeks"],

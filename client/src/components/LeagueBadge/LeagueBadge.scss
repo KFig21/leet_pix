@@ -1,0 +1,105 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.league-badge {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: $radius-pill;
+  background: color-mix(in srgb, var(--color-info) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-info) 40%, transparent);
+  color: var(--color-info);
+  font-size: $font-size-sm;
+  font-weight: $font-weight-bold;
+  white-space: nowrap;
+
+  &:hover {
+    filter: brightness(1.12);
+  }
+
+  &__icon {
+    font-size: 14px;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-md;
+    color: var(--text-primary);
+  }
+
+  &__teams {
+    margin: 0;
+    font-size: $font-size-lg;
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-xs;
+  }
+
+  &__heading {
+    margin: 0;
+    font-size: $font-size-sm;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+  }
+
+  &__lineup {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $gap-xs;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  &__slot {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: $radius-pill;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+
+    &--bench {
+      color: var(--text-secondary);
+    }
+  }
+
+  &__slot-count {
+    color: var(--accent);
+  }
+
+  &__rules {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__rule {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $gap-sm 0;
+    border-bottom: 1px solid var(--border-color);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    strong {
+      font-variant-numeric: tabular-nums;
+    }
+  }
+}

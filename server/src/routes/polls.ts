@@ -47,6 +47,7 @@ pollsRouter.get(
       include: {
         author: true,
         scoringFormat: true,
+        league: { include: { scoringFormat: true } },
         options: { include: { _count: { select: { votes: true } } } },
       },
     });
@@ -89,6 +90,7 @@ pollsRouter.get(
       include: {
         author: true,
         scoringFormat: true,
+        league: { include: { scoringFormat: true } },
         options: {
           include: {
             votes: { include: { voter: true } },
@@ -139,10 +141,24 @@ pollsRouter.post(
       }
     }
 
-    // Seed each option's projected points from imported projections (football
-    // only — no baseball projection source). Kept fresh by the scheduler.
+    // Resolve scoring rules (for projection seeding) from the attached league —
+    // which owns its scoring and supplies the keeper leagueSize — else the poll's
+    // own preset/custom format. Kept fresh by the scheduler.
     let rules: ScoringRules | null = null;
-    if (input.scoringPreset) {
+    let leagueSize: number | null = input.leagueSize ?? null;
+    if (input.leagueId) {
+      const league = await prisma.fantasyLeague.findFirst({
+        where: { id: input.leagueId, ownerId: req.userId! },
+        include: { scoringFormat: { select: { rules: true } } },
+      });
+      if (!league) throw new HttpError(400, "League not found");
+      rules = league.scoringFormat
+        ? (league.scoringFormat.rules as ScoringRules)
+        : league.scoringPreset
+          ? SCORING_PRESET_RULES[league.scoringPreset as ScoringPreset]
+          : null;
+      leagueSize = league.numTeams;
+    } else if (input.scoringPreset) {
       rules = SCORING_PRESET_RULES[input.scoringPreset as ScoringPreset];
     } else if (input.scoringFormatId) {
       const fmt = await prisma.scoringFormat.findUnique({
@@ -191,11 +207,13 @@ pollsRouter.post(
         lockType: input.lockType,
         lockAt,
         evaluationWeeks: input.evaluationWeeks ?? null,
-        leagueSize: input.leagueSize ?? null,
+        leagueSize,
         season,
         week,
-        scoringPreset: input.scoringPreset ?? null,
-        scoringFormatId: input.scoringFormatId ?? null,
+        // A league owns scoring, so blank the poll's own scoring fields then.
+        leagueId: input.leagueId ?? null,
+        scoringPreset: input.leagueId ? null : input.scoringPreset ?? null,
+        scoringFormatId: input.leagueId ? null : input.scoringFormatId ?? null,
         options: {
           create: input.options.map((o) => ({
             playerId: o.playerId,

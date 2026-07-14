@@ -1,0 +1,147 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.league {
+  &__header {
+    padding: $gap-md;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-sm;
+    padding: $gap-md;
+    padding-bottom: 30vh;
+  }
+
+  &__label {
+    font-weight: $font-weight-bold;
+  }
+
+  &__label-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: $gap-sm;
+  }
+
+  &__roster {
+    font-size: $font-size-sm;
+    color: var(--text-secondary);
+  }
+
+  &__input {
+    padding: $gap-sm;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-sm;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font: inherit;
+  }
+
+  &__slots {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-sm;
+    overflow: hidden;
+  }
+
+  &__slot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $gap-sm;
+    padding: $gap-sm $gap-md;
+    border-bottom: 1px solid var(--border-color);
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__slot-label {
+    display: flex;
+    align-items: baseline;
+    gap: $gap-sm;
+    font-weight: $font-weight-bold;
+  }
+
+  &__slot-hint {
+    font-size: $font-size-sm;
+    font-weight: normal;
+    color: var(--text-secondary);
+  }
+
+  &__stepper {
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+  }
+
+  &__step {
+    @include button-reset;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: $radius-sm;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+
+    &:hover:not(:disabled) {
+      background: var(--bg-hover);
+    }
+
+    &:disabled {
+      opacity: 0.35;
+    }
+  }
+
+  &__count {
+    min-width: 20px;
+    text-align: center;
+    font-weight: $font-weight-bold;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__link {
+    align-self: flex-start;
+    color: var(--accent);
+    font-size: $font-size-sm;
+  }
+
+  &__error {
+    margin: 0;
+    color: var(--color-danger);
+    font-size: $font-size-sm;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: $gap-sm;
+    border-top: 1px solid var(--border-color);
+  }
+
+  &__save {
+    @include button-reset;
+    padding: $gap-sm $gap-lg;
+    border-radius: $radius-pill;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      background: var(--accent-hover);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+    }
+  }
+}

@@ -50,7 +50,10 @@ export function SettingsPage() {
       </section>
 
       <section className="settings__section">
-        <h2>Scoring formats</h2>
+        <h2>Leagues &amp; scoring</h2>
+        <Link to="/leagues/new" className="settings__row">
+          Set up a league →
+        </Link>
         <Link to="/scoring/new" className="settings__row">
           Create a custom scoring format →
         </Link>

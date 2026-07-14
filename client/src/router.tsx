@@ -13,6 +13,7 @@ import { PollViewPage } from "@/pages/PollView/PollViewPage";
 import { SearchPage } from "@/pages/Search/SearchPage";
 import { SettingsPage } from "@/pages/Settings/SettingsPage";
 import { ScoringFormatCreatorPage } from "@/pages/ScoringFormatCreator/ScoringFormatCreatorPage";
+import { LeagueCreatorPage } from "@/pages/LeagueCreator/LeagueCreatorPage";
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
       { path: "/u/:username", element: <ProfilePage /> },
       { path: "/settings", element: <SettingsPage /> },
       { path: "/scoring/new", element: <ScoringFormatCreatorPage /> },
+      { path: "/leagues/new", element: <LeagueCreatorPage /> },
     ],
   },
 ]);

@@ -21,6 +21,7 @@ import { TeamTag } from "@/components/TeamTag/TeamTag";
 import { StreakBadge } from "@/components/StreakBadge/StreakBadge";
 import { SportIcon } from "@/components/SportIcon/SportIcon";
 import { ScoringBadge } from "@/components/ScoringBadge/ScoringBadge";
+import { LeagueBadge } from "@/components/LeagueBadge/LeagueBadge";
 import { ResolutionBadge } from "@/components/ResolutionBadge/ResolutionBadge";
 import { HorizonBadge } from "@/components/HorizonBadge/HorizonBadge";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
@@ -160,10 +161,14 @@ export function PollCard({ poll, pick, preview }: Props) {
           questionType={poll.questionType}
           evaluationWeeks={poll.evaluationWeeks}
         />
-        <ScoringBadge
-          scoringPreset={poll.scoringPreset}
-          scoringFormat={poll.scoringFormat}
-        />
+        {poll.league ? (
+          <LeagueBadge league={poll.league} />
+        ) : (
+          <ScoringBadge
+            scoringPreset={poll.scoringPreset}
+            scoringFormat={poll.scoringFormat}
+          />
+        )}
         {isUpset && (
           <span
             className="poll-card__upset"

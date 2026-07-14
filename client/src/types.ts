@@ -16,6 +16,17 @@ export interface ScoringFormatSummary {
   rules: Record<string, number>;
 }
 
+// A league's public context (team count + starting lineup + its scoring), shown
+// on the poll badge so voters can weigh positional value.
+export interface LeagueSummary {
+  id: string;
+  name: string;
+  numTeams: number;
+  lineup: Record<string, number>;
+  scoringPreset: ScoringPreset | null;
+  scoringFormat: ScoringFormatSummary | null;
+}
+
 export interface ProfileSummary {
   id: string;
   username: string;
@@ -67,9 +78,10 @@ export interface PollView {
   options: PollOptionView[];
   // The viewer's own vote on this poll, if any (set by authed feeds).
   myVoteOptionId?: string | null;
-  // Scoring: exactly one of these is set.
+  // Scoring: exactly one of league / preset / custom format is set.
   scoringPreset: ScoringPreset | null;
   scoringFormat: ScoringFormatSummary | null;
+  league: LeagueSummary | null;
   // Weeks the outcome is tallied over (add/drop); null otherwise.
   evaluationWeeks: number | null;
   // Keeper polls: number of teams in the league (for overall pick number).

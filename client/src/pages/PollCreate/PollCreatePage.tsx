@@ -28,6 +28,7 @@ import { Loader } from "@/components/Loader/Loader";
 import { PollCard } from "@/components/PollCard/PollCard";
 import { SportIcon } from "@/components/SportIcon/SportIcon";
 import { ScoringBadge } from "@/components/ScoringBadge/ScoringBadge";
+import { LeagueBadge } from "@/components/LeagueBadge/LeagueBadge";
 import { ResolutionBadge } from "@/components/ResolutionBadge/ResolutionBadge";
 import { HorizonBadge } from "@/components/HorizonBadge/HorizonBadge";
 import { MultiSelect, type Option } from "@/components/MultiSelect/MultiSelect";
@@ -39,6 +40,7 @@ import type {
   PollView,
   ProfileSummary,
   ScoringFormatSummary,
+  LeagueSummary,
 } from "@/types";
 import {
   PlayerSelect,
@@ -51,6 +53,11 @@ interface ScoringFormat {
   name: string;
   sport: Sport;
   rules: Record<string, number>;
+}
+
+// A saved league as returned by /leagues (a superset of LeagueSummary).
+interface LeagueOption extends LeagueSummary {
+  sport: Sport;
 }
 
 export function PollCreatePage() {
@@ -99,6 +106,10 @@ export function PollCreatePage() {
     queryKey: ["scoring-formats"],
     queryFn: () => api.get<ScoringFormat[]>("/scoring-formats"),
   });
+  const { data: leagues } = useQuery({
+    queryKey: ["leagues"],
+    queryFn: () => api.get<LeagueOption[]>("/leagues"),
+  });
   const { data: facets } = useQuery({
     queryKey: ["player-facets", sport],
     queryFn: () =>
@@ -114,6 +125,7 @@ export function PollCreatePage() {
   });
   const presets = SPORT_PRESETS[sport];
   const customForSport = (customFormats ?? []).filter((f) => f.sport === sport);
+  const leaguesForSport = (leagues ?? []).filter((l) => l.sport === sport);
 
   // Filter options for the multi-selects. Teams render as a brand-color pill
   // (readable on the dark theme; matches the selected chips below).
@@ -186,7 +198,10 @@ export function PollCreatePage() {
         lockType: opinion ? PollLockType.FIXED_TIME : PollLockType.GAME_START,
         lockAt: opinion ? deadline : undefined,
         evaluationWeeks: windowed ? weeks : undefined,
-        leagueSize: keeper ? leagueSizeNum : undefined,
+        // A league supplies its own leagueSize, so only send a manual one when
+        // there's no league attached.
+        leagueSize: keeper && kind !== "league" ? leagueSizeNum : undefined,
+        leagueId: kind === "league" ? val : undefined,
         scoringPreset: kind === "preset" ? (val as ScoringPreset) : undefined,
         scoringFormatId: kind === "custom" ? val : undefined,
         options: picks,
@@ -226,17 +241,24 @@ export function PollCreatePage() {
       minute: "2-digit",
     });
   const [scoringKind, scoringVal] = scoring.split(":");
+  const selectedLeague =
+    scoringKind === "league"
+      ? (leaguesForSport.find((l) => l.id === scoringVal) ?? null)
+      : null;
   const previewFormat =
     scoringKind === "custom"
       ? customForSport.find((f) => f.id === scoringVal)
       : undefined;
   // Scoring badge props derived from the current selection (shared by the form
-  // badge and the preview card).
+  // badge and the preview card). A league carries its own scoring, so the plain
+  // preset/format badge props are blank when a league is selected.
   const scoringPreset: ScoringPreset | null =
     scoringKind === "preset" ? (scoringVal as ScoringPreset) : null;
   const scoringFormatSummary: ScoringFormatSummary | null = previewFormat
     ? { id: previewFormat.id, name: previewFormat.name, rules: previewFormat.rules }
     : null;
+  // A league dictates the team count; otherwise keeper polls use the manual field.
+  const effectiveLeagueSize = selectedLeague ? selectedLeague.numTeams : leagueSizeNum;
   const noDupes = new Set(picks.map((p) => p.playerId)).size === picks.length;
   const canPreview = picks.length >= 2 && !!me && noDupes;
   const previewPoll: PollView | null = me
@@ -250,10 +272,11 @@ export function PollCreatePage() {
         createdAt: new Date().toISOString(),
         author: me,
         myVoteOptionId: null,
-        scoringPreset,
-        scoringFormat: scoringFormatSummary,
+        scoringPreset: selectedLeague ? null : scoringPreset,
+        scoringFormat: selectedLeague ? null : scoringFormatSummary,
+        league: selectedLeague,
         evaluationWeeks: windowed ? weeks : null,
-        leagueSize: keeper ? (leagueSizeNum ?? null) : null,
+        leagueSize: keeper ? (effectiveLeagueSize ?? null) : null,
         options: picks.map((o, i) => ({
           id: `preview-${i}`,
           playerName: o.playerName,
@@ -363,7 +386,7 @@ export function PollCreatePage() {
           </>
         )}
 
-        {keeper && (
+        {keeper && !selectedLeague && (
           <>
             <label className="poll-create__label">League size (teams)</label>
             <input
@@ -382,33 +405,61 @@ export function PollCreatePage() {
             </p>
           </>
         )}
+        {keeper && selectedLeague && (
+          <p className="poll-create__hint">
+            Using {selectedLeague.numTeams} teams from{" "}
+            <strong>{selectedLeague.name}</strong> for keeper pick numbers.
+          </p>
+        )}
 
         <div className="poll-create__label-row">
-          <label className="poll-create__label">Scoring format</label>
-          <ScoringBadge
-            scoringPreset={scoringPreset}
-            scoringFormat={scoringFormatSummary}
-          />
+          <label className="poll-create__label">League or scoring</label>
+          {selectedLeague ? (
+            <LeagueBadge league={selectedLeague} />
+          ) : (
+            <ScoringBadge
+              scoringPreset={scoringPreset}
+              scoringFormat={scoringFormatSummary}
+            />
+          )}
         </div>
         <select
           className="poll-create__select"
           value={scoring}
           onChange={(e) => setScoring(e.target.value)}
         >
-          {presets.map((p) => (
-            <option key={p} value={`preset:${p}`}>
-              {SCORING_PRESET_LABELS[p]}
-            </option>
-          ))}
-          {customForSport.map((f) => (
-            <option key={f.id} value={`custom:${f.id}`}>
-              {f.name} (custom)
-            </option>
-          ))}
+          {leaguesForSport.length > 0 && (
+            <optgroup label="Your leagues">
+              {leaguesForSport.map((l) => (
+                <option key={l.id} value={`league:${l.id}`}>
+                  {l.numTeams}-team {l.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          <optgroup label="Scoring only">
+            {presets.map((p) => (
+              <option key={p} value={`preset:${p}`}>
+                {SCORING_PRESET_LABELS[p]}
+              </option>
+            ))}
+            {customForSport.map((f) => (
+              <option key={f.id} value={`custom:${f.id}`}>
+                {f.name} (custom)
+              </option>
+            ))}
+          </optgroup>
         </select>
-        <Link to="/scoring/new" className="poll-create__link">
-          + Create a custom scoring format
-        </Link>
+        <div className="poll-create__links">
+          {sport === Sport.FOOTBALL && (
+            <Link to="/leagues/new" className="poll-create__link">
+              + Set up a league
+            </Link>
+          )}
+          <Link to="/scoring/new" className="poll-create__link">
+            + Create a custom scoring format
+          </Link>
+        </div>
 
         <label className="poll-create__label">Players</label>
         <div className="poll-create__filters">
@@ -510,7 +561,7 @@ export function PollCreatePage() {
                     <input
                       type="number"
                       min={1}
-                      max={leagueSizeNum ?? 32}
+                      max={effectiveLeagueSize ?? 32}
                       className="poll-create__keeper-input"
                       disabled={opt.keeperRound == null}
                       value={opt.keeperPick ?? ""}
@@ -528,7 +579,7 @@ export function PollCreatePage() {
                     const overall = overallPickNumber({
                       round: opt.keeperRound,
                       pick: opt.keeperPick,
-                      leagueSize: leagueSizeNum,
+                      leagueSize: effectiveLeagueSize,
                     });
                     return overall != null ? (
                       <span className="poll-create__keeper-overall">

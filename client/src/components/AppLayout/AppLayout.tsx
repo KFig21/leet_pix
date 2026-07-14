@@ -6,16 +6,17 @@ import HomeIcon from "@mui/icons-material/Home";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import SearchIcon from "@mui/icons-material/Search";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
+import type { Avatar as AvatarData } from "@leetpix/shared";
 import { api } from "@/lib/api";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { RightRailContext } from "@/context/RightRailContext";
+import { Avatar } from "@/components/Avatar/Avatar";
 import { MobileDrawer } from "./MobileDrawer";
 import "./AppLayout.scss";
 
@@ -44,7 +45,8 @@ export function AppLayout() {
   // Current user's username, for the profile link. Shares the ProfileEditor cache.
   const { data: me } = useQuery({
     queryKey: ["me"],
-    queryFn: () => api.get<{ username: string }>("/profiles/me"),
+    queryFn: () =>
+      api.get<{ username: string; avatar: AvatarData }>("/profiles/me"),
   });
   // Unread notifications for the nav badge (polled, since there's no live push).
   const { data: unread } = useQuery({
@@ -80,7 +82,9 @@ export function AppLayout() {
         ))}
         {me && (
           <NavLink to={`/u/${me.username}`} className={linkClass}>
-            <AccountCircleIcon className="app-layout__icon" />
+            <span className="app-layout__avatar">
+              <Avatar avatar={me.avatar} size={24} />
+            </span>
             Profile
           </NavLink>
         )}
@@ -129,7 +133,7 @@ export function AppLayout() {
               className={tabClass}
               aria-label="Profile"
             >
-              <AccountCircleIcon className="app-layout__tab-icon" />
+              <Avatar avatar={me.avatar} size={26} />
             </NavLink>
           )}
           <button

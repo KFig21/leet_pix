@@ -31,6 +31,53 @@
     color: var(--text-secondary);
   }
 
+  // Rate-entry style toggle (whole vs decimal).
+  &__rate-style {
+    display: flex;
+    align-items: center;
+    gap: $gap-xs;
+    flex-wrap: wrap;
+  }
+
+  &__rate-style-label {
+    margin-right: $gap-xs;
+    font-size: $font-size-sm;
+    color: var(--text-secondary);
+  }
+
+  &__rate-tab {
+    @include button-reset;
+    padding: $gap-xs $gap-sm;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-pill;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+
+    &--on {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+  }
+
+  // Decimal rate: points box + "/ yard" suffix.
+  &__pts-unit {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  &__unit {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
   // ── Sport selector (segmented tabs) ────────────────────────────────────────
   &__sport {
     display: flex;

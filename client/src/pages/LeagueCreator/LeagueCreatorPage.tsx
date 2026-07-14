@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import RemoveIcon from "@mui/icons-material/Remove";
 import AddIcon from "@mui/icons-material/Add";
@@ -68,6 +68,9 @@ interface Props {
 export function LeagueCreatorPage({ embedded = false, onSaved }: Props = {}) {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  // Edit mode when routed as /leagues/:id/edit (never in embedded/modal use).
+  const params = useParams<{ id?: string }>();
+  const editId = embedded ? undefined : params.id;
   const [name, setName] = useState("");
   const [numTeams, setNumTeams] = useState(12);
   const [lineup, setLineup] = useState<LineupSlots>({ ...DEFAULT_FOOTBALL_LINEUP });
@@ -79,6 +82,31 @@ export function LeagueCreatorPage({ embedded = false, onSaved }: Props = {}) {
   const [showScoringWizard, setShowScoringWizard] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Editing: load the existing league and hydrate the form.
+  const { data: existing } = useQuery({
+    queryKey: ["league", editId],
+    queryFn: () =>
+      api.get<{
+        name: string;
+        numTeams: number;
+        lineup: LineupSlots;
+        scoringPreset: ScoringPreset | null;
+        scoringFormatId: string | null;
+      }>(`/leagues/${editId}`),
+    enabled: !!editId,
+  });
+  useEffect(() => {
+    if (!existing) return;
+    setName(existing.name);
+    setNumTeams(existing.numTeams);
+    setLineup({ ...DEFAULT_FOOTBALL_LINEUP, ...existing.lineup });
+    setScoring(
+      existing.scoringFormatId
+        ? `custom:${existing.scoringFormatId}`
+        : `preset:${existing.scoringPreset ?? SPORT_PRESETS[Sport.FOOTBALL][0]}`,
+    );
+  }, [existing]);
 
   const { data: customFormats } = useQuery({
     queryKey: ["scoring-formats"],
@@ -128,15 +156,19 @@ export function LeagueCreatorPage({ embedded = false, onSaved }: Props = {}) {
     const [kind, val] = scoring.split(":");
     setSaving(true);
     try {
-      const created = await api.post<SavedLeague>("/leagues", {
+      const body = {
         name,
         sport: Sport.FOOTBALL,
         numTeams,
         lineup,
         scoringPreset: kind === "preset" ? (val as ScoringPreset) : undefined,
         scoringFormatId: kind === "custom" ? val : undefined,
-      });
-      if (onSaved) onSaved(created);
+      };
+      const saved = editId
+        ? await api.put<SavedLeague>(`/leagues/${editId}`, body)
+        : await api.post<SavedLeague>("/leagues", body);
+      qc.invalidateQueries({ queryKey: ["leagues"] });
+      if (onSaved) onSaved(saved);
       else navigate("/settings");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save league.");
@@ -146,7 +178,11 @@ export function LeagueCreatorPage({ embedded = false, onSaved }: Props = {}) {
 
   return (
     <div className={`league${embedded ? " league--embedded" : ""}`}>
-      {!embedded && <header className="league__header">New league</header>}
+      {!embedded && (
+        <header className="league__header">
+          {editId ? "Edit league" : "New league"}
+        </header>
+      )}
       <form className="league__form" onSubmit={save}>
         <label className="league__label">Name</label>
         <input
@@ -246,7 +282,7 @@ export function LeagueCreatorPage({ embedded = false, onSaved }: Props = {}) {
 
         <div className="league__footer">
           <button className="league__save" disabled={saving}>
-            {saving ? "Saving…" : "Save league"}
+            {saving ? "Saving…" : editId ? "Save changes" : "Save league"}
           </button>
         </div>
       </form>

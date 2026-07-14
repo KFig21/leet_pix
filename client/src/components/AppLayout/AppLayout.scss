@@ -62,6 +62,12 @@
     font-size: 24px;
   }
 
+  // Wrapper so the profile avatar lines up with the 24px nav icons.
+  &__avatar {
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+
   &__icon-wrap {
     position: relative;
     display: inline-flex;

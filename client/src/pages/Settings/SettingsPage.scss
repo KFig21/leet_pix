@@ -34,6 +34,57 @@
     font-size: $font-size-sm;
   }
 
+  // A saved league / format row with edit + delete actions.
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $gap-sm;
+    padding: $gap-sm 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__item-name {
+    display: flex;
+    align-items: baseline;
+    gap: $gap-sm;
+    min-width: 0;
+    color: var(--text-primary);
+  }
+
+  &__item-meta {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  &__item-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: $gap-xs;
+    flex-shrink: 0;
+  }
+
+  &__icon-btn {
+    @include button-reset;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: $radius-sm;
+    color: var(--text-secondary);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    &--danger:hover {
+      color: var(--color-danger);
+    }
+  }
+
   &__toggle-row {
     display: flex;
     align-items: center;

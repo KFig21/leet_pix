@@ -37,7 +37,9 @@ export const router = createBrowserRouter([
       { path: "/u/:username", element: <ProfilePage /> },
       { path: "/settings", element: <SettingsPage /> },
       { path: "/scoring/new", element: <ScoringFormatCreatorPage /> },
+      { path: "/scoring/:id/edit", element: <ScoringFormatCreatorPage /> },
       { path: "/leagues/new", element: <LeagueCreatorPage /> },
+      { path: "/leagues/:id/edit", element: <LeagueCreatorPage /> },
     ],
   },
 ]);

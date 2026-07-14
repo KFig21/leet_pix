@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Sport,
   STAT_CATALOG,
@@ -55,10 +56,13 @@ function openGroupsFor(fields: Record<string, Field>, sport: Sport): Set<string>
 const rulePoints = (v: ScoringRuleValue): number =>
   typeof v === "number" ? v : v.points;
 
-// Seed editor state from a built-in preset: enable exactly the preset's
-// categories with its points/per, leaving the rest off (at catalog defaults).
-function fieldsFromPreset(sport: Sport, preset: ScoringPreset): Record<string, Field> {
-  const rules = SCORING_PRESET_RULES[preset];
+// Reconstruct editor state from a saved rule set: enable exactly the categories
+// present (with their points/per and any overrides), leaving the rest off at
+// catalog defaults. Used for both presets and editing an existing format.
+function fieldsFromRules(
+  sport: Sport,
+  rules: Record<string, ScoringRuleValue>,
+): Record<string, Field> {
   const out: Record<string, Field> = {};
   for (const c of STAT_CATALOG[sport]) {
     const v = rules[c.key];
@@ -71,6 +75,35 @@ function fieldsFromPreset(sport: Sport, preset: ScoringPreset): Record<string, F
       overrides[pos] = ov !== undefined ? rulePoints(ov) : points;
     }
     out[c.key] = { on, points, per, overrides };
+  }
+  return out;
+}
+
+const fieldsFromPreset = (sport: Sport, preset: ScoringPreset) =>
+  fieldsFromRules(sport, SCORING_PRESET_RULES[preset]);
+
+type RateStyle = "whole" | "decimal";
+const round3 = (n: number) => Math.round(n * 1000) / 1000;
+
+// Re-frame every rate field between "1 pt per N units" (whole) and "X pts per
+// unit" (decimal, per = 1) while preserving the actual points-per-unit value.
+function convertRateFraming(
+  fields: Record<string, Field>,
+  sport: Sport,
+  style: RateStyle,
+): Record<string, Field> {
+  const out = { ...fields };
+  for (const c of STAT_CATALOG[sport]) {
+    if (c.kind !== "rate") continue;
+    const f = out[c.key];
+    if (!f) continue;
+    const ppu = f.per ? f.points / f.per : 0;
+    const per = style === "decimal" ? 1 : (c.defaultPer ?? 1);
+    out[c.key] = {
+      ...f,
+      per,
+      points: round3(style === "decimal" ? ppu : ppu * per),
+    };
   }
   return out;
 }
@@ -98,6 +131,10 @@ export function ScoringFormatCreatorPage({
   initialSport = Sport.FOOTBALL,
 }: Props = {}) {
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  // Edit mode when routed as /scoring/:id/edit (never in embedded/modal use).
+  const params = useParams<{ id?: string }>();
+  const editId = embedded ? undefined : params.id;
   const [name, setName] = useState("");
   const [sport, setSport] = useState<Sport>(initialSport);
   const [fields, setFields] = useState<Record<string, Field>>(() =>
@@ -108,9 +145,29 @@ export function ScoringFormatCreatorPage({
   );
   // "Start from" preset dropdown ("" = catalog defaults, no preset applied).
   const [startPreset, setStartPreset] = useState<string>("");
+  // How rate stats are entered: whole ("1 pt per 25 yds") or decimal ("0.04/yd").
+  const [rateStyle, setRateStyle] = useState<RateStyle>("whole");
   const [showAdvanced, setShowAdvanced] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Editing: load the existing format and hydrate the sheet from its rules.
+  const { data: existing } = useQuery({
+    queryKey: ["scoring-format", editId],
+    queryFn: () =>
+      api.get<{ name: string; sport: Sport; rules: Record<string, ScoringRuleValue> }>(
+        `/scoring-formats/${editId}`,
+      ),
+    enabled: !!editId,
+  });
+  useEffect(() => {
+    if (!existing) return;
+    setName(existing.name);
+    setSport(existing.sport);
+    const f = fieldsFromRules(existing.sport, existing.rules);
+    setFields(f);
+    setOpenGroups(openGroupsFor(f, existing.sport));
+  }, [existing]);
 
   const categories = STAT_CATALOG[sport];
 
@@ -132,6 +189,14 @@ export function ScoringFormatCreatorPage({
     setOpenGroups(openGroupsFor(defaultsFor(next), next));
     setShowAdvanced(new Set());
     setStartPreset("");
+    setRateStyle("whole");
+  };
+
+  // Re-frame rate stats between whole and decimal (value-preserving).
+  const changeRateStyle = (next: RateStyle) => {
+    if (next === rateStyle) return;
+    setRateStyle(next);
+    setFields((prev) => convertRateFraming(prev, sport, next));
   };
 
   // Populate the whole sheet from a built-in preset (or reset to catalog
@@ -141,7 +206,7 @@ export function ScoringFormatCreatorPage({
     const next = value
       ? fieldsFromPreset(sport, value as ScoringPreset)
       : defaultsFor(sport);
-    setFields(next);
+    setFields(rateStyle === "decimal" ? convertRateFraming(next, sport, "decimal") : next);
     setOpenGroups(openGroupsFor(next, sport));
     setShowAdvanced(new Set());
   };
@@ -200,12 +265,12 @@ export function ScoringFormatCreatorPage({
 
     setSaving(true);
     try {
-      const created = await api.post<SavedScoringFormat>("/scoring-formats", {
-        name,
-        sport,
-        rules,
-      });
-      if (onSaved) onSaved(created);
+      const body = { name, sport, rules };
+      const saved = editId
+        ? await api.put<SavedScoringFormat>(`/scoring-formats/${editId}`, body)
+        : await api.post<SavedScoringFormat>("/scoring-formats", body);
+      qc.invalidateQueries({ queryKey: ["scoring-formats"] });
+      if (onSaved) onSaved(saved);
       else navigate("/settings");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save format.");
@@ -233,7 +298,7 @@ export function ScoringFormatCreatorPage({
             aria-label={c.label}
             onChange={(e) => setField(c.key, { on: e.target.checked })}
           />
-          {c.kind === "rate" ? (
+          {c.kind === "rate" && rateStyle === "whole" ? (
             <span className="scoring__desc">
               Every{" "}
               <input
@@ -253,15 +318,30 @@ export function ScoringFormatCreatorPage({
               {c.label}
             </label>
           )}
-          <input
-            className="scoring__pts"
-            type="number"
-            step="0.01"
-            value={f.points}
-            disabled={!f.on}
-            aria-label={`${c.label} points`}
-            onChange={(e) => setField(c.key, { points: Number(e.target.value) })}
-          />
+          {c.kind === "rate" && rateStyle === "decimal" ? (
+            <span className="scoring__pts-unit">
+              <input
+                className="scoring__pts"
+                type="number"
+                step="0.001"
+                value={f.points}
+                disabled={!f.on}
+                aria-label={`${c.label} points per ${c.unit}`}
+                onChange={(e) => setField(c.key, { points: Number(e.target.value) })}
+              />
+              <span className="scoring__unit">/ {c.unit}</span>
+            </span>
+          ) : (
+            <input
+              className="scoring__pts"
+              type="number"
+              step="0.01"
+              value={f.points}
+              disabled={!f.on}
+              aria-label={`${c.label} points`}
+              onChange={(e) => setField(c.key, { points: Number(e.target.value) })}
+            />
+          )}
         </div>
 
         {advOpen &&
@@ -288,7 +368,9 @@ export function ScoringFormatCreatorPage({
   return (
     <div className="scoring">
       {!embedded && (
-        <header className="scoring__header">New scoring format</header>
+        <header className="scoring__header">
+          {editId ? "Edit scoring format" : "New scoring format"}
+        </header>
       )}
       <form className="scoring__form" onSubmit={save}>
         <input
@@ -300,8 +382,8 @@ export function ScoringFormatCreatorPage({
           required
         />
 
-        {/* Sport is locked in embedded mode (e.g. the football-only league builder). */}
-        {!embedded && (
+        {/* Sport is locked in embedded mode and when editing an existing format. */}
+        {!embedded && !editId && (
           <div className="scoring__sport" role="tablist" aria-label="Sport">
             {SPORTS.map((s) => (
               <button
@@ -337,6 +419,25 @@ export function ScoringFormatCreatorPage({
             </option>
           ))}
         </select>
+
+        {/* How rate stats (yards, innings) are entered — value-preserving. */}
+        <div className="scoring__rate-style" role="group" aria-label="Rate scoring style">
+          <span className="scoring__rate-style-label">Rate scoring</span>
+          <button
+            type="button"
+            className={`scoring__rate-tab${rateStyle === "whole" ? " scoring__rate-tab--on" : ""}`}
+            onClick={() => changeRateStyle("whole")}
+          >
+            Whole (1 per 25)
+          </button>
+          <button
+            type="button"
+            className={`scoring__rate-tab${rateStyle === "decimal" ? " scoring__rate-tab--on" : ""}`}
+            onClick={() => changeRateStyle("decimal")}
+          >
+            Decimal (per unit)
+          </button>
+        </div>
 
         {groups.map(([group, cats]) => {
           const open = openGroups.has(group);
@@ -396,7 +497,7 @@ export function ScoringFormatCreatorPage({
         <div className="scoring__footer">
           <span className="scoring__count">{enabledCount} categories</span>
           <button className="scoring__save" disabled={saving}>
-            {saving ? "Saving…" : "Save format"}
+            {saving ? "Saving…" : editId ? "Save changes" : "Save format"}
           </button>
         </div>
       </form>

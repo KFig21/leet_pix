@@ -7,13 +7,15 @@ import type {
   PollQuestionType,
   PollHorizon,
   ScoringPreset,
+  ScoringRuleValue,
   PlayerStreak,
 } from "@leetpix/shared";
 
 export interface ScoringFormatSummary {
   id: string;
   name: string;
-  rules: Record<string, number>;
+  // Rate stats are { points, per }; count stats a plain number.
+  rules: Record<string, ScoringRuleValue>;
 }
 
 // A league's public context (team count + starting lineup + its scoring), shown

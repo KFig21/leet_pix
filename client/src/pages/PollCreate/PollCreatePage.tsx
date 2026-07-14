@@ -19,6 +19,7 @@ import {
   isWindowedPoll,
   teamColor,
   type ScoringPreset,
+  type ScoringRuleValue,
 } from "@leetpix/shared";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import CloseIcon from "@mui/icons-material/Close";
@@ -60,7 +61,7 @@ interface ScoringFormat {
   id: string;
   name: string;
   sport: Sport;
-  rules: Record<string, number>;
+  rules: Record<string, ScoringRuleValue>;
 }
 
 // A saved league as returned by /leagues (a superset of LeagueSummary).

@@ -6,6 +6,7 @@ import {
   LINEUP_SLOTS,
   LINEUP_SLOT_LABELS,
   statLabel,
+  formatScoringRule,
   type ScoringPreset,
   type LineupSlot,
 } from "@leetpix/shared";
@@ -80,10 +81,10 @@ export function LeagueBadge({ league }: Props) {
             <div className="league-badge__section">
               <h4 className="league-badge__heading">{scoringLabel} scoring</h4>
               <ul className="league-badge__rules">
-                {Object.entries(rules).map(([key, points]) => (
+                {Object.entries(rules).map(([key, value]) => (
                   <li key={key} className="league-badge__rule">
                     <span>{statLabel(key)}</span>
-                    <strong>{points > 0 ? `+${points}` : points}</strong>
+                    <strong>{formatScoringRule(key, value)}</strong>
                   </li>
                 ))}
               </ul>

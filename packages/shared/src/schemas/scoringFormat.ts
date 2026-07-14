@@ -2,15 +2,21 @@ import { z } from "zod";
 import { Sport } from "../enums";
 import { catalogByKey } from "../statCatalog";
 
-// A custom scoring format maps a stat category key -> points per unit.
-// e.g. { passingYards: 0.04, passingTd: 4, interception: -2, reception: 1 }
-// Values are bounded so a saved format can't award absurd (or non-finite)
-// points; keys are validated against the sport's catalog in the object schema
-// below (this record can't see the sport on its own).
-export const scoringRulesSchema = z.record(
-  z.string(),
-  z.number().finite().gte(-100).lte(100),
-);
+// A custom scoring format maps a stat category key -> its award. Count stats
+// store a plain number of points (e.g. passingTd: 4). Rate stats store the
+// intended framing { points, per } (e.g. passingYards: { points: 1, per: 25 } —
+// "1 pt per 25 yards"), NOT the collapsed points-per-unit, so the exact intent
+// (and any custom per) survives round-trips and displays faithfully. Scoring
+// converts to points-per-unit at read time (see ruleToPointsPerUnit).
+const points = z.number().finite().gte(-100).lte(100);
+export const rateRuleSchema = z.object({
+  points,
+  per: z.number().int().min(1).max(1000),
+});
+export const scoringRuleValueSchema = z.union([points, rateRuleSchema]);
+export type ScoringRuleValue = z.infer<typeof scoringRuleValueSchema>;
+
+export const scoringRulesSchema = z.record(z.string(), scoringRuleValueSchema);
 export type ScoringRules = z.infer<typeof scoringRulesSchema>;
 
 export const createScoringFormatSchema = z

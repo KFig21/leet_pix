@@ -4,6 +4,7 @@ import {
   SCORING_PRESET_LABELS,
   SCORING_PRESET_RULES,
   statLabel,
+  formatScoringRule,
   type ScoringPreset,
 } from "@leetpix/shared";
 import { Modal } from "@/components/Modal/Modal";
@@ -49,10 +50,10 @@ export function ScoringBadge({ scoringPreset, scoringFormat }: Props) {
       {open && (
         <Modal title={title} onClose={() => setOpen(false)}>
           <ul className="scoring-badge__rules">
-            {Object.entries(rules).map(([key, points]) => (
+            {Object.entries(rules).map(([key, value]) => (
               <li key={key} className="scoring-badge__rule">
                 <span>{statLabel(key)}</span>
-                <strong>{points > 0 ? `+${points}` : points}</strong>
+                <strong>{formatScoringRule(key, value)}</strong>
               </li>
             ))}
           </ul>

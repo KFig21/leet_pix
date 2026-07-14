@@ -16,13 +16,19 @@
     padding: $gap-md;
   }
 
-  &__name {
+  &__name,
+  &__preset {
     padding: $gap-sm;
     border: 1px solid var(--border-color);
     border-radius: $radius-sm;
     background: var(--bg-primary);
     color: var(--text-primary);
     font: inherit;
+  }
+
+  &__preset-label {
+    font-size: $font-size-sm;
+    color: var(--text-secondary);
   }
 
   // ── Sport selector (segmented tabs) ────────────────────────────────────────

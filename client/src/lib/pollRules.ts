@@ -1,8 +1,13 @@
 import { SCORING_PRESET_RULES, type ScoringRules } from "@leetpix/shared";
 import type { PollView } from "@/types";
 
-// Resolve a poll's active scoring rules (preset or custom format).
+// Resolve a poll's active scoring rules (league, preset, or custom format).
 export function getPollRules(poll: PollView): ScoringRules {
+  if (poll.league) {
+    if (poll.league.scoringFormat) return poll.league.scoringFormat.rules;
+    if (poll.league.scoringPreset)
+      return SCORING_PRESET_RULES[poll.league.scoringPreset];
+  }
   if (poll.scoringFormat) return poll.scoringFormat.rules;
   if (poll.scoringPreset) return SCORING_PRESET_RULES[poll.scoringPreset];
   return {};

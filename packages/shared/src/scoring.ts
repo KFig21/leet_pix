@@ -1,6 +1,7 @@
 import { Sport, type ScoringPreset } from "./enums";
-import type { ScoringRules } from "./schemas/scoringFormat";
+import type { ScoringRules, ScoringRuleValue } from "./schemas/scoringFormat";
 import { ALL_STAT_CATEGORIES } from "./statCatalog";
+import type { StatCategory } from "./statCatalog";
 
 // Short badge label per preset (e.g. "PPR", "0.5 PPR", "Standard").
 export const SCORING_PRESET_LABELS: Record<ScoringPreset, string> = {
@@ -10,13 +11,14 @@ export const SCORING_PRESET_LABELS: Record<ScoringPreset, string> = {
   BASEBALL_STANDARD: "Standard",
 };
 
+// Rate stats carry their intended framing { points, per }; count stats a number.
 const FOOTBALL_BASE: ScoringRules = {
-  passingYards: 0.04,
+  passingYards: { points: 1, per: 25 },
   passingTd: 4,
   interception: -2,
-  rushingYards: 0.1,
+  rushingYards: { points: 1, per: 10 },
   rushingTd: 6,
-  receivingYards: 0.1,
+  receivingYards: { points: 1, per: 10 },
   receivingTd: 6,
   fumbleLost: -2,
 };
@@ -37,7 +39,7 @@ export const SCORING_PRESET_RULES: Record<ScoringPreset, ScoringRules> = {
     stolenBase: 2,
     walk: 1,
     // Pitching
-    inningsPitched: 3,
+    inningsPitched: { points: 3, per: 1 },
     strikeoutPitched: 1,
     win: 5,
     save: 5,
@@ -70,6 +72,37 @@ export function statLabel(key: string): string {
 
 export const POSITION_OVERRIDE_SEP = ".";
 
+// Category lookup for display (label/unit/kind), tolerant of override keys.
+const CATEGORY_BY_KEY = new Map(ALL_STAT_CATEGORIES.map((c) => [c.key, c]));
+export function categoryForKey(key: string): StatCategory | undefined {
+  return CATEGORY_BY_KEY.get(key.split(POSITION_OVERRIDE_SEP)[0]);
+}
+
+/** Collapse a stored rule value to points-per-unit (rate → points/per). */
+export function ruleToPointsPerUnit(value: ScoringRuleValue | undefined): number {
+  if (value === undefined) return 0;
+  if (typeof value === "number") return value;
+  return value.per ? value.points / value.per : 0;
+}
+
+/**
+ * Human-readable award for a rule value, honoring the stored framing:
+ *   rate  → "1 pt per 25 yards" (or "3 pts per inning" when per is 1)
+ *   count → "+4" / "-2"
+ * Legacy rate values stored as a bare points-per-unit number fall back to a
+ * plain number (they read as a count) — new formats store the framing.
+ */
+export function formatScoringRule(key: string, value: ScoringRuleValue): string {
+  if (typeof value === "object") {
+    const unit = categoryForKey(key)?.unit ?? "unit";
+    const pts = `${value.points} pt${Math.abs(value.points) === 1 ? "" : "s"}`;
+    return value.per === 1
+      ? `${pts} per ${unit}`
+      : `${pts} per ${value.per} ${unit}s`;
+  }
+  return value > 0 ? `+${value}` : `${value}`;
+}
+
 /** Distinct base stat keys in a rule set (override suffixes stripped, order kept). */
 export function baseCategoryKeys(rules: ScoringRules): string[] {
   const seen = new Set<string>();
@@ -84,7 +117,7 @@ export function baseCategoryKeys(rules: ScoringRules): string[] {
   return out;
 }
 
-/** Effective per-unit rate for a base stat, honoring a position override. */
+/** Effective points-per-unit for a base stat, honoring a position override. */
 export function effectiveRate(
   rules: ScoringRules,
   baseKey: string,
@@ -92,9 +125,9 @@ export function effectiveRate(
 ): number {
   if (position) {
     const override = rules[`${baseKey}${POSITION_OVERRIDE_SEP}${position}`];
-    if (override !== undefined) return override;
+    if (override !== undefined) return ruleToPointsPerUnit(override);
   }
-  return rules[baseKey] ?? 0;
+  return ruleToPointsPerUnit(rules[baseKey]);
 }
 
 /** Points a player earns for one base category (for the breakdown display). */

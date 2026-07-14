@@ -3,8 +3,12 @@ import { useNavigate } from "react-router-dom";
 import {
   Sport,
   STAT_CATALOG,
-  toPointsPerUnit,
+  SPORT_PRESETS,
+  SCORING_PRESET_LABELS,
+  SCORING_PRESET_RULES,
   type StatCategory,
+  type ScoringPreset,
+  type ScoringRuleValue,
 } from "@leetpix/shared";
 import { api } from "@/lib/api";
 import "./ScoringFormatCreatorPage.scss";
@@ -41,12 +45,34 @@ function defaultsFor(sport: Sport): Record<string, Field> {
   return out;
 }
 
-// A group starts expanded if it contains any on-by-default category (i.e. the
-// core offensive groups); advanced groups like Kicking/IDP start collapsed.
-function openGroupsFor(sport: Sport): Set<string> {
+// A group starts expanded if it contains any enabled category.
+function openGroupsFor(fields: Record<string, Field>, sport: Sport): Set<string> {
   const open = new Set<string>();
-  for (const c of STAT_CATALOG[sport]) if (c.defaultOn) open.add(c.group);
+  for (const c of STAT_CATALOG[sport]) if (fields[c.key]?.on) open.add(c.group);
   return open;
+}
+
+const rulePoints = (v: ScoringRuleValue): number =>
+  typeof v === "number" ? v : v.points;
+
+// Seed editor state from a built-in preset: enable exactly the preset's
+// categories with its points/per, leaving the rest off (at catalog defaults).
+function fieldsFromPreset(sport: Sport, preset: ScoringPreset): Record<string, Field> {
+  const rules = SCORING_PRESET_RULES[preset];
+  const out: Record<string, Field> = {};
+  for (const c of STAT_CATALOG[sport]) {
+    const v = rules[c.key];
+    const on = v !== undefined;
+    const points = on ? rulePoints(v) : c.defaultPoints;
+    const per = on && typeof v === "object" ? v.per : (c.defaultPer ?? 1);
+    const overrides: Record<string, number> = {};
+    for (const pos of c.overridePositions ?? []) {
+      const ov = rules[`${c.key}.${pos}`];
+      overrides[pos] = ov !== undefined ? rulePoints(ov) : points;
+    }
+    out[c.key] = { on, points, per, overrides };
+  }
+  return out;
 }
 
 // The saved-format shape the API returns (and onSaved hands back).
@@ -78,8 +104,10 @@ export function ScoringFormatCreatorPage({
     defaultsFor(initialSport),
   );
   const [openGroups, setOpenGroups] = useState<Set<string>>(() =>
-    openGroupsFor(initialSport),
+    openGroupsFor(defaultsFor(initialSport), initialSport),
   );
+  // "Start from" preset dropdown ("" = catalog defaults, no preset applied).
+  const [startPreset, setStartPreset] = useState<string>("");
   const [showAdvanced, setShowAdvanced] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,7 +129,20 @@ export function ScoringFormatCreatorPage({
   const changeSport = (next: Sport) => {
     setSport(next);
     setFields(defaultsFor(next));
-    setOpenGroups(openGroupsFor(next));
+    setOpenGroups(openGroupsFor(defaultsFor(next), next));
+    setShowAdvanced(new Set());
+    setStartPreset("");
+  };
+
+  // Populate the whole sheet from a built-in preset (or reset to catalog
+  // defaults when cleared), so a common format is one click, not many toggles.
+  const changeStartPreset = (value: string) => {
+    setStartPreset(value);
+    const next = value
+      ? fieldsFromPreset(sport, value as ScoringPreset)
+      : defaultsFor(sport);
+    setFields(next);
+    setOpenGroups(openGroupsFor(next, sport));
     setShowAdvanced(new Set());
   };
 
@@ -136,18 +177,20 @@ export function ScoringFormatCreatorPage({
     e.preventDefault();
     setError(null);
 
-    // Convert each enabled category (and any position overrides) to stored
-    // points-per-unit values.
-    const rules: Record<string, number> = {};
+    // Store each enabled category's award in its intended framing: rate stats
+    // keep { points, per } ("1 pt per 25 yds"); count stats a plain number.
+    const rules: Record<string, ScoringRuleValue> = {};
+    const valueFor = (c: StatCategory, points: number): ScoringRuleValue =>
+      c.kind === "rate" ? { points, per: fields[c.key].per } : points;
     for (const c of categories) {
       const f = fields[c.key];
       if (!f?.on) continue;
-      const base = Math.round(toPointsPerUnit(c, f.points, f.per) * 1000) / 1000;
-      rules[c.key] = base;
+      rules[c.key] = valueFor(c, f.points);
       for (const pos of c.overridePositions ?? []) {
-        const ov = Math.round(toPointsPerUnit(c, f.overrides[pos], f.per) * 1000) / 1000;
-        // Only store an override that actually differs from the base rate.
-        if (ov !== base) rules[`${c.key}.${pos}`] = ov;
+        // Only store an override that actually differs from the base points.
+        if (f.overrides[pos] !== f.points) {
+          rules[`${c.key}.${pos}`] = valueFor(c, f.overrides[pos]);
+        }
       }
     }
     if (Object.keys(rules).length === 0) {
@@ -276,6 +319,24 @@ export function ScoringFormatCreatorPage({
             ))}
           </div>
         )}
+
+        {/* Preset head-start: populate the whole sheet, then tweak. */}
+        <label className="scoring__preset-label" htmlFor="scoring-start-preset">
+          Start from a preset
+        </label>
+        <select
+          id="scoring-start-preset"
+          className="scoring__preset"
+          value={startPreset}
+          onChange={(e) => changeStartPreset(e.target.value)}
+        >
+          <option value="">Blank (catalog defaults)</option>
+          {SPORT_PRESETS[sport].map((p) => (
+            <option key={p} value={p}>
+              {SCORING_PRESET_LABELS[p]}
+            </option>
+          ))}
+        </select>
 
         {groups.map(([group, cats]) => {
           const open = openGroups.has(group);

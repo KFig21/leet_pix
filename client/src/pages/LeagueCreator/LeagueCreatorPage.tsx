@@ -16,6 +16,7 @@ import {
   type LineupSlots,
   type LineupSlot,
   type ScoringPreset,
+  type ScoringRuleValue,
 } from "@leetpix/shared";
 import { api } from "@/lib/api";
 import { Modal } from "@/components/Modal/Modal";
@@ -31,7 +32,7 @@ interface ScoringFormat {
   id: string;
   name: string;
   sport: Sport;
-  rules: Record<string, number>;
+  rules: Record<string, ScoringRuleValue>;
 }
 
 // Per-slot max so counts stay sane (matches the shared zod bounds).

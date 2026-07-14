@@ -84,7 +84,8 @@ export const POLL_HORIZON_HINTS: Record<PollHorizon, string> = {
 // one horizon (a start/bench call fits both daily and season). The first entry
 // is the horizon's default question in the creator.
 export const HORIZON_QUESTIONS: Record<PollHorizon, PollQuestionType[]> = {
-  DAILY: [PollQuestionType.START, PollQuestionType.BENCH],
+  // DFS has no bench — you just set a lineup, so daily is a "who to play" call.
+  DAILY: [PollQuestionType.START],
   SEASON: [
     PollQuestionType.START,
     PollQuestionType.BENCH,

@@ -48,9 +48,23 @@ const SLOT_MAX: Record<LineupSlot, number> = {
   BENCH: 20,
 };
 
+// The saved-league shape the API returns (and onSaved hands back).
+export interface SavedLeague {
+  id: string;
+  name: string;
+  numTeams: number;
+}
+
+interface Props {
+  // Embedded (modal) mode: hides the page header and, on save, calls onSaved
+  // with the created league instead of navigating away.
+  embedded?: boolean;
+  onSaved?: (league: SavedLeague) => void;
+}
+
 // League setup wizard: team count + starting lineup + scoring. Reusable across
 // polls (attach one so voters see how valuable a position is). Football-only.
-export function LeagueCreatorPage() {
+export function LeagueCreatorPage({ embedded = false, onSaved }: Props = {}) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [name, setName] = useState("");
@@ -113,7 +127,7 @@ export function LeagueCreatorPage() {
     const [kind, val] = scoring.split(":");
     setSaving(true);
     try {
-      await api.post("/leagues", {
+      const created = await api.post<SavedLeague>("/leagues", {
         name,
         sport: Sport.FOOTBALL,
         numTeams,
@@ -121,7 +135,8 @@ export function LeagueCreatorPage() {
         scoringPreset: kind === "preset" ? (val as ScoringPreset) : undefined,
         scoringFormatId: kind === "custom" ? val : undefined,
       });
-      navigate("/settings");
+      if (onSaved) onSaved(created);
+      else navigate("/settings");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save league.");
       setSaving(false);
@@ -129,8 +144,8 @@ export function LeagueCreatorPage() {
   };
 
   return (
-    <div className="league">
-      <header className="league__header">New league</header>
+    <div className={`league${embedded ? " league--embedded" : ""}`}>
+      {!embedded && <header className="league__header">New league</header>}
       <form className="league__form" onSubmit={save}>
         <label className="league__label">Name</label>
         <input

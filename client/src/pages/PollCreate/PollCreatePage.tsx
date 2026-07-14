@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Sport,
   PollLockType,
@@ -35,6 +35,14 @@ import { MultiSelect, type Option } from "@/components/MultiSelect/MultiSelect";
 import { DateTimePicker } from "@/components/DateTimePicker/DateTimePicker";
 import { TeamTag } from "@/components/TeamTag/TeamTag";
 import { PlayerMeta } from "@/components/PlayerMeta/PlayerMeta";
+import {
+  ScoringFormatCreatorPage,
+  type SavedScoringFormat,
+} from "@/pages/ScoringFormatCreator/ScoringFormatCreatorPage";
+import {
+  LeagueCreatorPage,
+  type SavedLeague,
+} from "@/pages/LeagueCreator/LeagueCreatorPage";
 import type {
   PlayerGame,
   PollView,
@@ -62,6 +70,7 @@ interface LeagueOption extends LeagueSummary {
 
 export function PollCreatePage() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [sport, setSport] = useState<Sport>(Sport.FOOTBALL);
   const [horizon, setHorizon] = useState<PollHorizon>(PollHorizon.SEASON);
   const [questionType, setQuestionType] = useState<PollQuestionType>(
@@ -85,6 +94,21 @@ export function PollCreatePage() {
   const [positionFilters, setPositionFilters] = useState<string[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Sub-wizards open in modals so in-progress poll inputs aren't lost.
+  const [showScoringWizard, setShowScoringWizard] = useState(false);
+  const [showLeagueWizard, setShowLeagueWizard] = useState(false);
+
+  // A format/league just created in a modal: cache it, select it, close.
+  const onScoringSaved = (fmt: SavedScoringFormat) => {
+    qc.invalidateQueries({ queryKey: ["scoring-formats"] });
+    setScoring(`custom:${fmt.id}`);
+    setShowScoringWizard(false);
+  };
+  const onLeagueSaved = (league: SavedLeague) => {
+    qc.invalidateQueries({ queryKey: ["leagues"] });
+    setScoring(`league:${league.id}`);
+    setShowLeagueWizard(false);
+  };
 
   const toggle = (setter: typeof setTeamFilters) => (value: string) =>
     setter((prev) =>
@@ -314,7 +338,7 @@ export function PollCreatePage() {
         </select>
 
         <div className="poll-create__label-row">
-          <label className="poll-create__label">Horizon</label>
+          <label className="poll-create__label">League Type</label>
           <HorizonBadge horizon={horizon} />
         </div>
         <select
@@ -452,13 +476,21 @@ export function PollCreatePage() {
         </select>
         <div className="poll-create__links">
           {sport === Sport.FOOTBALL && (
-            <Link to="/leagues/new" className="poll-create__link">
+            <button
+              type="button"
+              className="poll-create__link"
+              onClick={() => setShowLeagueWizard(true)}
+            >
               + Set up a league
-            </Link>
+            </button>
           )}
-          <Link to="/scoring/new" className="poll-create__link">
+          <button
+            type="button"
+            className="poll-create__link"
+            onClick={() => setShowScoringWizard(true)}
+          >
             + Create a custom scoring format
-          </Link>
+          </button>
         </div>
 
         <label className="poll-create__label">Players</label>
@@ -655,6 +687,30 @@ export function PollCreatePage() {
           <div className="poll-create__preview">
             <PollCard poll={previewPoll} preview />
           </div>
+        </Modal>
+      )}
+
+      {showScoringWizard && (
+        <Modal
+          title="New scoring format"
+          onClose={() => setShowScoringWizard(false)}
+          wide
+        >
+          <ScoringFormatCreatorPage
+            embedded
+            initialSport={sport}
+            onSaved={onScoringSaved}
+          />
+        </Modal>
+      )}
+
+      {showLeagueWizard && (
+        <Modal
+          title="New league"
+          onClose={() => setShowLeagueWizard(false)}
+          wide
+        >
+          <LeagueCreatorPage embedded onSaved={onLeagueSaved} />
         </Modal>
       )}
 

@@ -1,6 +1,8 @@
 @use "variables" as *;
+@use "mixins" as *;
 
 .horizon-badge {
+  @include button-reset;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -13,6 +15,10 @@
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
   white-space: nowrap;
+
+  &:hover {
+    filter: brightness(1.12);
+  }
 
   &__icon {
     font-size: 14px;
@@ -28,5 +34,41 @@
     color: var(--accent);
     border-color: color-mix(in srgb, var(--accent) 50%, transparent);
     background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  // ── Explainer modal ──
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-sm;
+  }
+
+  &__row {
+    display: flex;
+    gap: $gap-sm;
+    padding: $gap-sm;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-sm;
+    color: var(--text-primary);
+
+    p {
+      margin: 2px 0 0;
+      font-size: $font-size-sm;
+      color: var(--text-secondary);
+    }
+
+    &--on {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 8%, transparent);
+    }
+  }
+
+  &__row-icon {
+    flex-shrink: 0;
+    font-size: 20px;
+    color: var(--text-secondary);
   }
 }

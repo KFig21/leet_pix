@@ -17,6 +17,12 @@
     padding-bottom: 30vh;
   }
 
+  // In a modal there's no page scroll to clear, so drop the tall bottom padding.
+  &--embedded &__form {
+    padding: 0;
+    padding-top: $gap-sm;
+  }
+
   &__label {
     font-weight: $font-weight-bold;
   }

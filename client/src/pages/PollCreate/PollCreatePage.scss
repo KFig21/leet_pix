@@ -58,9 +58,11 @@
   }
 
   &__link {
+    @include button-reset;
     align-self: flex-start;
     font-size: $font-size-sm;
     color: var(--accent);
+    cursor: pointer;
   }
 
   &__resolution {

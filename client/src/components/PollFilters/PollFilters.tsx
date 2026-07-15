@@ -29,6 +29,17 @@ export const defaultPollFilters: PollFilterState = {
 
 const SCORING_LABELS = Array.from(new Set(Object.values(SCORING_PRESET_LABELS)));
 const DAY = 24 * 60 * 60 * 1000;
+const HOUR = 60 * 60 * 1000;
+const MIN15 = 15 * 60 * 1000;
+
+// Milliseconds a "Closing" option covers. Selections are OR'd, so several add up
+// to the widest window.
+const CLOSING_WINDOW: Record<string, number> = {
+  MIN15,
+  HOUR,
+  SOON: DAY,
+  WEEK: 7 * DAY,
+};
 
 const DIMENSIONS: { key: keyof PollFilterState; label: string; options: Option[] }[] =
   [
@@ -71,7 +82,8 @@ const DIMENSIONS: { key: keyof PollFilterState; label: string; options: Option[]
       label: "Status",
       options: [
         { value: "OPEN", label: "Open" },
-        { value: "CLOSED", label: "Closed" },
+        { value: "LOCKED", label: "Locked" },
+        { value: "RESOLVED", label: "Resolved" },
       ],
     },
     {
@@ -86,6 +98,8 @@ const DIMENSIONS: { key: keyof PollFilterState; label: string; options: Option[]
       key: "closing",
       label: "Closing",
       options: [
+        { value: "MIN15", label: "Within 15 min" },
+        { value: "HOUR", label: "Within 1h" },
         { value: "SOON", label: "Within 24h" },
         { value: "WEEK", label: "This week" },
       ],
@@ -107,7 +121,12 @@ export function matchesPollFilters(poll: PollView, f: PollFilterState): boolean 
   const label = pollScoringLabel(poll);
   if (f.scoring.length && (!label || !f.scoring.includes(label))) return false;
 
-  const status = poll.status === "OPEN" ? "OPEN" : "CLOSED";
+  // An OPEN poll whose lock time has passed reads as Locked (the status job may
+  // not have flipped it yet), matching what the card shows.
+  const lockPassed =
+    poll.lockAt != null && new Date(poll.lockAt).getTime() <= Date.now();
+  const status =
+    poll.status === "OPEN" && lockPassed ? "LOCKED" : poll.status;
   if (f.status.length && !f.status.includes(status)) return false;
 
   const voted = poll.myVoteOptionId != null ? "VOTED" : "NOT_VOTED";
@@ -117,7 +136,7 @@ export function matchesPollFilters(poll: PollView, f: PollFilterState): boolean 
     if (!poll.lockAt) return false;
     const ms = new Date(poll.lockAt).getTime() - Date.now();
     if (ms <= 0) return false;
-    const limit = f.closing.includes("WEEK") ? 7 * DAY : DAY;
+    const limit = Math.max(...f.closing.map((v) => CLOSING_WINDOW[v] ?? DAY));
     if (ms > limit) return false;
   }
 

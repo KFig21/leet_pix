@@ -23,6 +23,11 @@ interface Props {
 export function LeagueBadge({ league }: Props) {
   const [open, setOpen] = useState(false);
 
+  // Badge stays generic ("Custom") so it reads as a scoring *style*, not a
+  // one-off format name; the modal below surfaces the actual format name.
+  const badgeScoring = league.scoringPreset
+    ? SCORING_PRESET_LABELS[league.scoringPreset]
+    : "Custom";
   const scoringLabel = league.scoringPreset
     ? SCORING_PRESET_LABELS[league.scoringPreset]
     : (league.scoringFormat?.name ?? "Custom");
@@ -46,7 +51,7 @@ export function LeagueBadge({ league }: Props) {
         }}
       >
         <GroupsIcon className="league-badge__icon" />
-        {league.numTeams}-team {scoringLabel}
+        {league.numTeams}-team {badgeScoring}
       </button>
 
       {open && (

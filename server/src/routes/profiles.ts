@@ -80,7 +80,7 @@ profilesRouter.get(
   asyncHandler(async (req: AuthedRequest, res) => {
     const profile = await profileByUsername(req.params.username);
     const polls = await prisma.poll.findMany({
-      where: { authorId: profile.id },
+      where: { authorId: profile.id, deletedAt: null, hiddenAt: null },
       orderBy: { createdAt: "desc" },
       take: 50,
       include: pollInclude,
@@ -100,7 +100,10 @@ profilesRouter.get(
   asyncHandler(async (req: AuthedRequest, res) => {
     const profile = await profileByUsername(req.params.username);
     const votes = await prisma.vote.findMany({
-      where: { voterId: profile.id },
+      where: {
+        voterId: profile.id,
+        poll: { is: { deletedAt: null, hiddenAt: null } },
+      },
       orderBy: { createdAt: "desc" },
       take: 50,
       include: { poll: { include: pollInclude }, option: true },

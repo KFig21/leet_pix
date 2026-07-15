@@ -25,6 +25,8 @@ searchRouter.get(
       prisma.poll.findMany({
         // Question is now an enum, so polls are searched by referenced player.
         where: {
+          deletedAt: null,
+          hiddenAt: null,
           options: { some: { playerName: { contains: q, mode: "insensitive" } } },
         },
         include: {

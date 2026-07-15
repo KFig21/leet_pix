@@ -27,10 +27,13 @@ exploreRouter.get(
   optionalAuth,
   asyncHandler(async (req: AuthedRequest, res) => {
     const sport = String(req.query.sport ?? "");
-    const where: Prisma.PollWhereInput =
-      sport === Sport.FOOTBALL || sport === Sport.BASEBALL
+    const where: Prisma.PollWhereInput = {
+      deletedAt: null,
+      hiddenAt: null,
+      ...(sport === Sport.FOOTBALL || sport === Sport.BASEBALL
         ? { sport: sport as Sport }
-        : {};
+        : {}),
+    };
 
     const polls = await prisma.poll.findMany({
       where,

@@ -41,7 +41,7 @@ pollsRouter.get(
     });
     const authorIds = [...following.map((f) => f.followingId), req.userId!];
     const candidates = await prisma.poll.findMany({
-      where: { authorId: { in: authorIds } },
+      where: { authorId: { in: authorIds }, deletedAt: null, hiddenAt: null },
       orderBy: { createdAt: "desc" },
       take: 100,
       include: {
@@ -99,11 +99,38 @@ pollsRouter.get(
         },
       },
     });
-    if (!poll) throw new HttpError(404, "Not found");
+    if (!poll || poll.deletedAt || poll.hiddenAt) throw new HttpError(404, "Not found");
     const [withVote] = await withMyVote([poll], req.userId);
     const [withStats] = await attachStatLines([withVote]);
     const [withCtx] = await attachPlayerContext([withStats]);
     res.json(withCtx);
+  }),
+);
+
+// Delete a poll (author only). Lifecycle policy: a poll with no votes can be
+// hard-deleted; once anyone has voted it's only soft-hidden (deletedAt), so
+// voters' graded records survive. Moderator/void flows are separate.
+pollsRouter.delete(
+  "/:id",
+  requireAuth,
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const poll = await prisma.poll.findUnique({
+      where: { id: req.params.id },
+      select: { authorId: true, deletedAt: true, _count: { select: { votes: true } } },
+    });
+    if (!poll || poll.deletedAt) throw new HttpError(404, "Not found");
+    if (poll.authorId !== req.userId) throw new HttpError(403, "Not your poll");
+
+    if (poll._count.votes === 0) {
+      await prisma.poll.delete({ where: { id: req.params.id } });
+      return res.status(204).end();
+    }
+    // Has votes → soft delete; keep the row and its results intact.
+    await prisma.poll.update({
+      where: { id: req.params.id },
+      data: { deletedAt: new Date() },
+    });
+    res.status(200).json({ softDeleted: true });
   }),
 );
 
@@ -214,6 +241,9 @@ pollsRouter.post(
         leagueId: input.leagueId ?? null,
         scoringPreset: input.leagueId ? null : input.scoringPreset ?? null,
         scoringFormatId: input.leagueId ? null : input.scoringFormatId ?? null,
+        // Freeze the effective rules so later edits to the league/format can't
+        // silently re-score this poll (resolution/projections prefer this).
+        resolvedScoring: rules ?? undefined,
         options: {
           create: input.options.map((o) => ({
             playerId: o.playerId,

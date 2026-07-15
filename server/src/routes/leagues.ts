@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { asyncHandler } from "../lib/asyncHandler";
 import { requireAuth, type AuthedRequest } from "../middleware/auth";
 import { HttpError } from "../middleware/error";
+import { userEntitlements, assertUnderCap } from "../services/entitlements";
 
 export const leaguesRouter = Router();
 
@@ -68,6 +69,11 @@ leaguesRouter.post(
   asyncHandler(async (req: AuthedRequest, res) => {
     const input = createLeagueSchema.parse(req.body);
     await assertFormatOwned(input, req.userId!);
+    const { limits } = await userEntitlements(req.userId!);
+    const owned = await prisma.fantasyLeague.count({
+      where: { ownerId: req.userId! },
+    });
+    await assertUnderCap(owned, limits.maxLeagues, "leagues");
     const league = await prisma.fantasyLeague.create({
       data: {
         ownerId: req.userId!,

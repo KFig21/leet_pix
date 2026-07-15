@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { asyncHandler } from "../lib/asyncHandler";
 import { requireAuth, type AuthedRequest } from "../middleware/auth";
 import { HttpError } from "../middleware/error";
+import { userEntitlements, assertUnderCap } from "../services/entitlements";
 
 export const scoringFormatsRouter = Router();
 
@@ -47,6 +48,11 @@ scoringFormatsRouter.post(
   requireAuth,
   asyncHandler(async (req: AuthedRequest, res) => {
     const input = createScoringFormatSchema.parse(req.body);
+    const { limits } = await userEntitlements(req.userId!);
+    const owned = await prisma.scoringFormat.count({
+      where: { ownerId: req.userId! },
+    });
+    await assertUnderCap(owned, limits.maxScoringFormats, "scoring formats");
     const format = await prisma.scoringFormat.create({
       data: { ownerId: req.userId!, ...input },
     });

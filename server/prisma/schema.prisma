@@ -16,6 +16,39 @@ enum Sport {
   BASEBALL
 }
 
+// What a user is allowed to DO (permissions). Orthogonal to UserTier (billing).
+// SUPERADMIN is the internal "god" role for you + employees: bypasses every
+// entitlement limit and permission check. ADMIN/MODERATOR are delegable staff
+// roles you may never assign until you hire.
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+  SUPERADMIN
+}
+
+// What a user has PAID for. Drives entitlement limits (see @leetpix/shared
+// TIER_LIMITS). Orthogonal to UserRole. Staff roles bypass tier limits.
+enum UserTier {
+  BASE
+  PREMIUM
+}
+
+// Moderation report lifecycle (schema only for now — no UI/queue yet).
+enum ReportStatus {
+  OPEN
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+// What a report points at. IDs are the target row's uuid (polymorphic, no FK).
+enum ReportTargetType {
+  POLL
+  COMMENT
+  PROFILE
+}
+
 enum League {
   NFL
   MLB
@@ -78,6 +111,22 @@ model Profile {
   bio         String?
   // Generic avatar (icon + colors), stored as JSON. No uploads.
   avatar      Json
+
+  // Permissions (what you can do) and billing tier (what you paid for) — two
+  // independent axes. Entitlement = staff role bypasses, else TIER_LIMITS[tier].
+  role UserRole @default(USER)
+  tier UserTier @default(BASE)
+
+  // Billing hooks — nullable now, wired if/when Stripe is added. Entitlements
+  // should derive from subscriptionStatus + currentPeriodEnd, not a manual flag.
+  stripeCustomerId   String?
+  subscriptionStatus String? // e.g. active / past_due / canceled
+  currentPeriodEnd   DateTime?
+
+  // Soft delete: keeps the row (and any authored content's records) around for
+  // moderation/recovery instead of a hard cascade.
+  deletedAt DateTime?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -91,6 +140,13 @@ model Profile {
 
   notifications      Notification[] @relation("recipient")
   notificationsActed Notification[] @relation("actor")
+
+  // Social/moderation (schema future-proofing — no UI yet).
+  likes     Like[]
+  comments  Comment[]
+  reports   Report[]  @relation("reporter")
+  blocking  Block[]   @relation("blocker")
+  blockedBy Block[]   @relation("blocked")
 
   @@index([username])
   @@map("profiles")
@@ -108,6 +164,80 @@ model Follow {
   @@id([followerId, followingId])
   @@index([followingId])
   @@map("follows")
+}
+
+// ── Social / moderation (future-proofing) ──────────────────
+// These tables exist so an acquirer can build likes/comments/moderation without
+// a migration. Intentionally NOT wired to any UI yet.
+
+// A user liking a poll (one row per user per poll).
+model Like {
+  userId    String   @db.Uuid
+  pollId    String   @db.Uuid
+  user      Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  poll      Poll     @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, pollId])
+  @@index([pollId])
+  @@map("likes")
+}
+
+// A threaded comment on a poll. Soft-delete (deletedAt) and moderation hide
+// (hiddenAt) present from day one so they never need a retrofit.
+model Comment {
+  id       String  @id @default(uuid()) @db.Uuid
+  pollId   String  @db.Uuid
+  poll     Poll    @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  authorId String  @db.Uuid
+  author   Profile @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Self-relation for replies. Null = top-level comment.
+  parentId String?   @db.Uuid
+  parent   Comment?  @relation("thread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[] @relation("thread")
+
+  body String
+
+  deletedAt DateTime? // author removed
+  hiddenAt  DateTime? // moderator hid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([pollId, createdAt])
+  @@index([parentId])
+  @@map("comments")
+}
+
+// A user report against a poll/comment/profile. Polymorphic target (no FK).
+model Report {
+  id         String           @id @default(uuid()) @db.Uuid
+  reporterId String           @db.Uuid
+  reporter   Profile          @relation("reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType ReportTargetType
+  targetId   String           @db.Uuid
+  reason     String
+  status     ReportStatus     @default(OPEN)
+  createdAt  DateTime         @default(now())
+
+  @@index([targetType, targetId])
+  @@index([status])
+  @@map("reports")
+}
+
+// A directed block edge (blocker hides/ignores blocked). Mirrors Follow.
+model Block {
+  blockerId String  @db.Uuid
+  blockedId String  @db.Uuid
+  blocker   Profile @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   Profile @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+  @@map("blocks")
 }
 
 // ── Polls / options / votes ────────────────────────────────
@@ -138,6 +268,11 @@ model Poll {
   scoringFormatId String?        @db.Uuid
   scoringFormat   ScoringFormat? @relation(fields: [scoringFormatId], references: [id], onDelete: SetNull)
 
+  // Frozen effective scoring rules captured at creation, so later edits to the
+  // referenced league/format can't silently re-score this poll. Resolution and
+  // projections prefer this snapshot when present.
+  resolvedScoring Json?
+
   // Optional league context (teams + starting lineup + scoring). Informs voters
   // of positional value and supplies the keeper leagueSize.
   leagueId String?        @db.Uuid
@@ -147,12 +282,23 @@ model Poll {
   season Int?
   week   Int?
 
+  // Soft delete (author removal after it has votes) vs moderation hide. Kept so
+  // voters' graded records survive a poll's removal. Hard delete only pre-votes.
+  deletedAt DateTime?
+  hiddenAt  DateTime?
+
+  // Denormalized engagement counters for cheap feed rendering.
+  likeCount    Int @default(0)
+  commentCount Int @default(0)
+
   createdAt DateTime @default(now())
   resolvedAt DateTime?
 
   options       PollOption[]
   votes         Vote[]
   notifications Notification[]
+  likes         Like[]
+  comments      Comment[]
   // The specific games this poll depends on, captured at creation. The poll
   // locks at the earliest kickoff and grades once all of these are FINAL.
   games         PollGame[]

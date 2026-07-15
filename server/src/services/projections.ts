@@ -64,13 +64,16 @@ function sourceRules(src: ScoringSource): ScoringRules | null {
   return null;
 }
 
-// Resolve a poll's scoring rules: from its attached league (which owns scoring),
-// else the poll's own preset/custom format.
+// Resolve a poll's scoring rules. Prefers the frozen snapshot captured at
+// creation (so edits to the league/format don't retroactively change scoring),
+// then the attached league (which owns scoring), then the poll's own scoring.
 export function pollRules(poll: {
   scoringPreset: string | null;
   scoringFormat?: { rules: unknown } | null;
   league?: ScoringSource | null;
+  resolvedScoring?: unknown;
 }): ScoringRules | null {
+  if (poll.resolvedScoring) return poll.resolvedScoring as ScoringRules;
   if (poll.league) return sourceRules(poll.league);
   return sourceRules(poll);
 }

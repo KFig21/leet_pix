@@ -1,5 +1,6 @@
 export * from "./constants";
 export * from "./enums";
+export * from "./entitlements";
 export * from "./teams";
 export * from "./statCatalog";
 export * from "./scoring";

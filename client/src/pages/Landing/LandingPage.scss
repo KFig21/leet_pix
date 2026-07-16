@@ -1,0 +1,315 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.landing {
+  position: relative;
+  overflow: hidden; // glyphs may bleed past the edges
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(
+      120% 80% at 50% -10%,
+      color-mix(in srgb, var(--accent) 16%, transparent),
+      transparent 60%
+    ),
+    var(--bg-primary);
+  color: var(--text-primary);
+
+  // ── Decorative underlay ────────────────────────────────────────────────────
+  // A faint dot grid (masked so it fades out lower down) plus oversized,
+  // low-opacity sport glyphs. Sits behind all content and ignores pointers.
+  &__bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+    background-image: radial-gradient(
+      color-mix(in srgb, var(--text-secondary) 26%, transparent) 1px,
+      transparent 1.5px
+    );
+    background-size: 24px 24px;
+    -webkit-mask-image: radial-gradient(115% 85% at 50% 0%, #000 45%, transparent 82%);
+    mask-image: radial-gradient(115% 85% at 50% 0%, #000 45%, transparent 82%);
+  }
+
+  &__glyph {
+    position: absolute;
+    color: var(--text-primary);
+    opacity: 0.05;
+
+    // Two of them pick up a faint brand tint for warmth.
+    &--2,
+    &--5 {
+      color: var(--accent);
+      opacity: 0.07;
+    }
+
+    &--1 { top: 4%; left: -46px; font-size: 210px !important; transform: rotate(-18deg); }
+    &--2 { top: 20%; right: 5%; font-size: 120px !important; transform: rotate(14deg); }
+    &--3 { bottom: 16%; left: 6%; font-size: 150px !important; transform: rotate(22deg); }
+    &--4 { top: 52%; right: -40px; font-size: 250px !important; transform: rotate(-10deg); }
+    &--5 { bottom: -44px; right: 22%; font-size: 170px !important; transform: rotate(10deg); }
+  }
+
+  &__bar {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $gap-md $gap-lg;
+    max-width: 1080px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  &__wordmark {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: var(--accent);
+
+    &--sm {
+      font-size: $font-size-lg;
+    }
+  }
+
+  &__signin {
+    @include button-reset;
+    padding: $gap-xs $gap-md;
+    border-radius: $radius-pill;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-weight: $font-weight-bold;
+    font-size: $font-size-sm;
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+  }
+
+  &__main {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    width: 100%;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 $gap-lg;
+  }
+
+  // ── Hero ─────────────────────────────────────────────────────────────────
+  &__hero {
+    text-align: center;
+    padding: clamp(2rem, 8vw, 6rem) 0 clamp(2rem, 6vw, 4rem);
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  &__headline {
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    margin-bottom: $gap-md;
+  }
+
+  &__subhead {
+    font-size: clamp($font-size-base, 2.5vw, $font-size-lg);
+    color: var(--text-secondary);
+    max-width: 34em;
+    margin: 0 auto $gap-lg;
+
+    em {
+      font-style: normal;
+      color: var(--text-primary);
+      font-weight: $font-weight-bold;
+    }
+  }
+
+  &__cta {
+    display: flex;
+    gap: $gap-sm;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  &__btn {
+    @include button-reset;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: $gap-sm $gap-xl;
+    border-radius: $radius-pill;
+    font-weight: $font-weight-bold;
+    font-size: $font-size-base;
+
+    &--primary {
+      background: var(--accent);
+      color: var(--accent-contrast);
+
+      &:hover {
+        background: var(--accent-hover);
+      }
+    }
+
+    &--ghost {
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+
+      &:hover {
+        background: var(--bg-hover);
+      }
+    }
+  }
+
+  &__sports {
+    display: flex;
+    gap: $gap-sm;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: $gap-lg;
+  }
+
+  &__sport-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: $radius-pill;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+
+    svg {
+      font-size: 18px;
+      color: var(--accent);
+    }
+  }
+
+  &__note {
+    margin-top: $gap-md;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  // ── How it works ─────────────────────────────────────────────────────────
+  &__section-title {
+    text-align: center;
+    font-size: $font-size-lg;
+    margin-bottom: $gap-lg;
+  }
+
+  &__steps {
+    padding: clamp(1.5rem, 4vw, 3rem) 0;
+  }
+
+  &__step-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: $gap-md;
+    max-width: 720px;
+    margin: 0 auto;
+
+    @include tablet {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  &__step {
+    display: flex;
+    gap: $gap-md;
+    align-items: flex-start;
+    padding: $gap-md;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-md;
+    background: var(--bg-secondary);
+  }
+
+  &__step-num {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-weight: $font-weight-bold;
+  }
+
+  &__step-title {
+    font-size: $font-size-base;
+    margin-bottom: 2px;
+  }
+
+  &__step-body {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  // ── Feature cards ────────────────────────────────────────────────────────
+  &__features {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: $gap-md;
+    padding: clamp(1.5rem, 4vw, 3rem) 0;
+
+    @include tablet {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  &__feature {
+    padding: $gap-lg;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-md;
+  }
+
+  &__feature-icon {
+    color: var(--accent);
+    font-size: 30px !important;
+    margin-bottom: $gap-sm;
+  }
+
+  &__feature-title {
+    font-size: $font-size-base;
+    margin-bottom: 4px;
+  }
+
+  &__feature-body {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  // ── Closing CTA ──────────────────────────────────────────────────────────
+  &__foot-cta {
+    text-align: center;
+    padding: clamp(2rem, 6vw, 4rem) 0;
+  }
+
+  &__foot-title {
+    font-size: clamp($font-size-lg, 4vw, 2rem);
+    margin-bottom: $gap-lg;
+  }
+
+  // ── Footer ───────────────────────────────────────────────────────────────
+  &__footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border-color);
+    padding: $gap-lg;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $gap-xs;
+  }
+
+  &__footer-note {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+}

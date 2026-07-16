@@ -7,6 +7,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import { api } from "@/lib/api";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
+import { useTutorial } from "@/context/TutorialContext";
 import { usePreferences } from "@/context/PreferencesContext";
 import { Toggle } from "@/components/Toggle/Toggle";
 import "./SettingsPage.scss";
@@ -24,6 +25,7 @@ interface LeagueRow {
 export function SettingsPage() {
   const { theme, toggle } = useTheme();
   const { signOut } = useAuth();
+  const { openTutorial } = useTutorial();
   const { confirmVotes, setConfirmVotes } = usePreferences();
   const qc = useQueryClient();
   const isDark = theme === "dark";
@@ -148,6 +150,17 @@ export function SettingsPage() {
         <Link to="/scoring/new" className="settings__row">
           Create a custom scoring format →
         </Link>
+      </section>
+
+      <section className="settings__section">
+        <h2>Help</h2>
+        <button
+          type="button"
+          className="settings__row"
+          onClick={openTutorial}
+        >
+          Replay the tutorial →
+        </button>
       </section>
 
       <section className="settings__section">

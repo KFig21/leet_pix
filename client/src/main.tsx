@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { PreferencesProvider } from "@/context/PreferencesContext";
+import { TutorialProvider } from "@/context/TutorialContext";
 import { router } from "@/router";
 import "@styles/global.scss";
 
@@ -16,7 +17,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <ThemeProvider>
         <PreferencesProvider>
           <AuthProvider>
-            <RouterProvider router={router} />
+            <TutorialProvider>
+              <RouterProvider router={router} />
+            </TutorialProvider>
           </AuthProvider>
         </PreferencesProvider>
       </ThemeProvider>

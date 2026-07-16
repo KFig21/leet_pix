@@ -1,0 +1,142 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.onboarding {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $gap-md;
+  background: var(--overlay-bg);
+  animation: onboarding-fade 0.15s ease;
+
+  &__card {
+    position: relative;
+    @include card;
+    width: 100%;
+    max-width: 420px;
+    padding: $gap-xl;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: var(--shadow-card);
+  }
+
+  &__skip {
+    @include button-reset;
+    position: absolute;
+    top: $gap-md;
+    right: $gap-md;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+
+    &:hover {
+      color: var(--text-primary);
+    }
+  }
+
+  &__icon {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    margin-bottom: $gap-md;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+
+    svg {
+      font-size: 34px;
+    }
+  }
+
+  &__eyebrow {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    margin-bottom: $gap-xs;
+  }
+
+  &__title {
+    font-size: $font-size-xl;
+    margin-bottom: $gap-sm;
+  }
+
+  &__body {
+    color: var(--text-secondary);
+    font-size: $font-size-base;
+    line-height: 1.5;
+    margin-bottom: $gap-lg;
+    min-height: 4.5em;
+  }
+
+  &__dots {
+    display: flex;
+    gap: 7px;
+    margin-bottom: $gap-lg;
+  }
+
+  &__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border-color);
+    transition: background 0.15s ease, width 0.15s ease;
+
+    &--on {
+      width: 22px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $gap-sm;
+    width: 100%;
+  }
+
+  &__back {
+    @include button-reset;
+    padding: $gap-sm $gap-lg;
+    border-radius: $radius-pill;
+    color: var(--text-primary);
+    font-weight: $font-weight-bold;
+
+    &:hover:not(:disabled) {
+      background: var(--bg-hover);
+    }
+
+    &:disabled {
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
+
+  &__next {
+    @include button-reset;
+    padding: $gap-sm $gap-xl;
+    border-radius: $radius-pill;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      background: var(--accent-hover);
+    }
+  }
+}
+
+@keyframes onboarding-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

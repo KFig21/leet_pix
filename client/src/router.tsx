@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout/AppLayout";
 import { ProtectedRoute } from "@/components/ProtectedRoute/ProtectedRoute";
+import { LandingPage } from "@/pages/Landing/LandingPage";
 import { LoginPage } from "@/pages/Login/LoginPage";
 import { RegisterPage } from "@/pages/Register/RegisterPage";
 import { ForgotPasswordPage } from "@/pages/ForgotPassword/ForgotPasswordPage";
@@ -16,6 +17,7 @@ import { ScoringFormatCreatorPage } from "@/pages/ScoringFormatCreator/ScoringFo
 import { LeagueCreatorPage } from "@/pages/LeagueCreator/LeagueCreatorPage";
 
 export const router = createBrowserRouter([
+  { path: "/", element: <LandingPage /> },
   { path: "/login", element: <LoginPage /> },
   { path: "/register", element: <RegisterPage /> },
   { path: "/forgot-password", element: <ForgotPasswordPage /> },
@@ -27,7 +29,6 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <Navigate to="/home" replace /> },
       { path: "/home", element: <TimelinePage /> },
       { path: "/explore", element: <Navigate to="/search" replace /> },
       { path: "/notifications", element: <NotificationsPage /> },

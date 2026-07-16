@@ -6,25 +6,23 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 24px;
-  padding: 0 10px;
+  height: 20px;
+  padding: 0 8px;
   border-radius: $radius-pill;
-  font-size: $font-size-sm;
+  font-size: 11px;
   font-weight: $font-weight-bold;
 
   &__icon {
-    font-size: 14px;
+    font-size: 12px;
   }
 
   &--scored {
-    background: color-mix(in srgb, var(--color-scored) 15%, transparent);
-    border: 1px solid var(--color-scored);
+    background: color-mix(in srgb, var(--color-scored) 18%, transparent);
     color: var(--color-scored);
   }
 
   &--opinion {
-    background: var(--bg-secondary);
-    border: 1px dashed var(--text-secondary);
+    background: var(--bg-hover);
     color: var(--text-secondary);
   }
 

@@ -74,12 +74,12 @@
     font-size: $font-size-lg;
   }
 
+  // Meta badges sit below the options (context, not headline).
   &__badges {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: $gap-sm;
-    margin-bottom: $gap-xs;
   }
 
   &__options {
@@ -148,6 +148,14 @@
       .poll-card__option-label {
         font-weight: $font-weight-bold;
       }
+      .poll-card__option-name {
+        color: var(--color-success);
+      }
+    }
+
+    // The other options on a resolved poll: a faint red-tinted share fill.
+    &--loser .poll-card__option-fill {
+      background: color-mix(in srgb, var(--color-danger) 14%, var(--bg-secondary));
     }
   }
 
@@ -205,17 +213,97 @@
     font-size: $font-size-sm;
   }
 
-  // Single-line row above the vote-share fill. Nothing wraps: the player name
-  // ellipsizes, everything else keeps its size.
-  &__option-content {
+  // ── Desktop: single inline row above the vote-share fill ───────────────────
+  &__d {
     position: relative;
     z-index: 1;
     display: flex;
     align-items: center;
-    flex-wrap: nowrap;
     gap: $gap-sm;
     flex: 1;
     min-width: 0;
+  }
+
+  // Result/% cluster, pinned right.
+  &__d-num {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+    flex-shrink: 0;
+  }
+
+  // ── Mobile: two stacked rows ───────────────────────────────────────────────
+  &__m {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__m-row {
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+  }
+
+  // Line 1 left: name + projection.
+  &__m-id {
+    display: flex;
+    align-items: center;
+    gap: $gap-xs;
+    min-width: 0;
+    flex: 1;
+  }
+
+  // Line 1 right: score + your-pick + %.
+  &__m-num {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: $gap-xs;
+    flex-shrink: 0;
+  }
+
+  // Line 2: team dot · position · matchup / stats / keeper cost, tally right.
+  // Compact so two lines don't congest the card.
+  &__m-sub {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: 11.5px;
+
+    .player-meta {
+      font-size: inherit;
+    }
+  }
+
+  // Small colored dot standing in for the team badge on the tight mobile row.
+  &__team-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  // "QB · DET vs NO · Sun 1:00 PM" — shrinks/ellipsizes before the tally does.
+  &__m-meta {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+
+  // Bottom-right corner: voter faces + tally (or your grade when resolved).
+  &__m-tally {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: $gap-xs;
+    flex-shrink: 0;
   }
 
   &__option-label {
@@ -232,51 +320,76 @@
     white-space: nowrap;
   }
 
-  // Everything after the name holds its width.
-  &__option-content .team-tag,
-  &__option-content .player-meta,
+  // Fixed-width atoms don't shrink; the name + matchup absorb tight space.
+  .team-tag,
+  &__pos,
   &__proj,
-  &__pts-actual,
+  &__score,
   &__keeper,
-  &__option-right {
+  &__badge,
+  &__pct {
     flex-shrink: 0;
   }
 
-  // Keeper cost pill ("Rd 5") — the draft round forfeited to keep the player.
+  // Position chip (QB / WR / …).
+  &__pos {
+    display: inline-flex;
+    align-items: center;
+    height: 18px;
+    padding: 0 5px;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-sm;
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: $font-weight-bold;
+  }
+
+  // Keeper cost — neutral light-gray badge ("R3 · P3 (#27 overall)").
   &__keeper {
     display: inline-flex;
     align-items: center;
-    height: 16px;
-    padding: 0 6px;
+    height: 18px;
+    padding: 0 7px;
     border-radius: $radius-sm;
-    background: color-mix(in srgb, var(--accent) 16%, transparent);
-    color: var(--accent);
+    background: var(--bg-hover);
+    color: var(--text-primary);
     font-size: 11px;
     font-weight: $font-weight-bold;
     white-space: nowrap;
   }
 
-  // On phones the option row is tight — drop the verbose matchup text (keep the
-  // team tag + injury pill) so the name and vote share stay readable.
-  @include mobile {
-    &__option-meta .player-meta__game {
-      display: none;
+  // Final (actual) score — the standout number: Futura italic bold, full
+  // strength for the winner, dimmed for the rest.
+  &__score {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 3px;
+    font-family: Futura, "Century Gothic", "Trebuchet MS", sans-serif;
+    font-style: italic;
+    font-weight: $font-weight-bold;
+    font-size: 15px;
+    color: var(--text-primary);
+
+    &--dim {
+      opacity: 0.7;
     }
+  }
+
+  &__score-unit {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 11px;
+    color: var(--text-secondary);
   }
 
   &__proj {
     display: inline-flex;
     align-items: center;
     gap: 3px;
+    margin-left: 4px; // breathing room after the player name
     color: var(--text-secondary);
     font-size: $font-size-sm;
-
-    // The projected favorite is tinted + weighted so voters can spot the pick
-    // the numbers favor at a glance.
-    &--favorite {
-      color: var(--accent);
-      font-weight: $font-weight-bold;
-    }
   }
 
   // Small uppercase "PROJ" tag so a projection is never read as a final score.
@@ -290,15 +403,14 @@
     line-height: 14px;
   }
 
-  &__proj-icon {
-    font-size: 15px;
-  }
-
-  // Final (actual) points read as a solid result — full-strength text, no tag.
-  &__pts-actual {
-    color: var(--text-primary);
+  // Compact headline stats on resolved options ("9 rec · 154 yds · 2 TD").
+  &__stats {
+    color: var(--text-secondary);
     font-size: $font-size-sm;
-    font-weight: $font-weight-bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
   }
 
   &__upset {
@@ -315,46 +427,64 @@
     letter-spacing: 0.03em;
   }
 
-  &__option-right {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: $gap-sm;
-  }
-
-  &__badge {
+  // Your / the profile owner's pick — borderless: avatar + colored text.
+  &__you {
     display: inline-flex;
     align-items: center;
     gap: $gap-xs;
-    height: 24px;
-    padding: 0 8px;
-    border-radius: $radius-pill;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    color: var(--text-secondary);
+    color: var(--accent);
     font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
     white-space: nowrap;
-
-    &--you {
-      color: var(--accent);
-      border-color: var(--accent);
-    }
 
     // A pick that was wrong on a resolved poll (viewer's vote or profile owner's).
     &--wrong {
       color: var(--color-danger);
-      border-color: var(--color-danger);
     }
 
     // A pick that was correct on a resolved poll.
     &--right {
       color: var(--color-success);
-      border-color: var(--color-success);
     }
+  }
+
+  // Overlapping stack of recent voter avatars (mobile tally corner).
+  &__faces {
+    display: inline-flex;
+    align-items: center;
+
+    > * {
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px var(--bg-secondary);
+    }
+
+    > * + * {
+      margin-left: -6px;
+    }
+  }
+
+  &__tally {
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-style: italic;
+    white-space: nowrap;
   }
 
   &__pct {
     font-weight: $font-weight-bold;
+    font-size: $font-size-lg;
+
+    // Resolved: the winner's share reads green, the rest red.
+    &--win {
+      color: var(--color-success);
+    }
+    &--lose {
+      color: var(--color-danger);
+    }
+  }
+
+  &__resolved-tag {
+    white-space: nowrap;
   }
 
   &__breakdown-icon {

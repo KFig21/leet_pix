@@ -66,6 +66,9 @@ export interface PollOptionView {
   } | null;
   game?: PlayerGame | null;
   _count?: { votes: number };
+  // A few recent voters, for the option's avatar stack. Feeds carry up to 3;
+  // the detail view carries all (see PollDetailOption).
+  votes?: { voter: { avatar: Avatar } }[];
 }
 
 export interface PollView {
@@ -88,6 +91,8 @@ export interface PollView {
   evaluationWeeks: number | null;
   // Keeper polls: number of teams in the league (for overall pick number).
   leagueSize?: number | null;
+  // Grading period (football week) — shown on resolved cards ("Resolved · Wk 5").
+  week?: number | null;
 }
 
 // Detailed poll (in-depth view) also carries each option's voters.

@@ -31,7 +31,16 @@ searchRouter.get(
         },
         include: {
           author: true,
-          options: true,
+          options: {
+            include: {
+              _count: { select: { votes: true } },
+              votes: {
+                take: 3,
+                orderBy: { createdAt: "desc" as const },
+                select: { voter: { select: { avatar: true } } },
+              },
+            },
+          },
           scoringFormat: true,
           league: { include: { scoringFormat: true } },
         },

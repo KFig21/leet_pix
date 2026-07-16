@@ -64,7 +64,17 @@ const pollInclude = {
   author: true,
   scoringFormat: true,
   league: { include: { scoringFormat: true } },
-  options: { include: { _count: { select: { votes: true } } } },
+  options: {
+    include: {
+      _count: { select: { votes: true } },
+      // A few recent voters, for the option's avatar stack on cards.
+      votes: {
+        take: 3,
+        orderBy: { createdAt: "desc" as const },
+        select: { voter: { select: { avatar: true } } },
+      },
+    },
+  },
 } as const;
 
 async function profileByUsername(username: string) {

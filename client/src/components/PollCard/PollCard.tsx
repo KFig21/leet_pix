@@ -3,15 +3,16 @@ import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import {
   POLL_QUESTION_LABELS,
   PollQuestionType,
   formatKeeperCost,
+  teamColor,
 } from "@leetpix/shared";
 import type { Avatar as AvatarData } from "@leetpix/shared";
 import { api } from "@/lib/api";
 import { getPollRules } from "@/lib/pollRules";
+import { statSummary } from "@/lib/statSummary";
 import { useAuth } from "@/context/AuthContext";
 import { usePreferences } from "@/context/PreferencesContext";
 import { useIsMobile } from "@/hooks/useMediaQuery";
@@ -155,34 +156,6 @@ export function PollCard({ poll, pick, preview }: Props) {
         {POLL_QUESTION_LABELS[poll.questionType]}
       </p>
 
-      <div className="poll-card__badges">
-        <HorizonBadge horizon={poll.horizon} />
-        <ResolutionBadge
-          questionType={poll.questionType}
-          evaluationWeeks={poll.evaluationWeeks}
-        />
-        {poll.league ? (
-          <LeagueBadge league={poll.league} />
-        ) : (
-          <ScoringBadge
-            scoringPreset={poll.scoringPreset}
-            scoringFormat={poll.scoringFormat}
-          />
-        )}
-        {isUpset && (
-          <span
-            className="poll-card__upset"
-            title="The winner wasn't the projected favorite"
-          >
-            Upset
-          </span>
-        )}
-        {/* On phones the countdown moves down to the footer (bottom-right). */}
-        {!isMobile && (
-          <PollCountdown lockAt={poll.lockAt} status={poll.status} />
-        )}
-      </div>
-
       <ul className="poll-card__options">
         {poll.options.map((o) => {
           const votes = o._count?.votes ?? 0;
@@ -206,7 +179,126 @@ export function PollCard({ poll, pick, preview }: Props) {
           // The owner's losing pick gets the same red border as a wrong vote.
           if (pickWrong) cls.push("poll-card__option--voted-wrong");
           if (pending === o.id) cls.push("poll-card__option--pending");
-          if (resolved && o.isWinner) cls.push("poll-card__option--winner");
+          if (resolved) {
+            cls.push(
+              o.isWinner
+                ? "poll-card__option--winner"
+                : "poll-card__option--loser",
+            );
+          }
+
+          // ── Shared pieces (arranged differently on mobile vs desktop) ──────
+          const nameEl = (
+            <span className="poll-card__option-label">
+              {resolved && o.isWinner && (
+                <EmojiEventsIcon className="poll-card__trophy" />
+              )}
+              <span className="poll-card__option-name">{o.playerName}</span>
+            </span>
+          );
+          const cost = formatKeeperCost({
+            round: o.keeperRound,
+            pick: o.keeperPick,
+            leagueSize: poll.leagueSize,
+          });
+          const keeperEl = cost ? (
+            <span
+              className="poll-card__keeper"
+              title="Keeper cost — the draft slot given up to keep this player"
+            >
+              {cost}
+            </span>
+          ) : null;
+          const streakEl = !resolved ? (
+            <StreakBadge streak={o.player?.streak} />
+          ) : null;
+          // Projection: quiet, labeled PROJ so it never reads as a result.
+          const projEl =
+            !resolved && points != null ? (
+              <span className="poll-card__proj" title="Projected points">
+                <span className="poll-card__proj-tag">PROJ</span>
+                {points}
+              </span>
+            ) : null;
+          // Final score: the standout number (Futura italic bold, dimmed for
+          // the non-winner).
+          const scoreEl =
+            resolved && points != null ? (
+              <span
+                className={`poll-card__score${o.isWinner ? "" : " poll-card__score--dim"}`}
+                title="Final points"
+              >
+                {points}
+                <span className="poll-card__score-unit">pts</span>
+              </span>
+            ) : null;
+          // Compact headline stats on resolved options ("9 rec · 154 yds · 2 TD").
+          const stats = resolved ? statSummary(o.statLine, poll.sport) : null;
+          // The profile owner's pick / your own vote — borderless, avatar +
+          // colored text. On resolved polls they read "✓" / "✗ you".
+          const ownedBadge = owned ? (
+            <span
+              className={`poll-card__you${pickWrong ? " poll-card__you--wrong" : pickRight ? " poll-card__you--right" : ""}`}
+            >
+              <Avatar avatar={pick!.avatar} size={16} />
+              {resolved ? (pickRight ? "✓" : "✗") : "picked"}
+            </span>
+          ) : null;
+          const myBadge =
+            voted === o.id && !pick?.isSelf ? (
+              <span
+                className={`poll-card__you${youWrong ? " poll-card__you--wrong" : youRight ? " poll-card__you--right" : ""}`}
+              >
+                {me?.avatar && <Avatar avatar={me.avatar} size={16} />}
+                {resolved ? (youRight ? "✓ you" : "✗ you") : "You"}
+              </span>
+            ) : null;
+          const youBadge = (
+            <>
+              {ownedBadge}
+              {myBadge}
+            </>
+          );
+          const hasYouBadge = ownedBadge != null || myBadge != null;
+          const pctEl = (
+            <span
+              className={`poll-card__pct${resolved ? (o.isWinner ? " poll-card__pct--win" : " poll-card__pct--lose") : ""}`}
+            >
+              {pct}%
+            </span>
+          );
+          // Mobile line-2 right corner: voter avatars + tally ("You & 36
+          // others" / "70 votes"); on resolved options your grade instead.
+          const iVoted = voted === o.id;
+          const others = votes - (iVoted ? 1 : 0);
+          const tallyText = iVoted
+            ? others > 0
+              ? `You & ${others} other${others === 1 ? "" : "s"}`
+              : "You"
+            : `${votes} vote${votes === 1 ? "" : "s"}`;
+          const faces = (o.votes ?? []).slice(0, 3);
+          const tallyEl =
+            resolved && hasYouBadge ? (
+              youBadge
+            ) : (
+              <>
+                {ownedBadge}
+                {!resolved && faces.length > 0 && (
+                  <span className="poll-card__faces">
+                    {faces.map((v, i) => (
+                      <Avatar key={i} avatar={v.voter.avatar} size={16} />
+                    ))}
+                  </span>
+                )}
+                <span className="poll-card__tally">{tallyText}</span>
+              </>
+            );
+          // Mobile line 2 text: "QB · DET" (+ matchup / stats after it).
+          const posTeam = [o.player?.position, o.player?.team]
+            .filter(Boolean)
+            .join(" · ");
+          const dotColor = teamColor(o.player?.team, poll.sport)?.bg;
+
           return (
             <li key={o.id}>
               <button
@@ -215,85 +307,109 @@ export function PollCard({ poll, pick, preview }: Props) {
                 onClick={(e) => onOption(e, o)}
               >
                 <span className="poll-card__option-fill" style={{ width: `${pct}%` }} />
-                <span className="poll-card__option-content">
-                  <span className="poll-card__option-label">
-                    {resolved && o.isWinner && (
-                      <EmojiEventsIcon className="poll-card__trophy" />
+
+                {isMobile ? (
+                  // Two-line layout: name + PROJ + score/% on top; team dot ·
+                  // pos · matchup (or stats / keeper cost) + tally below.
+                  <span className="poll-card__m">
+                    <span className="poll-card__m-row">
+                      <span className="poll-card__m-id">
+                        {nameEl}
+                        {projEl}
+                      </span>
+                      <span className="poll-card__m-num">
+                        {scoreEl}
+                        {pctEl}
+                      </span>
+                    </span>
+                    <span className="poll-card__m-row poll-card__m-sub">
+                      {dotColor && (
+                        <span
+                          className="poll-card__team-dot"
+                          style={{ background: dotColor }}
+                        />
+                      )}
+                      {posTeam && (
+                        <span className="poll-card__m-meta">
+                          {posTeam}
+                          {stats ? ` · ${stats}` : ""}
+                        </span>
+                      )}
+                      {keeperEl}
+                      {!resolved && (
+                        <PlayerMeta
+                          className="poll-card__option-meta"
+                          game={isKeeper ? null : o.game}
+                          injuryStatus={o.player?.injuryStatus}
+                        />
+                      )}
+                      {streakEl}
+                      <span className="poll-card__m-tally">{tallyEl}</span>
+                    </span>
+                  </span>
+                ) : (
+                  // Single line: name · pos · team badge · matchup/stats, PROJ
+                  // on the left; score → your grade → % pinned right.
+                  <span className="poll-card__d">
+                    {nameEl}
+                    {o.player?.position && (
+                      <span className="poll-card__pos">{o.player.position}</span>
                     )}
-                    <span className="poll-card__option-name">{o.playerName}</span>
-                  </span>
-                  <TeamTag abbr={o.player?.team} sport={poll.sport} />
-                  {(() => {
-                    const cost = formatKeeperCost({
-                      round: o.keeperRound,
-                      pick: o.keeperPick,
-                      leagueSize: poll.leagueSize,
-                    });
-                    return cost ? (
-                      <span
-                        className="poll-card__keeper"
-                        title="Keeper cost — the draft slot given up to keep this player"
-                      >
-                        {cost}
-                      </span>
-                    ) : null;
-                  })()}
-                  {!resolved && <StreakBadge streak={o.player?.streak} />}
-                  {!resolved && (
-                    <PlayerMeta
-                      className="poll-card__option-meta"
-                      game={isKeeper ? null : o.game}
-                      injuryStatus={o.player?.injuryStatus}
-                    />
-                  )}
-                  {points != null &&
-                    (resolved ? (
-                      // Actual, final points.
-                      <span className="poll-card__pts-actual" title="Final points">
-                        {points} pts
-                      </span>
-                    ) : (
-                      // Projection — labeled so it's never mistaken for a result.
-                      <span
-                        className={`poll-card__proj${projFavoriteId === o.id ? " poll-card__proj--favorite" : ""}`}
-                        title={
-                          projFavoriteId === o.id
-                            ? "Projected to win"
-                            : "Projected points"
-                        }
-                      >
-                        {projFavoriteId === o.id && (
-                          <TrendingUpIcon className="poll-card__proj-icon" />
-                        )}
-                        <span className="poll-card__proj-tag">PROJ</span>
-                        {points}
-                      </span>
-                    ))}
-                  <span className="poll-card__option-right">
-                  {owned && (
-                    <span
-                      className={`poll-card__badge${pickWrong ? " poll-card__badge--wrong" : pickRight ? " poll-card__badge--right" : ""}`}
-                    >
-                      <Avatar avatar={pick!.avatar} size={16} />
-                      picked
+                    <TeamTag abbr={o.player?.team} sport={poll.sport} />
+                    {keeperEl}
+                    {stats && <span className="poll-card__stats">{stats}</span>}
+                    {!resolved && (
+                      <PlayerMeta
+                        className="poll-card__option-meta"
+                        game={isKeeper ? null : o.game}
+                        injuryStatus={o.player?.injuryStatus}
+                      />
+                    )}
+                    {streakEl}
+                    {projEl}
+                    <span className="poll-card__d-num">
+                      {scoreEl}
+                      {youBadge}
+                      {!resolved && faces.length > 0 && (
+                        <span className="poll-card__faces">
+                          {faces.map((v, i) => (
+                            <Avatar key={i} avatar={v.voter.avatar} size={16} />
+                          ))}
+                        </span>
+                      )}
+                      {pctEl}
                     </span>
-                  )}
-                  {voted === o.id && !pick?.isSelf && (
-                    <span
-                      className={`poll-card__badge poll-card__badge--you${youWrong ? " poll-card__badge--wrong" : youRight ? " poll-card__badge--right" : ""}`}
-                    >
-                      {me?.avatar && <Avatar avatar={me.avatar} size={16} />}
-                      You
-                    </span>
-                  )}
-                  <span className="poll-card__pct">{pct}%</span>
                   </span>
-                </span>
+                )}
               </button>
             </li>
           );
         })}
       </ul>
+
+      <div className="poll-card__badges">
+        <HorizonBadge horizon={poll.horizon} />
+        <ResolutionBadge
+          questionType={poll.questionType}
+          evaluationWeeks={poll.evaluationWeeks}
+        />
+        {poll.league ? (
+          <LeagueBadge league={poll.league} />
+        ) : (
+          <ScoringBadge
+            scoringPreset={poll.scoringPreset}
+            scoringFormat={poll.scoringFormat}
+          />
+        )}
+        {isUpset && (
+          <span
+            className="poll-card__upset"
+            title="The winner wasn't the projected favorite"
+          >
+            Upset
+          </span>
+        )}
+      </div>
 
       {pending && confirmVotes && !voted && (
         <div className="poll-card__confirm">
@@ -327,7 +443,13 @@ export function PollCard({ poll, pick, preview }: Props) {
           {totalVotes} {totalVotes === 1 ? "vote" : "votes"}
           {voted ? " · you voted" : ""}
         </span>
-        {isMobile && <PollCountdown lockAt={poll.lockAt} status={poll.status} />}
+        {resolved ? (
+          <span className="poll-card__resolved-tag">
+            Resolved{poll.week ? ` · Wk ${poll.week}` : ""}
+          </span>
+        ) : (
+          <PollCountdown lockAt={poll.lockAt} status={poll.status} />
+        )}
       </footer>
 
       {breakdownList && (

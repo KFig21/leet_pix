@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import {
+  ALL_STAT_CATEGORIES,
   baseCategoryKeys,
+  categoryForKey,
   categoryPoints,
   effectiveRate,
   statLabel,
@@ -26,12 +28,18 @@ interface Props {
   rules: ScoringRules;
   scoringPreset: ScoringPreset | null;
   scoringFormat: ScoringFormatSummary | null;
-  // Optional readable stat line shown above the scoring breakdown (projections).
+  // Optional readable stat line shown above the scoring breakdown (projections),
+  // with a small heading above it (e.g. "Season projection").
   summary?: ReactNode;
+  summaryHeading?: ReactNode;
   onClose: () => void;
 }
 
-const fmt = (p: number) => (p === 0 ? "–" : p > 0 ? `+${p}` : `${p}`);
+// Thousands separators + at most 2 decimals (e.g. 3548.26 → "3,548.26").
+const commas = (n: number) =>
+  n.toLocaleString("en-US", { maximumFractionDigits: 2 });
+
+const fmt = (p: number) => (p === 0 ? "–" : `${p > 0 ? "+" : "-"}${commas(Math.abs(p))}`);
 
 // "Jahmyr Gibbs" → "J. Gibbs" — keeps the comparison columns narrow (and legible
 // on phones), while suffixes like "Jr." stay attached to the surname.
@@ -48,6 +56,7 @@ export function ScoringBreakdownModal({
   scoringPreset,
   scoringFormat,
   summary,
+  summaryHeading,
   onClose,
 }: Props) {
   const many = options.length > 1;
@@ -61,7 +70,14 @@ export function ScoringBreakdownModal({
         <ScoringBadge scoringPreset={scoringPreset} scoringFormat={scoringFormat} />
       }
     >
-      {summary && <p className="breakdown-summary">{summary}</p>}
+      {summary && (
+        <div className="breakdown-summary">
+          {summaryHeading && (
+            <div className="breakdown-summary__heading">{summaryHeading}</div>
+          )}
+          <p className="breakdown-summary__line">{summary}</p>
+        </div>
+      )}
       {many ? (
         <Columns options={options} rules={rules} />
       ) : (
@@ -133,6 +149,18 @@ function Columns({
   );
 }
 
+// Group order follows the stat catalog (Passing, Rushing, Receiving, …).
+const GROUP_ORDER = new Map(
+  [...new Set(ALL_STAT_CATEGORIES.map((c) => c.group))].map((g, i) => [g, i]),
+);
+
+interface Line {
+  key: string;
+  value: number;
+  perUnit: number;
+  points: number;
+}
+
 function Single({
   option,
   rules,
@@ -142,7 +170,7 @@ function Single({
 }) {
   if (!option) return null;
   // Per base category, using the rate that applies to this player's position.
-  const lines = baseCategoryKeys(rules)
+  const lines: Line[] = baseCategoryKeys(rules)
     .map((key) => {
       const value = option.statLine[key] ?? 0;
       const perUnit = effectiveRate(rules, key, option.position);
@@ -153,24 +181,40 @@ function Single({
   if (lines.length === 0) {
     return <p className="breakdown-single__empty">No scored stats this period.</p>;
   }
+
+  // Bucket the rows by their stat group, keeping catalog order.
+  const byGroup = new Map<string, Line[]>();
+  for (const l of lines) {
+    const group = categoryForKey(l.key)?.group ?? "Other";
+    const bucket = byGroup.get(group) ?? [];
+    bucket.push(l);
+    byGroup.set(group, bucket);
+  }
+  const groups = [...byGroup.entries()].sort(
+    (a, b) => (GROUP_ORDER.get(a[0]) ?? 99) - (GROUP_ORDER.get(b[0]) ?? 99),
+  );
+
   return (
-    <ul className="breakdown-single">
-      {lines.map((l) => (
-        <li key={l.key} className="breakdown-single__row">
-          <span className="breakdown-single__stat">{statLabel(l.key)}</span>
-          <span className="breakdown-single__calc">
-            {l.value} × {l.perUnit}
-          </span>
-          <strong className="breakdown-single__pts">
-            {l.points > 0 ? `+${l.points}` : l.points}
-          </strong>
-        </li>
+    <div className="breakdown-single">
+      {groups.map(([group, rows]) => (
+        <div key={group} className="breakdown-single__group">
+          <div className="breakdown-single__group-head">{group}</div>
+          {rows.map((l) => (
+            <div key={l.key} className="breakdown-single__row">
+              <span className="breakdown-single__stat">{statLabel(l.key)}</span>
+              <span className="breakdown-single__calc">
+                {commas(l.value)} × {l.perUnit}
+              </span>
+              <strong className="breakdown-single__pts">{fmt(l.points)}</strong>
+            </div>
+          ))}
+        </div>
       ))}
-      <li className="breakdown-single__row breakdown-single__row--total">
+      <div className="breakdown-single__row breakdown-single__row--total">
         <span className="breakdown-single__stat">Total</span>
         <span />
-        <strong className="breakdown-single__pts">{option.total ?? 0}</strong>
-      </li>
-    </ul>
+        <strong className="breakdown-single__pts">{commas(option.total ?? 0)}</strong>
+      </div>
+    </div>
   );
 }

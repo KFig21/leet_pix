@@ -150,13 +150,21 @@ playersRouter.get(
     const statLine = await projectedStatLine(req.params.playerId, season, weeks);
     const total = scoreStatLine(statLine, rules, player.position);
 
+    const seasonLong = weeks.length > 1;
+    const periodLabel = seasonLong
+      ? "Season projection"
+      : player.sport === "FOOTBALL"
+        ? `Week ${weeks[0]} projection`
+        : "Projection";
+
     res.json({
       playerName: player.fullName,
       position: player.position,
       sport: player.sport,
       // Multiple weeks → a season-long projection (keeper): the client rounds
       // those to whole numbers; a single week keeps one decimal.
-      seasonLong: weeks.length > 1,
+      seasonLong,
+      periodLabel,
       statLine,
       total,
       rules,

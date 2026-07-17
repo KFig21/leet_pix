@@ -29,6 +29,7 @@ interface ProjectionResponse {
   position: string | null;
   sport: Sport;
   seasonLong: boolean;
+  periodLabel: string;
   statLine: Record<string, number>;
   total: number;
   rules: ScoringRules;
@@ -104,6 +105,7 @@ export function ProjectionBreakdown({ params, className, title, children }: Prop
             rules={data.rules}
             scoringPreset={data.scoringPreset}
             scoringFormat={data.scoringFormat}
+            summaryHeading={data.periodLabel}
             summary={projectionStatLine(
               data.statLine,
               data.position,

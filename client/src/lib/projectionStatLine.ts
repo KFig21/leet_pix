@@ -103,16 +103,20 @@ export function projectionStatLine(
   seasonLong: boolean,
 ): string | null {
   if (!statLine) return null;
-  const round = (v: number) =>
-    seasonLong ? Math.round(v) : Math.round(v * 10) / 10;
+  // Season-long rounds to whole numbers; single-game keeps one decimal. Thousands
+  // get a comma so long yardage totals read cleanly (e.g. "3,548 Pass Yd").
+  const fmt = (v: number) =>
+    (seasonLong ? Math.round(v) : Math.round(v * 10) / 10).toLocaleString("en-US", {
+      maximumFractionDigits: 1,
+    });
 
   const parts: string[] = [];
   for (const [key, label] of orderedGroups(position, sport)) {
     const raw = statLine[key];
     if (!raw) continue;
-    const v = round(raw);
+    const v = seasonLong ? Math.round(raw) : Math.round(raw * 10) / 10;
     if (v === 0) continue; // drops sub-rounding noise (e.g. 0.4 INT over a season)
-    parts.push(`${v} ${label}`);
+    parts.push(`${fmt(raw)} ${label}`);
   }
   return parts.length ? parts.join(", ") : null;
 }

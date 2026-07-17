@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { ScoringPreset, ScoringRules } from "@leetpix/shared";
+import type { ScoringPreset, ScoringRules, Sport } from "@leetpix/shared";
 import { api } from "@/lib/api";
+import { projectionStatLine } from "@/lib/projectionStatLine";
 import { Modal } from "@/components/Modal/Modal";
 import { Loader } from "@/components/Loader/Loader";
 import {
@@ -26,6 +27,8 @@ export interface ProjectionParams {
 interface ProjectionResponse {
   playerName: string;
   position: string | null;
+  sport: Sport;
+  seasonLong: boolean;
   statLine: Record<string, number>;
   total: number;
   rules: ScoringRules;
@@ -101,6 +104,12 @@ export function ProjectionBreakdown({ params, className, title, children }: Prop
             rules={data.rules}
             scoringPreset={data.scoringPreset}
             scoringFormat={data.scoringFormat}
+            summary={projectionStatLine(
+              data.statLine,
+              data.position,
+              data.sport,
+              data.seasonLong,
+            )}
             options={[
               {
                 playerName: data.playerName,

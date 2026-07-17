@@ -1,6 +1,17 @@
 @use "variables" as *;
 @use "mixins" as *;
 
+// Readable projection stat line above the scoring breakdown, e.g.
+// "960 Rush Yd, 6 Rush TD, 66 Rec, 402 Rec Yd, 3 Rec TD, 1 Fum lost".
+.breakdown-summary {
+  margin: 0 0 $gap-md;
+  padding-bottom: $gap-md;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: $font-size-sm;
+  line-height: 1.5;
+}
+
 // ── Comparison columns (multiple options) ─────────────────────────────────────
 .breakdown-cols {
   overflow-x: auto;

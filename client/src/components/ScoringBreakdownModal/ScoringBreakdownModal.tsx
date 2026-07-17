@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   baseCategoryKeys,
   categoryPoints,
@@ -25,6 +26,8 @@ interface Props {
   rules: ScoringRules;
   scoringPreset: ScoringPreset | null;
   scoringFormat: ScoringFormatSummary | null;
+  // Optional readable stat line shown above the scoring breakdown (projections).
+  summary?: ReactNode;
   onClose: () => void;
 }
 
@@ -44,6 +47,7 @@ export function ScoringBreakdownModal({
   rules,
   scoringPreset,
   scoringFormat,
+  summary,
   onClose,
 }: Props) {
   const many = options.length > 1;
@@ -57,6 +61,7 @@ export function ScoringBreakdownModal({
         <ScoringBadge scoringPreset={scoringPreset} scoringFormat={scoringFormat} />
       }
     >
+      {summary && <p className="breakdown-summary">{summary}</p>}
       {many ? (
         <Columns options={options} rules={rules} />
       ) : (

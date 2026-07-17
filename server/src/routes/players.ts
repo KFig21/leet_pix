@@ -89,7 +89,7 @@ playersRouter.get(
   asyncHandler(async (req: AuthedRequest, res) => {
     const player = await prisma.player.findUnique({
       where: { id: req.params.playerId },
-      select: { fullName: true, position: true },
+      select: { fullName: true, position: true, sport: true },
     });
     if (!player) throw new HttpError(404, "Player not found");
 
@@ -153,6 +153,10 @@ playersRouter.get(
     res.json({
       playerName: player.fullName,
       position: player.position,
+      sport: player.sport,
+      // Multiple weeks → a season-long projection (keeper): the client rounds
+      // those to whole numbers; a single week keeps one decimal.
+      seasonLong: weeks.length > 1,
       statLine,
       total,
       rules,

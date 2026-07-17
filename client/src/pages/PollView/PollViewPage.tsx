@@ -39,7 +39,7 @@ export function PollViewPage() {
             className={`poll-view__filter${filter === null ? " poll-view__filter--active" : ""}`}
             onClick={() => setFilter(null)}
           >
-            All {totalVotes}
+            All · {totalVotes}
           </button>
           {poll.options.map((o) => (
             <button
@@ -47,7 +47,7 @@ export function PollViewPage() {
               className={`poll-view__filter${filter === o.id ? " poll-view__filter--active" : ""}`}
               onClick={() => setFilter(o.id)}
             >
-              {o.playerName} {o._count?.votes ?? 0}
+              {o.playerName} · {o._count?.votes ?? 0}
             </button>
           ))}
         </div>

@@ -13,6 +13,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
 import type { Avatar as AvatarData } from "@leetpix/shared";
 import { api } from "@/lib/api";
+import { ScrollToTop } from "@/components/ScrollToTop/ScrollToTop";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { RightRailContext } from "@/context/RightRailContext";
@@ -66,6 +67,7 @@ export function AppLayout() {
 
   return (
     <RightRailContext.Provider value={setRail}>
+      <ScrollToTop />
       <div className="app-layout">
       <nav className="app-layout__nav">
         <div className="app-layout__brand">LeetPix</div>

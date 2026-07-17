@@ -19,6 +19,17 @@
   }
 }
 
+// Apply :hover styles only on devices with a real pointer. On touch screens a
+// tap otherwise leaves the element stuck in its :hover state until the next tap
+// elsewhere, which reads as a "stuck" highlight on buttons/pills.
+@mixin hover {
+  @media (hover: hover) {
+    &:hover {
+      @content;
+    }
+  }
+}
+
 // Standard card surface used by poll cards, panels, etc.
 @mixin card {
   background: var(--bg-primary);

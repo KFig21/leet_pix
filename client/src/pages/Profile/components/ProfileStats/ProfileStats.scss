@@ -34,13 +34,17 @@
     font-size: $font-size-sm;
     font-weight: $font-weight-bold;
 
-    &:hover {
+    @include hover {
       background: var(--bg-hover);
     }
 
     &--active {
       background: var(--accent);
       color: var(--accent-contrast);
+
+      @include hover {
+        background: var(--accent);
+      }
     }
 
     @include mobile {
@@ -87,6 +91,7 @@
     strong {
       font-size: $font-size-lg;
     }
+
     span {
       color: var(--text-secondary);
       font-size: $font-size-sm;
@@ -96,6 +101,7 @@
       strong {
         font-size: $font-size-base;
       }
+
       span {
         font-size: 11px;
       }
@@ -162,6 +168,7 @@
     .profile-stats__pick--win & {
       color: rgb(47, 168, 79);
     }
+
     .profile-stats__pick--loss & {
       color: rgb(244, 33, 46);
     }

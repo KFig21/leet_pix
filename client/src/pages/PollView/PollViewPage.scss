@@ -72,8 +72,9 @@
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
     font-size: $font-size-sm;
+    font-weight: 500;
 
-    &:hover {
+    @include hover {
       background: var(--bg-hover);
     }
 
@@ -81,6 +82,10 @@
       background: var(--accent);
       color: var(--accent-contrast);
       border-color: var(--accent);
+
+      @include hover {
+        background: var(--accent);
+      }
     }
   }
 

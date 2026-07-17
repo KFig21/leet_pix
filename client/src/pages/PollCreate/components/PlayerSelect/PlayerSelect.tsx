@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { Sport, PlayerStreak } from "@leetpix/shared";
+import {
+  Sport as SportEnum,
+  isScoreablePoll,
+  isSeasonProjectionPoll,
+  type Sport,
+  type PlayerStreak,
+  type PollQuestionType,
+} from "@leetpix/shared";
 import { api } from "@/lib/api";
 import { formatProjection } from "@/lib/formatProjection";
 import { Loader } from "@/components/Loader/Loader";
@@ -86,8 +93,16 @@ export function PlayerSelect({
   }, [search]);
 
   const hasFilter = teams.length > 0 || positions.length > 0;
-  // Enough to query: a typed query (>=2 chars) or an active team/position filter.
-  const ready = debounced.length >= 2 || hasFilter;
+  // With a projectable football context, the server can rank the whole pool, so
+  // opening the menu (no query, no filter) defaults to the best players.
+  const canDefault =
+    !!projection &&
+    sport === SportEnum.FOOTBALL &&
+    (isScoreablePoll(projection.questionType as PollQuestionType) ||
+      isSeasonProjectionPoll(projection.questionType as PollQuestionType));
+  // Enough to query: a typed query (>=2 chars), a team/position filter, or a
+  // projection-ranked default.
+  const ready = debounced.length >= 2 || hasFilter || canDefault;
   const teamKey = teams.join(",");
   const positionKey = positions.join(",");
 
@@ -168,7 +183,8 @@ export function PlayerSelect({
       <input
         className="player-select__input"
         placeholder={
-          placeholder ?? (hasFilter ? "Search or browse…" : "Search players…")
+          placeholder ??
+          (hasFilter || canDefault ? "Search or browse…" : "Search players…")
         }
         value={search}
         onChange={(e) => {

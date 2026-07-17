@@ -74,6 +74,64 @@ export async function projectedPointsByPlayer(
   return totals;
 }
 
+// ── Full-pool projection cache ───────────────────────────────────────────────
+// The player picker's "best players" default ranks the whole active pool by
+// projected points. Projections only change once a day (after the import), but
+// the default list is requested by every user opening the create screen — so we
+// memoize the full-sport map per scoring context. TTL is a safety net; the daily
+// refresh clears it explicitly (invalidateProjectionCache).
+const PROJ_CACHE_TTL_MS = 15 * 60_000;
+const projCache = new Map<string, { at: number; map: Map<string, number> }>();
+
+export function invalidateProjectionCache(): void {
+  projCache.clear();
+}
+
+/**
+ * Projected points for EVERY active player of a sport under `rules`, summed
+ * across `weeks`. Cached in memory per (sport, season, weeks, rules) so the
+ * picker's default "best" list doesn't reproject the whole pool on each open.
+ */
+export async function projectedPointsForSport(
+  sport: string,
+  season: number,
+  weeks: number[],
+  rules: ScoringRules,
+): Promise<Map<string, number>> {
+  const key = [sport, season, weeks.join(","), JSON.stringify(rules)].join("|");
+  const hit = projCache.get(key);
+  if (hit && Date.now() - hit.at < PROJ_CACHE_TTL_MS) return hit.map;
+
+  const players = await prisma.player.findMany({
+    where: { sport: sport as never, active: true },
+    select: { id: true, position: true },
+  });
+  const positionById = new Map(players.map((p) => [p.id, p.position]));
+
+  const lines = await prisma.playerStat.findMany({
+    where: {
+      season,
+      week: { in: weeks },
+      kind: "PROJECTION",
+      player: { sport: sport as never, active: true },
+    },
+    select: { playerId: true, stats: true },
+  });
+  const totals = new Map<string, number>();
+  for (const l of lines) {
+    const pts = scoreStatLine(
+      l.stats as Record<string, number>,
+      rules,
+      positionById.get(l.playerId),
+    );
+    totals.set(l.playerId, (totals.get(l.playerId) ?? 0) + pts);
+  }
+  for (const [k, v] of totals) totals.set(k, Math.round(v * 100) / 100);
+
+  projCache.set(key, { at: Date.now(), map: totals });
+  return totals;
+}
+
 // Resolve scoring rules from a raw selection (league / preset / custom format),
 // with the same precedence poll creation uses. Shared by the create route, the
 // preview-projections endpoint, and the player picker. Leagues are owner-scoped
@@ -186,5 +244,7 @@ export async function refreshOpenPollProjections(): Promise<number> {
       }
     }
   }
+  // Fresh projections just landed — drop the picker's cached "best" lists.
+  invalidateProjectionCache();
   return updated;
 }

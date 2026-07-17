@@ -8,7 +8,7 @@ import { upcomingGameByTeam } from "../lib/schedule";
 import { streaksByPlayer } from "../services/streaks";
 import { getNflState } from "../lib/nflState";
 import {
-  projectedPointsByPlayer,
+  projectedPointsForSport,
   projectionWeeks,
   resolveScoringRules,
 } from "../services/projections";
@@ -80,6 +80,7 @@ playersRouter.get(
     const teams = asList(req.query.team);
     const positions = asList(req.query.position);
     const hasFilter = teams.length > 0 || positions.length > 0;
+    const hasQuery = q.length >= 2;
     // Optional scoring context: when the create screen supplies it, each result
     // carries its projected points under those rules (shown in the picker).
     const questionType = String(req.query.questionType ?? "");
@@ -87,41 +88,38 @@ playersRouter.get(
       ? Number(req.query.evaluationWeeks)
       : null;
 
-    // Need either a query (>=2 chars) or a team/position filter to browse.
-    if (q.length < 2 && !hasFilter) return res.json([]);
-
-    const where: Prisma.PlayerWhereInput = { active: true };
-    if (sport) where.sport = sport;
-    if (q.length >= 2) where.fullName = { contains: q, mode: "insensitive" };
-    if (teams.length) where.team = { in: teams };
-    if (positions.length) where.position = { in: positions };
-
-    // Projectable question + scoring context → rank results by projection
-    // (most relevant first). We then pull a wider candidate set and trim to 20
-    // after ranking; otherwise just take 20 alphabetically.
+    // Projectable question + scoring context → rank results by projection (most
+    // relevant first) and, with no query/filter, default to the best players.
     const wantProj =
       sport === Sport.FOOTBALL &&
       questionType !== "" &&
       (isScoreablePoll(questionType as never) ||
         isSeasonProjectionPoll(questionType as never));
 
-    const candidates = await prisma.player.findMany({
-      where,
-      orderBy: { fullName: "asc" },
-      take: wantProj ? 100 : 20,
-      select: {
-        id: true,
-        fullName: true,
-        team: true,
-        position: true,
-        sport: true,
-        injuryStatus: true,
-      },
-    });
+    // Without a query, a filter, or a projection ranking, there's nothing to
+    // browse — a bare open shouldn't dump the whole table alphabetically.
+    if (!hasQuery && !hasFilter && !wantProj) return res.json([]);
 
-    // Projected points for the candidate set (when applicable).
+    const where: Prisma.PlayerWhereInput = { active: true };
+    if (sport) where.sport = sport;
+    if (hasQuery) where.fullName = { contains: q, mode: "insensitive" };
+    if (teams.length) where.team = { in: teams };
+    if (positions.length) where.position = { in: positions };
+
+    const RESULT_LIMIT = 20;
+    const selectFields = {
+      id: true,
+      fullName: true,
+      team: true,
+      position: true,
+      sport: true,
+      injuryStatus: true,
+    } as const;
+
+    // Projection map (cached full-pool) so ranking sees every player, not just an
+    // alphabetical slice — and the "best players" default has something to sort.
     let projById = new Map<string, number>();
-    if (wantProj && candidates.length > 0) {
+    if (wantProj) {
       const rules = await resolveScoringRules({
         leagueId: (req.query.leagueId as string) || null,
         scoringPreset: (req.query.scoringPreset as string) || null,
@@ -130,32 +128,53 @@ playersRouter.get(
       });
       const nfl = await getNflState();
       if (rules && nfl) {
-        const weeks = projectionWeeks(
-          questionType as never,
-          nfl.week,
-          evaluationWeeks,
-        );
-        projById = await projectedPointsByPlayer(
-          candidates.map((p) => p.id),
-          nfl.season,
-          weeks,
-          rules,
-        );
+        const weeks = projectionWeeks(questionType as never, nfl.week, evaluationWeeks);
+        projById = await projectedPointsForSport(sport!, nfl.season, weeks, rules);
       }
     }
 
-    // Rank by projection desc (unprojected players sort last), then keep 20.
-    const ranked = wantProj
-      ? [...candidates].sort((a, b) => {
-          const pa = projById.get(a.id) ?? null;
-          const pb = projById.get(b.id) ?? null;
-          if (pa == null && pb == null) return a.fullName.localeCompare(b.fullName);
-          if (pa == null) return 1;
-          if (pb == null) return -1;
-          return pb - pa;
-        })
-      : candidates;
-    const players = ranked.slice(0, 20);
+    let players: Array<{
+      id: string;
+      fullName: string;
+      team: string | null;
+      position: string | null;
+      sport: Sport;
+      injuryStatus: string | null;
+    }>;
+
+    if (wantProj && !hasQuery && !hasFilter) {
+      // Default "best players": take the top-projected ids straight from the map,
+      // then hydrate just those rows (no need to scan the whole table).
+      const topIds = [...projById.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, RESULT_LIMIT)
+        .map(([id]) => id);
+      const rows = await prisma.player.findMany({
+        where: { id: { in: topIds }, active: true },
+        select: selectFields,
+      });
+      const byId = new Map(rows.map((r) => [r.id, r]));
+      players = topIds.map((id) => byId.get(id)).filter((p): p is (typeof rows)[number] => !!p);
+    } else {
+      // Query/filter: rank the matching candidates by projection, then trim.
+      const candidates = await prisma.player.findMany({
+        where,
+        orderBy: { fullName: "asc" },
+        take: wantProj ? 200 : RESULT_LIMIT,
+        select: selectFields,
+      });
+      const ranked = wantProj
+        ? [...candidates].sort((a, b) => {
+            const pa = projById.get(a.id) ?? null;
+            const pb = projById.get(b.id) ?? null;
+            if (pa == null && pb == null) return a.fullName.localeCompare(b.fullName);
+            if (pa == null) return 1;
+            if (pb == null) return -1;
+            return pb - pa;
+          })
+        : candidates;
+      players = ranked.slice(0, RESULT_LIMIT);
+    }
 
     // Attach each result's next game (opponent + kickoff) so the picker shows
     // who they play — best-effort (needs the schedule imported). Final 20 only.

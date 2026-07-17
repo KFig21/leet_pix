@@ -32,6 +32,24 @@ const MIN_MARGIN: Record<Sport, number> = {
   [Sport.BASEBALL]: 3,
 };
 
+// Absolute production gates, so a streak reflects real form and not just noisy
+// movement around a player's own baseline:
+//   • HOT_FLOOR   — recent avg must clear this to count as hot, so a bench guy
+//     bumping from ~0 to a couple points isn't "hot".
+//   • COLD_CEILING — recent avg must sit at/below this to count as cold, so a
+//     still-productive player who merely cooled off a hot streak (e.g. a hitter
+//     averaging ~6 pts) isn't wrongly tagged "cold".
+// Reference-preset scale: football is HALF_PPR offense; baseball is Standard,
+// where a single=1, HR=4, RBI=1, walk=1 — a genuine hitter slump lands ≤3/gm.
+const HOT_FLOOR: Record<Sport, number> = {
+  [Sport.FOOTBALL]: 8,
+  [Sport.BASEBALL]: 5,
+};
+const COLD_CEILING: Record<Sport, number> = {
+  [Sport.FOOTBALL]: 6,
+  [Sport.BASEBALL]: 3,
+};
+
 /**
  * Classify recent form vs baseline into a hot/cold streak, or null if neither.
  * `recentAvg`/`baselineAvg` are average reference-preset points per game.
@@ -44,10 +62,18 @@ export function classifyStreak(
 ): PlayerStreakStatus | null {
   if (games < STREAK_MIN_GAMES) return null;
   const margin = MIN_MARGIN[sport];
-  if (recentAvg >= baselineAvg * HOT_RATIO && recentAvg - baselineAvg >= margin) {
+  if (
+    recentAvg >= HOT_FLOOR[sport] &&
+    recentAvg >= baselineAvg * HOT_RATIO &&
+    recentAvg - baselineAvg >= margin
+  ) {
     return "hot";
   }
-  if (recentAvg <= baselineAvg * COLD_RATIO && baselineAvg - recentAvg >= margin) {
+  if (
+    recentAvg <= COLD_CEILING[sport] &&
+    recentAvg <= baselineAvg * COLD_RATIO &&
+    baselineAvg - recentAvg >= margin
+  ) {
     return "cold";
   }
   return null;

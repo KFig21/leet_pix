@@ -22,7 +22,7 @@
   }
 
   &--cold {
-    color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--color-info);
+    background: color-mix(in srgb, var(--color-info) 16%, transparent);
   }
 }

@@ -24,6 +24,9 @@ $font-size-lg: 1.25rem;
 $font-size-xl: 1.5rem;
 $font-weight-bold: 700;
 
+// Small pill badges (Horizon/Resolution/Scoring/League/Status) share one icon size.
+$badge-icon-size: 15px;
+
 // ── Layout ────────────────────────────────────────────────────────────────────
 $layout-max-width: 1400px; // overall three-column shell
 $content-max-width: 820px; // center feed column

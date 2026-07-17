@@ -1,5 +1,5 @@
 import { useState } from "react";
-import TrackChangesIcon from "@mui/icons-material/TrackChanges";
+import SportsScoreIcon from "@mui/icons-material/SportsScore";
 import ForumIcon from "@mui/icons-material/Forum";
 import {
   QUESTION_RESOLUTION,
@@ -36,27 +36,42 @@ export function ResolutionBadge({ questionType, evaluationWeeks }: Props) {
       ? "the fewest points"
       : "the most points";
 
+  const variant = scoreable ? "scored" : "opinion";
+  // Shared pill content: the trigger button and the modal's title accessory.
+  const pill = (
+    <>
+      {scoreable ? (
+        <SportsScoreIcon className="resolution-badge__icon" />
+      ) : (
+        <ForumIcon className="resolution-badge__icon" />
+      )}
+      {scoreable ? `Scored · ${windowText}` : "Opinion"}
+    </>
+  );
+
   return (
     <>
       <button
         type="button"
-        className={`resolution-badge resolution-badge--${scoreable ? "scored" : "opinion"}`}
+        className={`resolution-badge resolution-badge--${variant}`}
         onClick={(e) => {
           e.stopPropagation();
           setOpen(true);
         }}
       >
-        {scoreable ? (
-          <TrackChangesIcon className="resolution-badge__icon" />
-        ) : (
-          <ForumIcon className="resolution-badge__icon" />
-        )}
-        {scoreable ? `Scored · ${windowText}` : "Opinion"}
+        {pill}
       </button>
 
       {open && (
         <Modal
           title={scoreable ? "Scored poll" : "Opinion poll"}
+          titleAccessory={
+            <span
+              className={`resolution-badge resolution-badge--${variant} resolution-badge--static`}
+            >
+              {pill}
+            </span>
+          }
           onClose={() => setOpen(false)}
         >
           {scoreable ? (

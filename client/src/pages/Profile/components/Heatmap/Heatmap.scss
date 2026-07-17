@@ -5,7 +5,7 @@
 // (it depends on the week count). Row 1 holds month labels; rows 2–8 are Sun–Sat.
 .heatmap {
   display: grid;
-  grid-template-rows: auto repeat(7, 13px);
+  grid-template-rows: auto repeat(7, 14px);
   column-gap: 3px;
   row-gap: 3px;
   width: 100%;

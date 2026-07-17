@@ -7,7 +7,8 @@
   color: var(--text-secondary);
   font-size: $font-size-sm;
 
-  &__icon {
-    font-size: 15px;
+  // svg qualifier + nesting so this beats MUI's runtime .MuiSvgIcon-root rule.
+  svg#{&}__icon {
+    font-size: 14px;
   }
 }

@@ -1,3 +1,11 @@
+import TuneIcon from "@mui/icons-material/Tune";
+import SportsScoreIcon from "@mui/icons-material/SportsScore";
+import ForumIcon from "@mui/icons-material/Forum";
+import SportsIcon from "@mui/icons-material/Sports";
+import LockIcon from "@mui/icons-material/Lock";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
+import ScheduleIcon from "@mui/icons-material/Schedule";
 import { Sport, SCORING_PRESET_LABELS, isScoreablePoll } from "@leetpix/shared";
 import { MultiSelect, type Option } from "@/components/MultiSelect/MultiSelect";
 import { SportIcon } from "@/components/SportIcon/SportIcon";
@@ -6,6 +14,9 @@ import "./PollFilters.scss";
 
 const FOOTBALL_COLOR = "#e8833a";
 const BASEBALL_COLOR = "#3b82f6";
+const ICON_SX = { fontSize: 16 };
+// A live "Open" dot, matching StatusBadge — no dedicated icon reads as "open".
+const OpenDot = () => <span className="poll-filters__dot" />;
 
 // Each dimension holds the set of chosen values (empty = no filter). Values
 // within a dimension are OR'd; dimensions are AND'd.
@@ -65,43 +76,108 @@ const DIMENSIONS: { key: keyof PollFilterState; label: string; options: Option[]
       key: "type",
       label: "Type",
       options: [
-        { value: "SCORED", label: "Scored" },
-        { value: "OPINION", label: "Opinion" },
+        {
+          value: "SCORED",
+          label: "Scored",
+          color: "var(--color-scored)",
+          icon: <SportsScoreIcon sx={ICON_SX} />,
+        },
+        {
+          value: "OPINION",
+          label: "Opinion",
+          color: "var(--text-secondary)",
+          icon: <ForumIcon sx={ICON_SX} />,
+        },
       ],
     },
     {
       key: "scoring",
       label: "Scoring",
       options: [
-        ...SCORING_LABELS.map((l) => ({ value: l, label: l })),
-        { value: "Custom", label: "Custom" },
+        ...SCORING_LABELS.map((l) => ({
+          value: l,
+          label: l,
+          color: "var(--color-info)",
+          icon: <SportsIcon sx={ICON_SX} />,
+        })),
+        {
+          value: "Custom",
+          label: "Custom",
+          color: "var(--color-info)",
+          icon: <SportsIcon sx={ICON_SX} />,
+        },
       ],
     },
     {
       key: "status",
       label: "Status",
       options: [
-        { value: "OPEN", label: "Open" },
-        { value: "LOCKED", label: "Locked" },
-        { value: "RESOLVED", label: "Resolved" },
+        {
+          value: "OPEN",
+          label: "Open",
+          color: "var(--color-success)",
+          icon: <OpenDot />,
+        },
+        {
+          value: "LOCKED",
+          label: "Locked",
+          color: "var(--color-warning)",
+          icon: <LockIcon sx={ICON_SX} />,
+        },
+        {
+          value: "RESOLVED",
+          label: "Resolved",
+          color: "var(--color-info)",
+          icon: <CheckCircleIcon sx={ICON_SX} />,
+        },
       ],
     },
     {
       key: "voted",
       label: "Your vote",
       options: [
-        { value: "VOTED", label: "Voted" },
-        { value: "NOT_VOTED", label: "Not voted" },
+        {
+          value: "VOTED",
+          label: "Voted",
+          color: "var(--accent)",
+          icon: <CheckCircleIcon sx={ICON_SX} />,
+        },
+        {
+          value: "NOT_VOTED",
+          label: "Not voted",
+          color: "var(--text-secondary)",
+          icon: <RadioButtonUncheckedIcon sx={ICON_SX} />,
+        },
       ],
     },
     {
       key: "closing",
       label: "Closing",
       options: [
-        { value: "MIN15", label: "Within 15 min" },
-        { value: "HOUR", label: "Within 1h" },
-        { value: "SOON", label: "Within 24h" },
-        { value: "WEEK", label: "This week" },
+        {
+          value: "MIN15",
+          label: "Within 15 min",
+          color: "var(--color-danger)",
+          icon: <ScheduleIcon sx={ICON_SX} />,
+        },
+        {
+          value: "HOUR",
+          label: "Within 1h",
+          color: "var(--color-warning)",
+          icon: <ScheduleIcon sx={ICON_SX} />,
+        },
+        {
+          value: "SOON",
+          label: "Within 24h",
+          color: "var(--color-info)",
+          icon: <ScheduleIcon sx={ICON_SX} />,
+        },
+        {
+          value: "WEEK",
+          label: "This week",
+          color: "var(--text-secondary)",
+          icon: <ScheduleIcon sx={ICON_SX} />,
+        },
       ],
     },
   ];
@@ -161,14 +237,22 @@ export function PollFilters({ value, onChange }: Props) {
   const active = DIMENSIONS.flatMap((dim) =>
     value[dim.key].map((val) => {
       const opt = dim.options.find((o) => o.value === val);
-      return { key: dim.key, val, label: opt?.label ?? val, color: opt?.color };
+      return {
+        key: dim.key,
+        val,
+        label: opt?.label ?? val,
+        color: opt?.color,
+        icon: opt?.icon,
+      };
     }),
   );
 
   return (
     <div className="poll-filters">
       <div className="poll-filters__top">
-        <h3 className="poll-filters__heading">Filters</h3>
+        <h3 className="poll-filters__heading">
+          <TuneIcon fontSize="small" /> Filters
+        </h3>
         {active.length > 0 && (
           <button
             className="poll-filters__clear"
@@ -199,6 +283,7 @@ export function PollFilters({ value, onChange }: Props) {
               className="poll-filters__pill"
               style={{ background: a.color ?? "var(--accent)" }}
             >
+              {a.icon && <span className="poll-filters__pill-icon">{a.icon}</span>}
               {a.label}
               <button
                 type="button"

@@ -4,7 +4,6 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LogoutIcon from "@mui/icons-material/Logout";
-import TuneIcon from "@mui/icons-material/Tune";
 import CloseIcon from "@mui/icons-material/Close";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
@@ -50,16 +49,12 @@ export function MobileDrawer({ rail, onClose }: Props) {
       <div className="mobile-drawer__sheet" onClick={(e) => e.stopPropagation()}>
         <div className="mobile-drawer__handle" />
 
-        {rail && (
-          <div className="mobile-drawer__section">
-            <div className="mobile-drawer__section-title">
-              <TuneIcon fontSize="small" /> Filters
-            </div>
-            {rail}
-          </div>
-        )}
+        {/* PollFilters renders its own "Filters" heading — no need to repeat it here. */}
+        {rail && <div className="mobile-drawer__section">{rail}</div>}
 
-        <div className="mobile-drawer__menu">
+        <div
+          className={`mobile-drawer__menu${rail ? " mobile-drawer__menu--divided" : ""}`}
+        >
           <Link
             to="/settings"
             className="mobile-drawer__item"

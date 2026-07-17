@@ -63,7 +63,7 @@
     border-top: 1px solid var(--border-color);
 
     @include mobile {
-      font-size: 13px;
+      font-size: 14px;
       padding: $gap-sm $gap-sm $gap-sm 0;
     }
   }
@@ -87,7 +87,7 @@
     }
 
     @include mobile {
-      font-size: 13px;
+      font-size: 14px;
       padding: $gap-sm 4px;
     }
   }

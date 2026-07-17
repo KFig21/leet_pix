@@ -1,6 +1,8 @@
 @use "variables" as *;
+@use "mixins" as *;
 
 .status-badge {
+  @include button-reset;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -9,6 +11,17 @@
   border-radius: $radius-pill;
   font-size: 11px;
   font-weight: $font-weight-bold;
+  white-space: nowrap;
+
+  &:hover {
+    filter: brightness(1.12);
+  }
+
+  // Non-interactive copy of the pill (modal title / explainer rows).
+  &--static {
+    pointer-events: none;
+    flex-shrink: 0;
+  }
 
   &__dot {
     width: 6px;
@@ -17,8 +30,10 @@
     background: currentColor;
   }
 
-  &__icon {
-    font-size: 12px;
+  // svg qualifier + nesting: MUI's runtime-injected .MuiSvgIcon-root rule ties
+  // a bare class on specificity and loads later, so it was winning.
+  svg#{&}__icon {
+    font-size: $badge-icon-size;
   }
 
   &--open {
@@ -34,5 +49,36 @@
   &--resolved {
     color: var(--color-info);
     background: color-mix(in srgb, var(--color-info) 12%, transparent);
+  }
+
+  // ── Lifecycle explainer modal ──
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-sm;
+  }
+
+  &__row {
+    display: flex;
+    align-items: flex-start;
+    gap: $gap-sm;
+    padding: $gap-sm;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-sm;
+    color: var(--text-primary);
+
+    p {
+      margin: 2px 0 0;
+      font-size: $font-size-sm;
+      color: var(--text-secondary);
+    }
+
+    &--on {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 8%, transparent);
+    }
   }
 }

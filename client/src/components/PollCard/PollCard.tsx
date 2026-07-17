@@ -45,6 +45,18 @@ interface Props {
 const REFRESH_KEYS = ["timeline", "explore-polls", "profile-polls", "profile-picks"];
 const stop = (e: React.MouseEvent) => e.stopPropagation();
 
+// Football polls store a week number ("Wk 5"); baseball polls store the grading
+// day as yyyymmdd, which reads as garbage ("Wk 20260710") — format it as a date.
+const weekLabel = (week: number) => {
+  if (week <= 100000) return `Wk ${week}`;
+  const d = new Date(
+    Math.floor(week / 10000),
+    (Math.floor(week / 100) % 100) - 1,
+    week % 100,
+  );
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+};
+
 // Self-contained poll card. Clicking the card opens the detail page; the author
 // identity links to their profile; option buttons vote (open polls) or open a
 // scoring breakdown (resolved polls).
@@ -217,7 +229,7 @@ export function PollCard({ poll, pick, preview }: Props) {
             !resolved && points != null ? (
               <span className="poll-card__proj" title="Projected points">
                 <span className="poll-card__proj-tag">PROJ</span>
-                {points}
+                <span className="poll-card__proj-value">{points}</span>
               </span>
             ) : null;
           // Final score: the standout number (Futura italic bold, dimmed for
@@ -250,7 +262,7 @@ export function PollCard({ poll, pick, preview }: Props) {
                 className={`poll-card__you${youWrong ? " poll-card__you--wrong" : youRight ? " poll-card__you--right" : ""}`}
               >
                 {me?.avatar && <Avatar avatar={me.avatar} size={16} />}
-                {resolved ? (youRight ? "✓ you" : "✗ you") : "You"}
+                {resolved ? (youRight ? "✓" : "✗") : "You"}
               </span>
             ) : null;
           const youBadge = (
@@ -276,7 +288,18 @@ export function PollCard({ poll, pick, preview }: Props) {
               ? `You & ${others} other${others === 1 ? "" : "s"}`
               : "You"
             : `${votes} vote${votes === 1 ? "" : "s"}`;
-          const faces = (o.votes ?? []).slice(0, 3);
+          // Recent voter avatars.
+          const allFaces = (o.votes ?? []).map((v) => v.voter.avatar);
+          const mineKey = me?.avatar ? JSON.stringify(me.avatar) : null;
+          const otherFaces = mineKey
+            ? allFaces.filter((a) => JSON.stringify(a) !== mineKey)
+            : allFaces;
+          // Mobile stack: no separate "You" chip there, so if the viewer voted
+          // their avatar caps the stack (front-right), never duplicated.
+          const faces =
+            iVoted && me?.avatar
+              ? [...otherFaces.slice(0, 2), me.avatar]
+              : allFaces.slice(0, 3);
           const tallyEl =
             resolved && hasYouBadge ? (
               youBadge
@@ -285,8 +308,8 @@ export function PollCard({ poll, pick, preview }: Props) {
                 {ownedBadge}
                 {!resolved && faces.length > 0 && (
                   <span className="poll-card__faces">
-                    {faces.map((v, i) => (
-                      <Avatar key={i} avatar={v.voter.avatar} size={16} />
+                    {faces.map((a, i) => (
+                      <Avatar key={i} avatar={a} size={16} />
                     ))}
                   </span>
                 )}
@@ -313,12 +336,10 @@ export function PollCard({ poll, pick, preview }: Props) {
                   // pos · matchup (or stats / keeper cost) + tally below.
                   <span className="poll-card__m">
                     <span className="poll-card__m-row">
-                      <span className="poll-card__m-id">
-                        {nameEl}
-                        {projEl}
-                      </span>
+                      <span className="poll-card__m-id">{nameEl}</span>
                       <span className="poll-card__m-num">
                         {scoreEl}
+                        {projEl}
                         {pctEl}
                       </span>
                     </span>
@@ -348,35 +369,36 @@ export function PollCard({ poll, pick, preview }: Props) {
                     </span>
                   </span>
                 ) : (
-                  // Single line: name · pos · team badge · matchup/stats, PROJ
-                  // on the left; score → your grade → % pinned right.
+                  // Single line: name · pos · team badge · matchup/stats, with
+                  // PROJ on the left; score → voter tally → % pinned right.
+                  // When there's no middle PROJ column (resolved polls, or open
+                  // polls with no projection) the info cluster is free to grow
+                  // into the empty space so long stat lines don't ellipsize;
+                  // when PROJ is present it stays fixed so PROJ column-aligns.
                   <span className="poll-card__d">
-                    {nameEl}
-                    {o.player?.position && (
-                      <span className="poll-card__pos">{o.player.position}</span>
-                    )}
-                    <TeamTag abbr={o.player?.team} sport={poll.sport} />
-                    {keeperEl}
-                    {stats && <span className="poll-card__stats">{stats}</span>}
-                    {!resolved && (
-                      <PlayerMeta
-                        className="poll-card__option-meta"
-                        game={isKeeper ? null : o.game}
-                        injuryStatus={o.player?.injuryStatus}
-                      />
-                    )}
-                    {streakEl}
+                    <span
+                      className={`poll-card__d-info${projEl ? "" : " poll-card__d-info--grow"}`}
+                    >
+                      {nameEl}
+                      {o.player?.position && (
+                        <span className="poll-card__pos">{o.player.position}</span>
+                      )}
+                      <TeamTag abbr={o.player?.team} sport={poll.sport} />
+                      {keeperEl}
+                      {stats && <span className="poll-card__stats">{stats}</span>}
+                      {!resolved && (
+                        <PlayerMeta
+                          className="poll-card__option-meta"
+                          game={isKeeper ? null : o.game}
+                          injuryStatus={o.player?.injuryStatus}
+                        />
+                      )}
+                      {streakEl}
+                    </span>
                     {projEl}
                     <span className="poll-card__d-num">
                       {scoreEl}
-                      {youBadge}
-                      {!resolved && faces.length > 0 && (
-                        <span className="poll-card__faces">
-                          {faces.map((v, i) => (
-                            <Avatar key={i} avatar={v.voter.avatar} size={16} />
-                          ))}
-                        </span>
-                      )}
+                      <span className="poll-card__d-tally">{tallyEl}</span>
                       {pctEl}
                     </span>
                   </span>
@@ -444,9 +466,9 @@ export function PollCard({ poll, pick, preview }: Props) {
           {voted ? " · you voted" : ""}
         </span>
         {resolved ? (
-          <span className="poll-card__resolved-tag">
-            Resolved{poll.week ? ` · Wk ${poll.week}` : ""}
-          </span>
+          poll.week ? (
+            <span className="poll-card__resolved-tag">{weekLabel(poll.week)}</span>
+          ) : null
         ) : (
           <PollCountdown lockAt={poll.lockAt} status={poll.status} />
         )}

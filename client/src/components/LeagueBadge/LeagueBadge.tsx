@@ -55,7 +55,16 @@ export function LeagueBadge({ league }: Props) {
       </button>
 
       {open && (
-        <Modal title={league.name} onClose={() => setOpen(false)}>
+        <Modal
+          title={league.name}
+          titleAccessory={
+            <span className="league-badge league-badge--static">
+              <GroupsIcon className="league-badge__icon" />
+              {league.numTeams}-team {badgeScoring}
+            </span>
+          }
+          onClose={() => setOpen(false)}
+        >
           <div className="league-badge__body">
             <p className="league-badge__teams">
               <strong>{league.numTeams}</strong> teams

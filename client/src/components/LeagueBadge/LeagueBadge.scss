@@ -19,8 +19,16 @@
     filter: brightness(1.12);
   }
 
-  &__icon {
-    font-size: 12px;
+  // svg qualifier + nesting: MUI's runtime-injected .MuiSvgIcon-root rule ties
+  // a bare class on specificity and loads later, so it was winning.
+  svg#{&}__icon {
+    font-size: $badge-icon-size;
+  }
+
+  // Non-interactive copy of the pill shown in the modal title.
+  &--static {
+    pointer-events: none;
+    flex-shrink: 0;
   }
 
   &__body {

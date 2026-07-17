@@ -1,5 +1,5 @@
 import { useState } from "react";
-import SportsScoreIcon from "@mui/icons-material/SportsScore";
+import SportsIcon from "@mui/icons-material/Sports";
 import {
   SCORING_PRESET_LABELS,
   SCORING_PRESET_RULES,
@@ -43,12 +43,21 @@ export function ScoringBadge({ scoringPreset, scoringFormat }: Props) {
           setOpen(true);
         }}
       >
-        <SportsScoreIcon className="scoring-badge__icon" />
+        <SportsIcon className="scoring-badge__icon" />
         {label}
       </button>
 
       {open && (
-        <Modal title={title} onClose={() => setOpen(false)}>
+        <Modal
+          title={title}
+          titleAccessory={
+            <span className="scoring-badge scoring-badge--static">
+              <SportsIcon className="scoring-badge__icon" />
+              {label}
+            </span>
+          }
+          onClose={() => setOpen(false)}
+        >
           <ul className="scoring-badge__rules">
             {Object.entries(rules).map(([key, value]) => (
               <li key={key} className="scoring-badge__rule">

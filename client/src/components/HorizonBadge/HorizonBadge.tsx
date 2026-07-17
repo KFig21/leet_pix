@@ -48,7 +48,18 @@ export function HorizonBadge({ horizon }: Props) {
       </button>
 
       {open && (
-        <Modal title="League type" onClose={() => setOpen(false)}>
+        <Modal
+          title="League type"
+          titleAccessory={
+            <span
+              className={`horizon-badge horizon-badge--${horizon.toLowerCase()} horizon-badge--static`}
+            >
+              <Icon className="horizon-badge__icon" />
+              {POLL_HORIZON_LABELS[horizon]}
+            </span>
+          }
+          onClose={() => setOpen(false)}
+        >
           <ul className="horizon-badge__list">
             {ORDER.map((h) => {
               const RowIcon = ICONS[h];

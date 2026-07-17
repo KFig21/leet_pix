@@ -145,9 +145,11 @@
       .poll-card__option-fill {
         background: color-mix(in srgb, var(--color-success) 22%, var(--bg-secondary));
       }
+
       .poll-card__option-label {
         font-weight: $font-weight-bold;
       }
+
       .poll-card__option-name {
         color: var(--color-success);
       }
@@ -224,13 +226,40 @@
     min-width: 0;
   }
 
-  // Result/% cluster, pinned right.
+  // Name/pos/team/matchup cluster. A fixed (shrinkable-only-under-pressure)
+  // basis, and crucially NO grow: it always ends at the same x, so PROJ —
+  // which follows it — sits on the left in a consistent column across option
+  // rows. (Letting it grow would fill the row and shove PROJ to the right.)
+  // The gap after a short matchup is the price of that vertical alignment.
+  &__d-info {
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+    flex: 0 1 380px;
+    min-width: 0;
+
+    // No middle PROJ column to align against (resolved polls, or open polls
+    // with no projection): grow into the empty space so long stat lines use
+    // the whole row instead of ellipsizing against the fixed basis.
+    &--grow {
+      flex-grow: 1;
+    }
+  }
+
+  // Result cluster, pinned right: score · voter tally · %.
   &__d-num {
     margin-left: auto;
     display: flex;
     align-items: center;
     gap: $gap-sm;
     flex-shrink: 0;
+  }
+
+  // Voter avatars + tally, matching the mobile treatment.
+  &__d-tally {
+    display: inline-flex;
+    align-items: center;
+    gap: $gap-xs;
   }
 
   // ── Mobile: two stacked rows ───────────────────────────────────────────────
@@ -287,6 +316,7 @@
     height: 9px;
     border-radius: 50%;
     flex-shrink: 0;
+    margin-right: -2px; // sit 2px tighter to the pos/matchup text than the row gap
   }
 
   // "QB · DET vs NO · Sun 1:00 PM" — shrinks/ellipsizes before the tally does.
@@ -318,6 +348,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-weight: $font-weight-bold;
   }
 
   // Fixed-width atoms don't shrink; the name + matchup absorb tight space.
@@ -352,7 +383,7 @@
     padding: 0 7px;
     border-radius: $radius-sm;
     background: var(--bg-hover);
-    color: var(--text-primary);
+    color: var(--text-secondary); // quieter than the headline data
     font-size: 11px;
     font-weight: $font-weight-bold;
     white-space: nowrap;
@@ -369,6 +400,7 @@
     font-weight: $font-weight-bold;
     font-size: 15px;
     color: var(--text-primary);
+    margin-right: 8px;
 
     &--dim {
       opacity: 0.7;
@@ -387,7 +419,7 @@
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    margin-left: 4px; // breathing room after the player name
+    margin-right: 8px; // extra air before the result/% that follows it
     color: var(--text-secondary);
     font-size: $font-size-sm;
   }
@@ -401,6 +433,13 @@
     font-weight: $font-weight-bold;
     letter-spacing: 0.04em;
     line-height: 14px;
+  }
+
+  // Right-aligned so the number itself lines up across option rows.
+  &__proj-value {
+    display: inline-block;
+    min-width: 26px;
+    text-align: right;
   }
 
   // Compact headline stats on resolved options ("9 rec · 154 yds · 2 TD").
@@ -453,12 +492,12 @@
     display: inline-flex;
     align-items: center;
 
-    > * {
+    >* {
       border-radius: 50%;
       box-shadow: 0 0 0 2px var(--bg-secondary);
     }
 
-    > * + * {
+    >*+* {
       margin-left: -6px;
     }
   }
@@ -471,6 +510,9 @@
   }
 
   &__pct {
+    display: inline-block;
+    min-width: 38px;
+    text-align: right;
     font-weight: $font-weight-bold;
     font-size: $font-size-lg;
 
@@ -478,6 +520,7 @@
     &--win {
       color: var(--color-success);
     }
+
     &--lose {
       color: var(--color-danger);
     }

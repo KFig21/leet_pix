@@ -70,21 +70,15 @@
     background: var(--border-color);
   }
 
-  &__section-title {
-    display: flex;
-    align-items: center;
-    gap: $gap-xs;
-    margin-bottom: $gap-sm;
-    color: var(--text-secondary);
-    font-size: $font-size-sm;
-    font-weight: $font-weight-bold;
-  }
-
   &__menu {
     display: flex;
     flex-direction: column;
-    border-top: 1px solid var(--border-color);
-    padding-top: $gap-sm;
+
+    // Only separates from something when a filters section actually precedes it.
+    &--divided {
+      border-top: 1px solid var(--border-color);
+      padding-top: $gap-sm;
+    }
   }
 
   &__item {

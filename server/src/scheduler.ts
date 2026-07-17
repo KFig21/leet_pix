@@ -2,6 +2,7 @@ import cron from "node-cron";
 import { prisma } from "./lib/prisma";
 import { tryAcquireJobLock, releaseJobLock } from "./lib/jobLock";
 import { getNflState } from "./lib/nflState";
+import { NFL_REGULAR_SEASON_WEEKS } from "@leetpix/shared";
 import { lockDuePolls } from "./services/locking";
 import { resolveDuePolls } from "./services/resolution";
 import { seedTeams } from "./jobs/importTeams";
@@ -78,9 +79,13 @@ async function dailyNflImports(): Promise<void> {
   await runJob(`stats wk${nfl.week}`, () =>
     importNflStats(nfl.season, nfl.week, "actual"),
   );
-  await runJob(`projections wk${nfl.week}`, () =>
-    importNflStats(nfl.season, nfl.week, "projection"),
-  );
+  // Rest-of-season projections (this week → the finale) so keeper polls can sum
+  // a season-long projection; single-game polls only read the current week.
+  for (let wk = nfl.week; wk <= NFL_REGULAR_SEASON_WEEKS; wk++) {
+    await runJob(`projections wk${wk}`, () =>
+      importNflStats(nfl.season, wk, "projection"),
+    );
+  }
   // Re-price open polls' projected points from the fresh projections.
   await runJob("refresh projections", refreshOpenPollProjections);
 }

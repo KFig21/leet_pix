@@ -6,14 +6,17 @@ import LockIcon from "@mui/icons-material/Lock";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import ScheduleIcon from "@mui/icons-material/Schedule";
-import { Sport, SCORING_PRESET_LABELS, isScoreablePoll } from "@leetpix/shared";
+import {
+  Sport,
+  SPORT_COLORS,
+  SCORING_PRESET_LABELS,
+  isScoreablePoll,
+} from "@leetpix/shared";
 import { MultiSelect, type Option } from "@/components/MultiSelect/MultiSelect";
 import { SportIcon } from "@/components/SportIcon/SportIcon";
 import type { PollView } from "@/types";
 import "./PollFilters.scss";
 
-const FOOTBALL_COLOR = "#e8833a";
-const BASEBALL_COLOR = "#3b82f6";
 const ICON_SX = { fontSize: 16 };
 // A live "Open" dot, matching StatusBadge — no dedicated icon reads as "open".
 const OpenDot = () => <span className="poll-filters__dot" />;
@@ -61,13 +64,13 @@ const DIMENSIONS: { key: keyof PollFilterState; label: string; options: Option[]
         {
           value: "FOOTBALL",
           label: "Football",
-          color: FOOTBALL_COLOR,
+          color: SPORT_COLORS.FOOTBALL,
           icon: <SportIcon sport={Sport.FOOTBALL} style={{ fontSize: 16 }} />,
         },
         {
           value: "BASEBALL",
           label: "Baseball",
-          color: BASEBALL_COLOR,
+          color: SPORT_COLORS.BASEBALL,
           icon: <SportIcon sport={Sport.BASEBALL} style={{ fontSize: 16 }} />,
         },
       ],

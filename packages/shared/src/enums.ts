@@ -6,6 +6,12 @@ export const Sport = {
 } as const;
 export type Sport = (typeof Sport)[keyof typeof Sport];
 
+// Accent color per sport, used to tint sport icons/filters.
+export const SPORT_COLORS: Record<Sport, string> = {
+  FOOTBALL: "#e8833a",
+  BASEBALL: "#3b82f6",
+};
+
 export const PollStatus = {
   OPEN: "OPEN",
   LOCKED: "LOCKED",
@@ -159,4 +165,15 @@ export function isScoreablePoll(q: PollQuestionType): boolean {
 /** Add/drop are scored over a multi-week window (rest are single-game). */
 export function isWindowedPoll(q: PollQuestionType): boolean {
   return q === PollQuestionType.ADD || q === PollQuestionType.DROP;
+}
+
+/** Last week of the NFL regular season — the horizon for season projections. */
+export const NFL_REGULAR_SEASON_WEEKS = 18;
+
+/**
+ * "Keep" is a season-long decision, so its projection spans the rest of the
+ * regular season (from `week` through week 18) rather than a single game.
+ */
+export function isSeasonProjectionPoll(q: PollQuestionType): boolean {
+  return q === PollQuestionType.KEEP;
 }

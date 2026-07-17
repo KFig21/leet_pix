@@ -9,7 +9,7 @@
   height: 20px;
   padding: 0 8px;
   border-radius: $radius-pill;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: $font-weight-bold;
   white-space: nowrap;
 
@@ -62,16 +62,29 @@
   }
 
   &__row {
-    display: flex;
-    align-items: flex-start;
-    gap: $gap-sm;
+    // Two columns so the badges and the descriptions each line up in their own
+    // column across every row. The badge column is a fixed width (wide enough
+    // for the longest label, "Resolved"), so the descriptions all start at the
+    // same x regardless of how wide each badge is.
+    display: grid;
+    grid-template-columns: 116px 1fr;
+    align-items: center;
+    column-gap: $gap-sm;
     padding: $gap-sm;
     border: 1px solid var(--border-color);
     border-radius: $radius-sm;
     color: var(--text-primary);
 
+    // Badge container: centers the pill in its column, horizontally + vertically.
+    .status-badge__cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: stretch;
+    }
+
     p {
-      margin: 2px 0 0;
+      margin: 0;
       font-size: $font-size-sm;
       color: var(--text-secondary);
     }

@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   createPollSchema,
   isScoreablePoll,
+  isSeasonProjectionPoll,
   SCORING_PRESET_RULES,
   type ScoringPreset,
   type ScoringRules,
@@ -23,7 +24,7 @@ import {
   baseballStartInfo,
   pollGameIds,
 } from "../lib/schedule";
-import { projectedPointsByPlayer } from "../services/projections";
+import { projectedPointsByPlayer, projectionWeeks } from "../services/projections";
 import { assertCanPost } from "../services/cooldown";
 
 export const pollsRouter = Router();
@@ -216,17 +217,22 @@ pollsRouter.post(
       gameIds = await pollGameIds(input.sport, season, week, playerIds);
     }
 
+    // Scoreable polls get a graded projection; keeper (season-long) polls get
+    // an informational rest-of-season projection. Both freeze the same rules.
     let projected = new Map<string, number>();
     if (
       rules &&
       input.sport === "FOOTBALL" &&
       season != null &&
       week != null &&
-      isScoreablePoll(input.questionType)
+      (isScoreablePoll(input.questionType) ||
+        isSeasonProjectionPoll(input.questionType))
     ) {
-      const weeks = input.evaluationWeeks
-        ? Array.from({ length: input.evaluationWeeks }, (_, i) => week! + i)
-        : [week];
+      const weeks = projectionWeeks(
+        input.questionType,
+        week,
+        input.evaluationWeeks ?? null,
+      );
       projected = await projectedPointsByPlayer(
         playerIds,
         season,

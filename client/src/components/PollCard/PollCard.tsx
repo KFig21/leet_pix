@@ -6,6 +6,7 @@ import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import {
   POLL_QUESTION_LABELS,
   PollQuestionType,
+  SPORT_COLORS,
   formatKeeperCost,
   teamColor,
 } from "@leetpix/shared";
@@ -159,13 +160,26 @@ export function PollCard({ poll, pick, preview }: Props) {
               <LeaderboardIcon />
             </button>
           )}
-          <SportIcon sport={poll.sport} className="poll-card__sport" />
+          {!isMobile && (
+            <SportIcon
+              sport={poll.sport}
+              className="poll-card__sport"
+              style={{ color: SPORT_COLORS[poll.sport] }}
+            />
+          )}
           <StatusBadge status={poll.status} />
         </span>
       </header>
 
       <p className="poll-card__question">
         {POLL_QUESTION_LABELS[poll.questionType]}
+        {isMobile && (
+          <SportIcon
+            sport={poll.sport}
+            className="poll-card__sport poll-card__sport--inline"
+            style={{ color: SPORT_COLORS[poll.sport] }}
+          />
+        )}
       </p>
 
       <ul className="poll-card__options">
@@ -224,11 +238,16 @@ export function PollCard({ poll, pick, preview }: Props) {
           const streakEl = !resolved ? (
             <StreakBadge streak={o.player?.streak} />
           ) : null;
-          // Projection: quiet, labeled PROJ so it never reads as a result.
+          // Projection: quiet, labeled so it never reads as a result. Keeper
+          // polls show a rest-of-season projection (SZN), everyone else a
+          // single-game/window one (PROJ).
           const projEl =
             !resolved && points != null ? (
-              <span className="poll-card__proj" title="Projected points">
-                <span className="poll-card__proj-tag">PROJ</span>
+              <span
+                className="poll-card__proj"
+                title={isKeeper ? "Projected rest-of-season points" : "Projected points"}
+              >
+                <span className="poll-card__proj-tag">{isKeeper ? "SZN" : "PROJ"}</span>
                 <span className="poll-card__proj-value">{points}</span>
               </span>
             ) : null;

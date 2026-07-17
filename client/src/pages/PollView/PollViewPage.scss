@@ -2,6 +2,7 @@
 @use "mixins" as *;
 
 .poll-view {
+
   // On tablet+ the poll card and voter filters stay pinned; only the voter
   // list scrolls. (On phones the whole page scrolls normally.)
   @include tablet {
@@ -11,13 +12,14 @@
     overflow: hidden;
 
     // The card and header keep their natural size and don't compress.
-    > .poll-card,
+    >.poll-card,
     &__header {
       flex-shrink: 0;
     }
   }
 
   &__header {
+    @include sticky-header;
     padding: $gap-md;
     font-size: $font-size-xl;
     font-weight: $font-weight-bold;

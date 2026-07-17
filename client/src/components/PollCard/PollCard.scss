@@ -60,12 +60,25 @@
     margin-left: auto;
     display: flex;
     align-items: center;
-    gap: $gap-sm;
+    gap: $gap-xs;
+
+    @include mobile {
+      gap: 0px;
+    }
   }
 
-  &__sport {
+  // svg qualifier beats MUI's runtime .MuiSvgIcon-root sizing (ties on
+  // specificity and loads later otherwise). Color comes from an inline style.
+  svg#{&}__sport {
     font-size: 20px;
     color: var(--text-secondary);
+
+    // Mobile: sits at the end of the question text instead of the top-right.
+    &--inline {
+      margin-left: $gap-xs;
+      font-size: 18px;
+      vertical-align: -2px;
+    }
   }
 
   &__question {
@@ -543,11 +556,12 @@
   }
 
   &__foot {
+    margin-top: 2px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: $gap-sm;
     color: var(--text-secondary);
-    font-size: $font-size-sm;
+    font-size: 12px;
   }
 }

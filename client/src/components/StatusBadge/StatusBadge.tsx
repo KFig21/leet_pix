@@ -72,11 +72,13 @@ export function StatusBadge({ status }: { status: PollStatus }) {
                 key={s}
                 className={`status-badge__row${s === status ? " status-badge__row--on" : ""}`}
               >
-                <span
-                  className={`status-badge status-badge--${s.toLowerCase()} status-badge--static`}
-                >
-                  {pillContent(s)}
-                </span>
+                <div className="status-badge__cell">
+                  <span
+                    className={`status-badge status-badge--${s.toLowerCase()} status-badge--static`}
+                  >
+                    {pillContent(s)}
+                  </span>
+                </div>
                 <p>{DESC[s]}</p>
               </li>
             ))}

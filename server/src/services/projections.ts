@@ -1,6 +1,9 @@
 import {
+  NFL_REGULAR_SEASON_WEEKS,
+  PollQuestionType,
   SCORING_PRESET_RULES,
   isScoreablePoll,
+  isSeasonProjectionPoll,
   type ScoringPreset,
   type ScoringRules,
 } from "@leetpix/shared";
@@ -13,6 +16,27 @@ const pollWeeks = (week: number, evaluationWeeks: number | null): number[] =>
   evaluationWeeks
     ? Array.from({ length: evaluationWeeks }, (_, i) => week + i)
     : [week];
+
+// Rest-of-season week range (this week through the regular-season finale),
+// clamped so an out-of-range week never produces an empty/backwards span.
+export const seasonWeeks = (week: number): number[] => {
+  const start = Math.min(Math.max(week, 1), NFL_REGULAR_SEASON_WEEKS);
+  return Array.from(
+    { length: NFL_REGULAR_SEASON_WEEKS - start + 1 },
+    (_, i) => start + i,
+  );
+};
+
+// Weeks a poll's *projection* should sum over: the whole rest of the season for
+// keeper (season-long) questions, else the poll's own outcome window.
+export const projectionWeeks = (
+  questionType: PollQuestionType,
+  week: number,
+  evaluationWeeks: number | null,
+): number[] =>
+  isSeasonProjectionPoll(questionType)
+    ? seasonWeeks(week)
+    : pollWeeks(week, evaluationWeeks);
 
 // Projected fantasy points per player under `rules`, summed across `weeks` from
 // imported PROJECTION stat lines. Players without a projection are absent.
@@ -98,11 +122,18 @@ export async function refreshOpenPollProjections(): Promise<number> {
 
   let updated = 0;
   for (const poll of polls) {
-    if (!isScoreablePoll(poll.questionType)) continue;
+    // Scoreable polls carry a graded projection; keeper polls carry an
+    // informational season-long one. Everything else has no projection.
+    if (!isScoreablePoll(poll.questionType) && !isSeasonProjectionPoll(poll.questionType))
+      continue;
     const rules = pollRules(poll);
     if (!rules) continue;
 
-    const weeks = pollWeeks(poll.week!, poll.evaluationWeeks);
+    const weeks = projectionWeeks(
+      poll.questionType,
+      poll.week!,
+      poll.evaluationWeeks,
+    );
     const map = await projectedPointsByPlayer(
       poll.options.map((o) => o.playerId),
       poll.season!,

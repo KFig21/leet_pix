@@ -5,7 +5,7 @@
   align-items: center;
   gap: 4px;
   color: var(--text-secondary);
-  font-size: $font-size-sm;
+  font-size: 12px;
 
   // svg qualifier + nesting so this beats MUI's runtime .MuiSvgIcon-root rule.
   svg#{&}__icon {

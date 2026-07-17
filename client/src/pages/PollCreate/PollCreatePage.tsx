@@ -411,32 +411,6 @@ export function PollCreatePage() {
           </>
         )}
 
-        {keeper && !selectedLeague && (
-          <>
-            <label className="poll-create__label">League size (teams)</label>
-            <input
-              type="number"
-              min={2}
-              max={32}
-              inputMode="numeric"
-              className="poll-create__select"
-              placeholder="Optional — e.g. 10"
-              value={leagueSize}
-              onChange={(e) => setLeagueSize(e.target.value)}
-            />
-            <p className="poll-create__hint">
-              Optional. Turns each keeper's round &amp; pick into the true overall
-              pick number.
-            </p>
-          </>
-        )}
-        {keeper && selectedLeague && (
-          <p className="poll-create__hint">
-            Using {selectedLeague.numTeams} teams from{" "}
-            <strong>{selectedLeague.name}</strong> for keeper pick numbers.
-          </p>
-        )}
-
         <div className="poll-create__label-row">
           <label className="poll-create__label">League or scoring</label>
           {selectedLeague ? (
@@ -493,6 +467,33 @@ export function PollCreatePage() {
             + Create a custom scoring format
           </button>
         </div>
+
+        {/* League size sits after scoring: picking a league overrides it. */}
+        {keeper && !selectedLeague && (
+          <>
+            <label className="poll-create__label">League size (teams)</label>
+            <input
+              type="number"
+              min={2}
+              max={32}
+              inputMode="numeric"
+              className="poll-create__select"
+              placeholder="Optional — e.g. 10"
+              value={leagueSize}
+              onChange={(e) => setLeagueSize(e.target.value)}
+            />
+            <p className="poll-create__hint">
+              Optional. Turns each keeper's round &amp; pick into the true overall
+              pick number.
+            </p>
+          </>
+        )}
+        {keeper && selectedLeague && (
+          <p className="poll-create__hint">
+            Using {selectedLeague.numTeams} teams from{" "}
+            <strong>{selectedLeague.name}</strong> for keeper pick numbers.
+          </p>
+        )}
 
         <label className="poll-create__label">Players</label>
         <div className="poll-create__filters">

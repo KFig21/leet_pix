@@ -14,6 +14,7 @@ import { Loader } from "@/components/Loader/Loader";
 import { PlayerMeta } from "@/components/PlayerMeta/PlayerMeta";
 import { TeamTag } from "@/components/TeamTag/TeamTag";
 import { StreakBadge } from "@/components/StreakBadge/StreakBadge";
+import { ProjectionBreakdown } from "@/components/ProjectionBreakdown/ProjectionBreakdown";
 import type { PlayerGame } from "@/types";
 import "./PlayerSelect.scss";
 
@@ -232,14 +233,33 @@ export function PlayerSelect({
                   game={hideGame ? null : p.game}
                 />
                 <StreakBadge streak={p.streak} />
-                {p.projectedPoints != null && (
-                  <span className="player-select__proj" title="Projected points">
-                    <span className="player-select__proj-tag">PROJ</span>
-                    <span className="player-select__proj-val">
-                      {formatProjection(p.projectedPoints)}
+                {p.projectedPoints != null &&
+                  (projection ? (
+                    <ProjectionBreakdown
+                      className="player-select__proj"
+                      title="Projected points — tap for the breakdown"
+                      params={{
+                        playerId: p.id,
+                        questionType: projection.questionType,
+                        leagueId: projection.leagueId,
+                        scoringPreset: projection.scoringPreset,
+                        scoringFormatId: projection.scoringFormatId,
+                        evaluationWeeks: projection.evaluationWeeks,
+                      }}
+                    >
+                      <span className="player-select__proj-tag">PROJ</span>
+                      <span className="player-select__proj-val">
+                        {formatProjection(p.projectedPoints)}
+                      </span>
+                    </ProjectionBreakdown>
+                  ) : (
+                    <span className="player-select__proj" title="Projected points">
+                      <span className="player-select__proj-tag">PROJ</span>
+                      <span className="player-select__proj-val">
+                        {formatProjection(p.projectedPoints)}
+                      </span>
                     </span>
-                  </span>
-                )}
+                  ))}
               </button>
             </li>
           ))}

@@ -58,6 +58,7 @@ const WEEKLY: PollView = {
   options: [
     {
       id: "w1",
+      playerId: "w1",
       playerName: "Ja'Marr Chase",
       projectedPoints: 19.5,
       actualPoints: null,
@@ -74,6 +75,7 @@ const WEEKLY: PollView = {
     },
     {
       id: "w2",
+      playerId: "w2",
       playerName: "Amon-Ra St. Brown",
       projectedPoints: 17.4,
       actualPoints: null,
@@ -85,6 +87,7 @@ const WEEKLY: PollView = {
     },
     {
       id: "w3",
+      playerId: "w3",
       playerName: "CeeDee Lamb",
       projectedPoints: 15.8,
       actualPoints: null,
@@ -108,6 +111,7 @@ const KEEPER: PollView = {
   options: [
     {
       id: "k1",
+      playerId: "k1",
       playerName: "Lamar Jackson",
       keeperRound: 3,
       keeperPick: 3,
@@ -121,6 +125,7 @@ const KEEPER: PollView = {
     },
     {
       id: "k2",
+      playerId: "k2",
       playerName: "Josh Allen",
       keeperRound: 2,
       keeperPick: 10,

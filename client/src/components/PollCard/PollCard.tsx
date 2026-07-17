@@ -33,6 +33,7 @@ import {
   ScoringBreakdownModal,
   type BreakdownOption,
 } from "@/components/ScoringBreakdownModal/ScoringBreakdownModal";
+import { ProjectionBreakdown } from "@/components/ProjectionBreakdown/ProjectionBreakdown";
 import type { PollOptionView, PollView } from "@/types";
 import "./PollCard.scss";
 
@@ -245,17 +246,32 @@ export function PollCard({ poll, pick, preview }: Props) {
           // Projection: quiet, labeled PROJ so it never reads as a result.
           // Keeper polls show a rest-of-season projection (tooltip clarifies);
           // the tag stays "PROJ" either way.
+          const projInner = (
+            <>
+              <span className="poll-card__proj-tag">PROJ</span>
+              <span className="poll-card__proj-value">
+                {formatProjection(points ?? 0)}
+              </span>
+            </>
+          );
+          const projTitle = isKeeper
+            ? "Projected rest-of-season points — tap for the breakdown"
+            : "Projected points — tap for the breakdown";
           const projEl =
             !resolved && points != null && show.projection ? (
-              <span
-                className="poll-card__proj"
-                title={isKeeper ? "Projected rest-of-season points" : "Projected points"}
-              >
-                <span className="poll-card__proj-tag">PROJ</span>
-                <span className="poll-card__proj-value">
-                  {formatProjection(points)}
+              preview ? (
+                <span className="poll-card__proj" title={projTitle}>
+                  {projInner}
                 </span>
-              </span>
+              ) : (
+                <ProjectionBreakdown
+                  className="poll-card__proj"
+                  title={projTitle}
+                  params={{ pollId: poll.id, playerId: o.playerId }}
+                >
+                  {projInner}
+                </ProjectionBreakdown>
+              )
             ) : null;
           // Final score: the standout number (Futura italic bold, dimmed for
           // the non-winner).

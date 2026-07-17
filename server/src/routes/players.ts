@@ -1,14 +1,24 @@
 import { Router } from "express";
 import type { Prisma } from "@prisma/client";
-import { Sport, isScoreablePoll, isSeasonProjectionPoll } from "@leetpix/shared";
+import {
+  Sport,
+  isScoreablePoll,
+  isSeasonProjectionPoll,
+  scoreStatLine,
+  type PollQuestionType,
+  type ScoringRules,
+} from "@leetpix/shared";
 import { prisma } from "../lib/prisma";
 import { asyncHandler } from "../lib/asyncHandler";
 import { requireAuth, type AuthedRequest } from "../middleware/auth";
+import { HttpError } from "../middleware/error";
 import { upcomingGameByTeam } from "../lib/schedule";
 import { streaksByPlayer } from "../services/streaks";
 import { getNflState } from "../lib/nflState";
 import {
+  pollRules,
   projectedPointsForSport,
+  projectedStatLine,
   projectionWeeks,
   resolveScoringRules,
 } from "../services/projections";
@@ -66,6 +76,89 @@ playersRouter.get(
     }
 
     res.json({ teams, positions, games });
+  }),
+);
+
+// Projected stat-line breakdown for one player, for the projection modal.
+// Scoring context comes either from a poll (?pollId, using its frozen rules and
+// grading window) or from create-screen params (?questionType &leagueId /
+// &scoringPreset / &scoringFormatId &evaluationWeeks, using the current week).
+playersRouter.get(
+  "/:playerId/projection",
+  requireAuth,
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const player = await prisma.player.findUnique({
+      where: { id: req.params.playerId },
+      select: { fullName: true, position: true },
+    });
+    if (!player) throw new HttpError(404, "Player not found");
+
+    let rules: ScoringRules | null = null;
+    let season: number;
+    let weeks: number[];
+    let scoringPreset: string | null = null;
+    let scoringFormat: { id: string; name: string; rules: unknown } | null = null;
+
+    const pollId = (req.query.pollId as string) || null;
+    if (pollId) {
+      const poll = await prisma.poll.findUnique({
+        where: { id: pollId },
+        include: {
+          scoringFormat: true,
+          league: { include: { scoringFormat: true } },
+        },
+      });
+      if (!poll || poll.season == null || poll.week == null) {
+        throw new HttpError(404, "Poll not projectable");
+      }
+      rules = pollRules(poll);
+      season = poll.season;
+      weeks = projectionWeeks(
+        poll.questionType as PollQuestionType,
+        poll.week,
+        poll.evaluationWeeks,
+      );
+      scoringPreset = poll.league?.scoringPreset ?? poll.scoringPreset ?? null;
+      const fmt = poll.league?.scoringFormat ?? poll.scoringFormat;
+      scoringFormat = fmt ? { id: fmt.id, name: fmt.name, rules: fmt.rules } : null;
+    } else {
+      const questionType = String(req.query.questionType ?? "");
+      const evaluationWeeks = req.query.evaluationWeeks
+        ? Number(req.query.evaluationWeeks)
+        : null;
+      const resolved = await resolveScoringRules({
+        leagueId: (req.query.leagueId as string) || null,
+        scoringPreset: (req.query.scoringPreset as string) || null,
+        scoringFormatId: (req.query.scoringFormatId as string) || null,
+        ownerId: req.userId!,
+      });
+      const nfl = await getNflState();
+      if (!resolved || !nfl) throw new HttpError(400, "No scoring context");
+      rules = resolved;
+      season = nfl.season;
+      weeks = projectionWeeks(questionType as PollQuestionType, nfl.week, evaluationWeeks);
+      scoringPreset = (req.query.scoringPreset as string) || null;
+      const formatId = (req.query.scoringFormatId as string) || null;
+      if (formatId) {
+        const fmt = await prisma.scoringFormat.findUnique({ where: { id: formatId } });
+        scoringFormat = fmt ? { id: fmt.id, name: fmt.name, rules: fmt.rules } : null;
+      }
+    }
+
+    if (!rules) throw new HttpError(400, "No scoring rules for this context");
+
+    const statLine = await projectedStatLine(req.params.playerId, season, weeks);
+    const total = scoreStatLine(statLine, rules, player.position);
+
+    res.json({
+      playerName: player.fullName,
+      position: player.position,
+      statLine,
+      total,
+      rules,
+      scoringPreset,
+      scoringFormat,
+    });
   }),
 );
 

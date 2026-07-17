@@ -360,6 +360,7 @@ export function PollCreatePage() {
         leagueSize: keeper ? (effectiveLeagueSize ?? null) : null,
         options: picks.map((o, i) => ({
           id: `preview-${i}`,
+          playerId: o.playerId,
           playerName: o.playerName,
           keeperRound: o.keeperRound ?? null,
           keeperPick: o.keeperPick ?? null,

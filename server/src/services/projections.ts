@@ -74,6 +74,28 @@ export async function projectedPointsByPlayer(
   return totals;
 }
 
+// Summed raw PROJECTION stat line for one player across `weeks` (keeper polls
+// span the rest of the season). Powers the projection breakdown modal — scoring
+// is linear, so scoreStatLine(sum) equals the summed per-week points.
+export async function projectedStatLine(
+  playerId: string,
+  season: number,
+  weeks: number[],
+): Promise<Record<string, number>> {
+  const lines = await prisma.playerStat.findMany({
+    where: { playerId, season, week: { in: weeks }, kind: "PROJECTION" },
+    select: { stats: true },
+  });
+  const merged: Record<string, number> = {};
+  for (const l of lines) {
+    for (const [k, v] of Object.entries(l.stats as Record<string, number>)) {
+      if (typeof v === "number") merged[k] = (merged[k] ?? 0) + v;
+    }
+  }
+  for (const k of Object.keys(merged)) merged[k] = Math.round(merged[k] * 100) / 100;
+  return merged;
+}
+
 // ── Full-pool projection cache ───────────────────────────────────────────────
 // The player picker's "best players" default ranks the whole active pool by
 // projected points. Projections only change once a day (after the import), but

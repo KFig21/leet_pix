@@ -1,0 +1,85 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.poll-customizer {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-md;
+
+  &__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $gap-md;
+  }
+
+  &__hint {
+    margin: 0;
+  }
+
+  &__reset {
+    @include button-reset;
+    flex-shrink: 0;
+    padding: $gap-xs $gap-md;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-pill;
+    color: var(--text-primary);
+    font-weight: $font-weight-bold;
+    font-size: $font-size-sm;
+
+    @include hover {
+      background: var(--bg-hover);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+
+  // Two-column grid of toggles; collapses to one column on phones.
+  &__toggles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $gap-xs $gap-lg;
+
+    @include mobile {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $gap-sm;
+    padding: $gap-xs 0;
+    cursor: pointer;
+  }
+
+  &__previews {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-xs;
+  }
+
+  &__preview-label {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  // Frame each sample card so the live preview reads as a distinct swatch.
+  &__preview {
+    border: 1px solid var(--border-color);
+    border-radius: $radius-md;
+    overflow: hidden;
+    margin-bottom: $gap-sm;
+
+    .poll-card {
+      border-bottom: none;
+    }
+  }
+}

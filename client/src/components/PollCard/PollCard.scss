@@ -313,6 +313,9 @@
   // Line 2: team dot · position · matchup / stats / keeper cost, tally right.
   // Compact so two lines don't congest the card.
   &__m-sub {
+    // A natural word-space between groups so "DET" and "vs NO" flow like a
+    // schedule ("WR · DET vs NO · Sun 1:00 PM"), not a drifted-apart gap.
+    gap: 5px;
     min-width: 0;
     overflow: hidden;
     color: var(--text-secondary);
@@ -448,11 +451,12 @@
     line-height: 14px;
   }
 
-  // Right-aligned so the number itself lines up across option rows.
+  // Right-aligned, monospace so the number lines up across option rows.
   &__proj-value {
     display: inline-block;
-    min-width: 26px;
+    min-width: 44px;
     text-align: right;
+    font-family: $font-mono;
   }
 
   // Compact headline stats on resolved options ("9 rec · 154 yds · 2 TD").
@@ -500,10 +504,17 @@
     }
   }
 
-  // Overlapping stack of recent voter avatars (mobile tally corner).
+  // Overlapping stack of recent voter avatars (tally corner). Backed by a
+  // pill of the option's base surface so the avatars always sit on --bg-secondary
+  // — the separator rings match it, and where the vote-share fill (which is
+  // lighter) runs underneath at a high %, the avatars read as a clean cutout
+  // instead of exposing a mismatched ring.
   &__faces {
     display: inline-flex;
     align-items: center;
+    padding: 2px;
+    border-radius: $radius-pill;
+    background: var(--bg-secondary);
 
     >* {
       border-radius: 50%;

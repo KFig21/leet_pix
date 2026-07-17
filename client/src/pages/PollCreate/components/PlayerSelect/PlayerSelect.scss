@@ -74,54 +74,77 @@
     font-size: $font-size-sm;
   }
 
+  // Desktop row order: team · position · name · schedule … PROJ (right-aligned).
   &__option {
     @include button-reset;
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
+    align-items: center;
     gap: $gap-sm;
     width: 100%;
     padding: $gap-sm;
     border-radius: $radius-sm;
     color: var(--text-primary);
+    text-align: left;
+
+    // Team / position / name / streak / proj hold their size; only the schedule
+    // flexes and ellipsizes when the row gets tight.
+    > * {
+      flex-shrink: 0;
+    }
 
     &:hover {
       background: var(--bg-hover);
     }
   }
 
+  &__pos {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+  }
+
   &__name {
     font-weight: $font-weight-bold;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: var(--text-primary);
     white-space: nowrap;
   }
 
-  // Leading group: the game schedule sits to the LEFT of the player's name.
-  &__lead {
-    display: flex;
-    align-items: baseline;
-    gap: $gap-sm;
+  // Schedule — the one flexible element; shrinks/ellipsizes before the rest.
+  &__game {
+    flex-shrink: 1;
     min-width: 0;
+    overflow: hidden;
   }
 
-  &__game {
-    // Roughly align names by giving the schedule a consistent leading column.
-    min-width: 150px;
-    justify-content: flex-start;
+  // Projected points pinned to the right edge so the numbers line up in a
+  // vertical column across rows. Hidden on phones (no room).
+  &__proj {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-secondary);
 
     @include mobile {
-      min-width: 0;
+      display: none;
     }
   }
 
-  &__pos-team {
-    display: inline-flex;
-    align-items: center;
-    gap: $gap-xs;
-    flex-shrink: 0;
-    color: var(--text-secondary);
-    font-size: $font-size-sm;
-    white-space: nowrap;
+  &__proj-tag {
+    padding: 0 4px;
+    border-radius: $radius-sm;
+    background: color-mix(in srgb, currentColor 16%, transparent);
+    font-size: 9px;
+    font-weight: $font-weight-bold;
+    letter-spacing: 0.04em;
+    line-height: 14px;
+  }
+
+  // Fixed-width, right-aligned, monospace so both the tag and the numbers form
+  // clean vertical columns regardless of digit count.
+  &__proj-val {
+    min-width: 54px;
+    text-align: right;
+    font-family: $font-mono;
   }
 }

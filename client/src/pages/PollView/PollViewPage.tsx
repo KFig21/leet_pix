@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { teamColor } from "@leetpix/shared";
 import { api } from "@/lib/api";
 import { PollCard } from "@/components/PollCard/PollCard";
 import { UserRow } from "@/components/UserRow/UserRow";
@@ -23,7 +24,12 @@ export function PollViewPage() {
   const totalVotes = poll.options.reduce((n, o) => n + (o._count?.votes ?? 0), 0);
   const shown = filter ? poll.options.filter((o) => o.id === filter) : poll.options;
   const rows = shown.flatMap((o) =>
-    o.votes.map((v) => ({ key: v.id, voter: v.voter, option: o.playerName })),
+    o.votes.map((v) => ({
+      key: v.id,
+      voter: v.voter,
+      option: o.playerName,
+      dotColor: teamColor(o.player?.team, poll.sport)?.bg ?? null,
+    })),
   );
 
   return (
@@ -63,7 +69,15 @@ export function PollViewPage() {
                 // In "All" view, show which option each person picked.
                 action={
                   filter === null ? (
-                    <span className="poll-view__picked">{r.option}</span>
+                    <span className="poll-view__picked">
+                      {r.dotColor && (
+                        <span
+                          className="poll-view__pick-dot"
+                          style={{ background: r.dotColor }}
+                        />
+                      )}
+                      {r.option}
+                    </span>
                   ) : undefined
                 }
               />

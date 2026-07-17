@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Sport, PlayerStreak } from "@leetpix/shared";
 import { api } from "@/lib/api";
+import { formatProjection } from "@/lib/formatProjection";
 import { Loader } from "@/components/Loader/Loader";
 import { PlayerMeta } from "@/components/PlayerMeta/PlayerMeta";
 import { TeamTag } from "@/components/TeamTag/TeamTag";
@@ -18,6 +19,16 @@ interface PlayerResult {
   injuryStatus: string | null;
   streak: PlayerStreak | null;
   game: PlayerGame | null;
+  projectedPoints: number | null;
+}
+
+// Scoring context so the picker can show each candidate's projected points.
+export interface ProjectionContext {
+  questionType: string;
+  leagueId?: string | null;
+  scoringPreset?: string | null;
+  scoringFormatId?: string | null;
+  evaluationWeeks?: number | null;
 }
 
 export interface PlayerPick {
@@ -47,6 +58,8 @@ interface Props {
   excludeIds?: string[];
   // Suppress the next-game line (e.g. keeper polls, where schedule is irrelevant).
   hideGame?: boolean;
+  // Scoring context; when set, results show projected points (desktop only).
+  projection?: ProjectionContext;
 }
 
 // Searchable player dropdown backed by our own /players endpoint. Type to filter
@@ -60,6 +73,7 @@ export function PlayerSelect({
   positions = [],
   excludeIds = [],
   hideGame = false,
+  projection,
 }: Props) {
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -77,12 +91,33 @@ export function PlayerSelect({
   const teamKey = teams.join(",");
   const positionKey = positions.join(",");
 
+  // Scoring context (stringified) so results re-fetch when it changes.
+  const projKey = projection
+    ? [
+        projection.questionType,
+        projection.leagueId,
+        projection.scoringPreset,
+        projection.scoringFormatId,
+        projection.evaluationWeeks,
+      ].join("|")
+    : "";
+
   const { data: results, isFetching } = useQuery({
-    queryKey: ["players", sport, debounced, teamKey, positionKey],
+    queryKey: ["players", sport, debounced, teamKey, positionKey, projKey],
     queryFn: () => {
       const params = new URLSearchParams({ sport, q: debounced });
       if (teamKey) params.set("team", teamKey);
       if (positionKey) params.set("position", positionKey);
+      if (projection) {
+        params.set("questionType", projection.questionType);
+        if (projection.leagueId) params.set("leagueId", projection.leagueId);
+        if (projection.scoringPreset)
+          params.set("scoringPreset", projection.scoringPreset);
+        if (projection.scoringFormatId)
+          params.set("scoringFormatId", projection.scoringFormatId);
+        if (projection.evaluationWeeks != null)
+          params.set("evaluationWeeks", String(projection.evaluationWeeks));
+      }
       return api.get<PlayerResult[]>(`/players?${params.toString()}`);
     },
     enabled: open && ready,
@@ -170,19 +205,25 @@ export function PlayerSelect({
                   setSearch("");
                 }}
               >
-                <span className="player-select__lead">
-                  <span className="player-select__name">{p.fullName}</span>
-                  <PlayerMeta
-                    className="player-select__game"
-                    injuryStatus={p.injuryStatus}
-                    game={hideGame ? null : p.game}
-                  />
-                </span>
-                <span className="player-select__pos-team">
-                  <StreakBadge streak={p.streak} />
-                  {p.position && <span>{p.position}</span>}
-                  <TeamTag abbr={p.team} sport={sport} />
-                </span>
+                <TeamTag abbr={p.team} sport={sport} />
+                {p.position && (
+                  <span className="player-select__pos">{p.position}</span>
+                )}
+                <span className="player-select__name">{p.fullName}</span>
+                <PlayerMeta
+                  className="player-select__game"
+                  injuryStatus={p.injuryStatus}
+                  game={hideGame ? null : p.game}
+                />
+                <StreakBadge streak={p.streak} />
+                {p.projectedPoints != null && (
+                  <span className="player-select__proj" title="Projected points">
+                    <span className="player-select__proj-tag">PROJ</span>
+                    <span className="player-select__proj-val">
+                      {formatProjection(p.projectedPoints)}
+                    </span>
+                  </span>
+                )}
               </button>
             </li>
           ))}

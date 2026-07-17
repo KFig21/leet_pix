@@ -24,10 +24,63 @@ import {
   baseballStartInfo,
   pollGameIds,
 } from "../lib/schedule";
-import { projectedPointsByPlayer, projectionWeeks } from "../services/projections";
+import {
+  projectedPointsByPlayer,
+  projectionWeeks,
+  resolveScoringRules,
+} from "../services/projections";
 import { assertCanPost } from "../services/cooldown";
 
 export const pollsRouter = Router();
+
+// Projected points for a set of players under the chosen scoring — used by the
+// create-screen live preview. Prices them exactly as poll creation would
+// (rest-of-season for keeper questions, else the poll's window) without saving
+// anything. Returns {} whenever there's nothing meaningful to project.
+pollsRouter.post(
+  "/preview-projections",
+  requireAuth,
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const {
+      sport,
+      questionType,
+      playerIds,
+      leagueId,
+      scoringPreset,
+      scoringFormatId,
+      evaluationWeeks,
+    } = req.body ?? {};
+
+    const empty = () => res.json({ projections: {} });
+    if (
+      sport !== "FOOTBALL" ||
+      !Array.isArray(playerIds) ||
+      playerIds.length === 0 ||
+      (!isScoreablePoll(questionType) && !isSeasonProjectionPoll(questionType))
+    ) {
+      return empty();
+    }
+
+    const rules = await resolveScoringRules({
+      leagueId,
+      scoringPreset,
+      scoringFormatId,
+      ownerId: req.userId!,
+    });
+
+    const nfl = await getNflState();
+    if (!rules || !nfl) return empty();
+
+    const weeks = projectionWeeks(questionType, nfl.week, evaluationWeeks ?? null);
+    const map = await projectedPointsByPlayer(
+      playerIds,
+      nfl.season,
+      weeks,
+      rules,
+    );
+    res.json({ projections: Object.fromEntries(map) });
+  }),
+);
 
 // Timeline: polls from people the user follows (+ themselves). Two-tier sort —
 // still-votable polls first (soonest lock at top), then everyone else by

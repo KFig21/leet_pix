@@ -92,6 +92,36 @@
     &:first-child {
       padding-top: $gap-xs;
     }
+
+    // Interactive "select all in group" heading (opt-in via onToggleGroup).
+    &--toggle {
+      @include button-reset;
+      display: flex;
+      align-items: center;
+      gap: $gap-sm;
+      width: 100%;
+      padding: $gap-xs $gap-sm;
+      border-radius: $radius-sm;
+      // button-reset's `font: inherit` drops the heading's weight/size — restore.
+      color: var(--text-primary);
+      font-size: $font-size-sm;
+      font-weight: $font-weight-bold;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+
+      &:hover,
+      &:focus-visible {
+        background: var(--bg-hover);
+        outline: none;
+      }
+    }
+  }
+
+  // Grouped menus (position picker): indent the options so they nest visually
+  // under their bold section header.
+  &__menu--grouped &__option {
+    padding-left: $gap-lg;
   }
 
   &__option {
@@ -133,6 +163,26 @@
     border-radius: 4px;
     border: 1px solid var(--border-color);
     flex-shrink: 0;
+
+    // Group heading: all members selected.
+    &--on {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    // Group heading: some (not all) members selected — a partial dash.
+    &--some {
+      border-color: var(--accent);
+
+      &::after {
+        content: "";
+        width: 8px;
+        height: 2px;
+        border-radius: 1px;
+        background: var(--accent);
+      }
+    }
   }
 
   &__check-icon {

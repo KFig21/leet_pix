@@ -74,6 +74,41 @@ export async function projectedPointsByPlayer(
   return totals;
 }
 
+// Resolve scoring rules from a raw selection (league / preset / custom format),
+// with the same precedence poll creation uses. Shared by the create route, the
+// preview-projections endpoint, and the player picker. Leagues are owner-scoped
+// when `ownerId` is given.
+export async function resolveScoringRules(opts: {
+  leagueId?: string | null;
+  scoringPreset?: string | null;
+  scoringFormatId?: string | null;
+  ownerId?: string | null;
+}): Promise<ScoringRules | null> {
+  const { leagueId, scoringPreset, scoringFormatId, ownerId } = opts;
+  if (leagueId) {
+    const league = await prisma.fantasyLeague.findFirst({
+      where: { id: leagueId, ...(ownerId ? { ownerId } : {}) },
+      include: { scoringFormat: { select: { rules: true } } },
+    });
+    return league?.scoringFormat
+      ? (league.scoringFormat.rules as ScoringRules)
+      : league?.scoringPreset
+        ? (SCORING_PRESET_RULES[league.scoringPreset as ScoringPreset] ?? null)
+        : null;
+  }
+  if (scoringPreset) {
+    return SCORING_PRESET_RULES[scoringPreset as ScoringPreset] ?? null;
+  }
+  if (scoringFormatId) {
+    const fmt = await prisma.scoringFormat.findUnique({
+      where: { id: scoringFormatId },
+      select: { rules: true },
+    });
+    return (fmt?.rules as ScoringRules) ?? null;
+  }
+  return null;
+}
+
 // Scoring source shared by polls and leagues.
 interface ScoringSource {
   scoringPreset: string | null;

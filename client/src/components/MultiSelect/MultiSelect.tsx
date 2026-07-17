@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -29,6 +30,9 @@ interface Props {
   // options carry extra content (e.g. a team's next game). Assumes the trigger
   // sits at the left edge of the content column.
   wideMenu?: boolean;
+  // When set, group headings become clickable and toggle every option under
+  // them at once. `allSelected` tells the parent whether to select or clear.
+  onToggleGroup?: (values: string[], allSelected: boolean) => void;
 }
 
 // Dropdown multi-select with full keyboard support:
@@ -40,8 +44,25 @@ export function MultiSelect({
   selected,
   onToggle,
   wideMenu,
+  onToggleGroup,
 }: Props) {
   const [open, setOpen] = useState(false);
+
+  // Map each heading's value → the option values beneath it (until the next
+  // heading), so a heading click can toggle its whole group.
+  const groupMembers = useMemo(() => {
+    const map = new Map<string, string[]>();
+    let current: string | null = null;
+    for (const o of options) {
+      if (o.heading) {
+        current = o.value;
+        map.set(o.value, []);
+      } else if (current) {
+        map.get(current)!.push(o.value);
+      }
+    }
+    return map;
+  }, [options]);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -136,7 +157,7 @@ export function MultiSelect({
 
       {open && (
         <div
-          className={`multi-select__menu${wideMenu ? " multi-select__menu--wide" : ""}`}
+          className={`multi-select__menu${wideMenu ? " multi-select__menu--wide" : ""}${onToggleGroup ? " multi-select__menu--grouped" : ""}`}
           role="listbox"
           aria-multiselectable="true"
           ref={menuRef}
@@ -144,10 +165,33 @@ export function MultiSelect({
         >
           {options.map((o) => {
             if (o.heading) {
+              // Plain label unless the parent opts into group toggling.
+              if (!onToggleGroup) {
+                return (
+                  <div key={o.value} className="multi-select__group-heading">
+                    {o.label}
+                  </div>
+                );
+              }
+              const members = groupMembers.get(o.value) ?? [];
+              const all =
+                members.length > 0 && members.every((v) => selected.includes(v));
+              const some = members.some((v) => selected.includes(v));
               return (
-                <div key={o.value} className="multi-select__group-heading">
+                <button
+                  key={o.value}
+                  data-opt
+                  type="button"
+                  className="multi-select__group-heading multi-select__group-heading--toggle"
+                  onClick={() => onToggleGroup(members, all)}
+                >
+                  <span
+                    className={`multi-select__check${all ? " multi-select__check--on" : some ? " multi-select__check--some" : ""}`}
+                  >
+                    {all && <CheckIcon className="multi-select__check-icon" />}
+                  </span>
                   {o.label}
-                </div>
+                </button>
               );
             }
             const checked = selected.includes(o.value);

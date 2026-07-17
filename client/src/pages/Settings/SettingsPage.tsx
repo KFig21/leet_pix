@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useTutorial } from "@/context/TutorialContext";
 import { usePreferences } from "@/context/PreferencesContext";
 import { Toggle } from "@/components/Toggle/Toggle";
+import { PollViewCustomizer } from "./components/PollViewCustomizer/PollViewCustomizer";
 import "./SettingsPage.scss";
 
 interface FormatRow {
@@ -83,6 +84,11 @@ export function SettingsPage() {
           When on, tapping a poll option shows a “Confirm vote” button instead of
           voting immediately.
         </p>
+      </section>
+
+      <section className="settings__section">
+        <h2>Poll view</h2>
+        <PollViewCustomizer />
       </section>
 
       <section className="settings__section">

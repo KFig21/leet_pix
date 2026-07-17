@@ -14,6 +14,7 @@ import type { Avatar as AvatarData } from "@leetpix/shared";
 import { api } from "@/lib/api";
 import { getPollRules } from "@/lib/pollRules";
 import { statSummary } from "@/lib/statSummary";
+import { formatProjection } from "@/lib/formatProjection";
 import { useAuth } from "@/context/AuthContext";
 import { usePreferences } from "@/context/PreferencesContext";
 import { useIsMobile } from "@/hooks/useMediaQuery";
@@ -65,7 +66,7 @@ export function PollCard({ poll, pick, preview }: Props) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { session } = useAuth();
-  const { confirmVotes } = usePreferences();
+  const { confirmVotes, pollCard: show } = usePreferences();
   const isMobile = useIsMobile();
   const { data: me } = useQuery({
     queryKey: ["me"],
@@ -82,7 +83,8 @@ export function PollCard({ poll, pick, preview }: Props) {
   const voted = poll.myVoteOptionId ?? null;
   const isOwn = session?.user.id === poll.author.id;
   const resolved = poll.status === "RESOLVED";
-  const canVote = poll.status === "OPEN" && !voted && !isOwn;
+  // Preview cards (create screen, settings customizer) are never votable.
+  const canVote = poll.status === "OPEN" && !voted && !isOwn && !preview;
   // Keeper polls are about season/dynasty value, so the next scheduled game is
   // just clutter — suppress it (injury designations still show).
   const isKeeper = poll.questionType === PollQuestionType.KEEP;
@@ -227,28 +229,32 @@ export function PollCard({ poll, pick, preview }: Props) {
             pick: o.keeperPick,
             leagueSize: poll.leagueSize,
           });
-          const keeperEl = cost ? (
-            <span
-              className="poll-card__keeper"
-              title="Keeper cost — the draft slot given up to keep this player"
-            >
-              {cost}
-            </span>
-          ) : null;
-          const streakEl = !resolved ? (
-            <StreakBadge streak={o.player?.streak} />
-          ) : null;
-          // Projection: quiet, labeled so it never reads as a result. Keeper
-          // polls show a rest-of-season projection (SZN), everyone else a
-          // single-game/window one (PROJ).
+          const keeperEl =
+            cost && show.keeperCost ? (
+              <span
+                className="poll-card__keeper"
+                title="Keeper cost — the draft slot given up to keep this player"
+              >
+                {cost}
+              </span>
+            ) : null;
+          const streakEl =
+            !resolved && show.streak ? (
+              <StreakBadge streak={o.player?.streak} />
+            ) : null;
+          // Projection: quiet, labeled PROJ so it never reads as a result.
+          // Keeper polls show a rest-of-season projection (tooltip clarifies);
+          // the tag stays "PROJ" either way.
           const projEl =
-            !resolved && points != null ? (
+            !resolved && points != null && show.projection ? (
               <span
                 className="poll-card__proj"
                 title={isKeeper ? "Projected rest-of-season points" : "Projected points"}
               >
-                <span className="poll-card__proj-tag">{isKeeper ? "SZN" : "PROJ"}</span>
-                <span className="poll-card__proj-value">{points}</span>
+                <span className="poll-card__proj-tag">PROJ</span>
+                <span className="poll-card__proj-value">
+                  {formatProjection(points)}
+                </span>
               </span>
             ) : null;
           // Final score: the standout number (Futura italic bold, dimmed for
@@ -264,7 +270,8 @@ export function PollCard({ poll, pick, preview }: Props) {
               </span>
             ) : null;
           // Compact headline stats on resolved options ("9 rec · 154 yds · 2 TD").
-          const stats = resolved ? statSummary(o.statLine, poll.sport) : null;
+          const stats =
+            resolved && show.stats ? statSummary(o.statLine, poll.sport) : null;
           // The profile owner's pick / your own vote — borderless, avatar +
           // colored text. On resolved polls they read "✓" / "✗ you".
           const ownedBadge = owned ? (
@@ -325,21 +332,28 @@ export function PollCard({ poll, pick, preview }: Props) {
             ) : (
               <>
                 {ownedBadge}
-                {!resolved && faces.length > 0 && (
+                {!resolved && show.voterAvatars && faces.length > 0 && (
                   <span className="poll-card__faces">
                     {faces.map((a, i) => (
                       <Avatar key={i} avatar={a} size={16} />
                     ))}
                   </span>
                 )}
-                <span className="poll-card__tally">{tallyText}</span>
+                {show.voteCount && (
+                  <span className="poll-card__tally">{tallyText}</span>
+                )}
               </>
             );
           // Mobile line 2 text: "QB · DET" (+ matchup / stats after it).
-          const posTeam = [o.player?.position, o.player?.team]
+          const posTeam = [
+            show.position ? o.player?.position : null,
+            show.team ? o.player?.team : null,
+          ]
             .filter(Boolean)
             .join(" · ");
-          const dotColor = teamColor(o.player?.team, poll.sport)?.bg;
+          const dotColor = show.team
+            ? teamColor(o.player?.team, poll.sport)?.bg
+            : undefined;
 
           return (
             <li key={o.id}>
@@ -379,8 +393,8 @@ export function PollCard({ poll, pick, preview }: Props) {
                       {!resolved && (
                         <PlayerMeta
                           className="poll-card__option-meta"
-                          game={isKeeper ? null : o.game}
-                          injuryStatus={o.player?.injuryStatus}
+                          game={isKeeper || !show.matchup ? null : o.game}
+                          injuryStatus={show.injury ? o.player?.injuryStatus : null}
                         />
                       )}
                       {streakEl}
@@ -399,17 +413,19 @@ export function PollCard({ poll, pick, preview }: Props) {
                       className={`poll-card__d-info${projEl ? "" : " poll-card__d-info--grow"}`}
                     >
                       {nameEl}
-                      {o.player?.position && (
+                      {show.position && o.player?.position && (
                         <span className="poll-card__pos">{o.player.position}</span>
                       )}
-                      <TeamTag abbr={o.player?.team} sport={poll.sport} />
+                      {show.team && (
+                        <TeamTag abbr={o.player?.team} sport={poll.sport} />
+                      )}
                       {keeperEl}
                       {stats && <span className="poll-card__stats">{stats}</span>}
                       {!resolved && (
                         <PlayerMeta
                           className="poll-card__option-meta"
-                          game={isKeeper ? null : o.game}
-                          injuryStatus={o.player?.injuryStatus}
+                          game={isKeeper || !show.matchup ? null : o.game}
+                          injuryStatus={show.injury ? o.player?.injuryStatus : null}
                         />
                       )}
                       {streakEl}

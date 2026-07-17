@@ -54,6 +54,7 @@ import type {
 import {
   PlayerSelect,
   type PlayerPick,
+  type ProjectionContext,
 } from "./components/PlayerSelect/PlayerSelect";
 import "./PollCreatePage.scss";
 
@@ -117,6 +118,14 @@ export function PollCreatePage() {
     );
   const toggleTeam = toggle(setTeamFilters);
   const togglePosition = toggle(setPositionFilters);
+  // Section header click: select every position in the group, or clear them all
+  // if they're already selected.
+  const togglePositionGroup = (values: string[], allSelected: boolean) =>
+    setPositionFilters((prev) =>
+      allSelected
+        ? prev.filter((v) => !values.includes(v))
+        : [...new Set([...prev, ...values])],
+    );
   const clearFilters = () => {
     setTeamFilters([]);
     setPositionFilters([]);
@@ -286,6 +295,53 @@ export function PollCreatePage() {
   const effectiveLeagueSize = selectedLeague ? selectedLeague.numTeams : leagueSizeNum;
   const noDupes = new Set(picks.map((p) => p.playerId)).size === picks.length;
   const canPreview = picks.length >= 2 && !!me && noDupes;
+
+  // Live projected points for the preview card. Priced server-side (the
+  // projection data lives there) exactly as the poll would be at creation.
+  const previewPlayerIds = picks.map((p) => p.playerId);
+  const wantProjections =
+    sport === Sport.FOOTBALL &&
+    previewPlayerIds.length >= 2 &&
+    (isScoreablePoll(questionType) || keeper);
+  const { data: previewProj } = useQuery({
+    queryKey: [
+      "preview-projections",
+      questionType,
+      scoring,
+      windowed ? weeks : null,
+      previewPlayerIds,
+    ],
+    queryFn: () =>
+      api.post<{ projections: Record<string, number> }>(
+        "/polls/preview-projections",
+        {
+          sport,
+          questionType,
+          playerIds: previewPlayerIds,
+          leagueId: selectedLeague?.id ?? null,
+          scoringPreset,
+          scoringFormatId: scoringKind === "custom" ? scoringVal : null,
+          evaluationWeeks: windowed ? weeks : null,
+        },
+      ),
+    enabled: wantProjections,
+    staleTime: 5 * 60_000,
+  });
+  const projections = previewProj?.projections ?? {};
+
+  // Scoring context handed to the player picker so its dropdown can show each
+  // candidate's projected points (football, projectable questions only).
+  const projectionCtx: ProjectionContext | undefined =
+    sport === Sport.FOOTBALL && (isScoreablePoll(questionType) || keeper)
+      ? {
+          questionType,
+          leagueId: selectedLeague?.id ?? null,
+          scoringPreset,
+          scoringFormatId: scoringKind === "custom" ? scoringVal : null,
+          evaluationWeeks: windowed ? weeks : null,
+        }
+      : undefined;
+
   const previewPoll: PollView | null = me
     ? {
         id: "preview",
@@ -307,7 +363,7 @@ export function PollCreatePage() {
           playerName: o.playerName,
           keeperRound: o.keeperRound ?? null,
           keeperPick: o.keeperPick ?? null,
-          projectedPoints: null,
+          projectedPoints: projections[o.playerId] ?? null,
           actualPoints: null,
           isWinner: false,
           player: {
@@ -509,6 +565,7 @@ export function PollCreatePage() {
             options={positionOptions}
             selected={positionFilters}
             onToggle={togglePosition}
+            onToggleGroup={togglePositionGroup}
           />
         </div>
         {(teamFilters.length > 0 || positionFilters.length > 0) && (
@@ -561,6 +618,7 @@ export function PollCreatePage() {
                 .filter((o, idx): o is PlayerPick => o !== null && idx !== i)
                 .map((o) => o.playerId)}
               hideGame={keeper}
+              projection={projectionCtx}
             />
             {/* Keeper polls: capture the draft slot forfeited for this player. */}
             {keeper && opt && (

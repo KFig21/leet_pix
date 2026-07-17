@@ -375,7 +375,10 @@ export function PollCard({ poll, pick, preview }: Props) {
             <li key={o.id}>
               <button
                 className={cls.join(" ")}
-                disabled={resolved ? !o.statLine : !canVote}
+                // aria-disabled (not the `disabled` attribute) so the button
+                // isn't click-inert — that would swallow clicks on the nested
+                // projection pill too. onOption already blocks unwanted votes.
+                aria-disabled={(resolved ? !o.statLine : !canVote) || undefined}
                 onClick={(e) => onOption(e, o)}
               >
                 <span className="poll-card__option-fill" style={{ width: `${pct}%` }} />

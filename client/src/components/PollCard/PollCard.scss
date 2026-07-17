@@ -118,12 +118,18 @@
     border-radius: $radius-md;
     overflow: hidden;
 
-    &:not(:disabled) {
+    &:not([aria-disabled="true"]) {
       cursor: pointer;
 
       &:hover {
         border-color: var(--accent);
       }
+    }
+
+    // Inert-for-voting (already voted / own poll / no stat line) but still lets
+    // nested controls like the projection pill receive clicks.
+    &[aria-disabled="true"] {
+      cursor: default;
     }
 
     // The option the viewer voted for (green border + "You" pill mark it as

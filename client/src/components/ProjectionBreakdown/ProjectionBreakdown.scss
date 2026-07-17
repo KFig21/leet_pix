@@ -26,6 +26,37 @@
   }
 }
 
+// Projection stat line, split into bordered per-category containers.
+.proj-summary {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-sm;
+
+  &__cat {
+    display: block;
+    padding: $gap-sm $gap-md;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-md;
+  }
+
+  &__cat-head {
+    display: block;
+    margin-bottom: 2px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__cat-stats {
+    display: block;
+    color: var(--text-primary);
+    font-size: $font-size-sm;
+    line-height: 1.5;
+  }
+}
+
 .projection-breakdown__loading {
   display: flex;
   align-items: center;

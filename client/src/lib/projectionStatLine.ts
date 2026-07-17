@@ -60,6 +60,19 @@ const FB_ORDER: Record<string, string[]> = {
 const FB_IDP_POSITIONS = new Set(["DL", "LB", "DB", "CB", "S", "DE", "DT", "EDGE"]);
 const FB_DEFAULT = ["passing", "rushing", "receiving", "misc"];
 
+// Display names for each group's category container.
+const GROUP_LABELS: Record<string, string> = {
+  passing: "Passing",
+  rushing: "Rushing",
+  receiving: "Receiving",
+  misc: "Misc",
+  kicking: "Kicking",
+  dst: "Defense",
+  idp: "Defense",
+  pitching: "Pitching",
+  hitting: "Hitting",
+};
+
 const BB_GROUPS: Record<string, Entry[]> = {
   pitching: [
     ["inningsPitched", "IP"],
@@ -80,43 +93,55 @@ const BB_GROUPS: Record<string, Entry[]> = {
   ],
 };
 
-function orderedGroups(position: string | null, sport: Sport): Entry[] {
+// Ordered [groupKey, entries] pairs for a player's position/sport.
+function orderedGroups(position: string | null, sport: Sport): [string, Entry[]][] {
   if (sport === Sport.BASEBALL) {
     const pitcher = position === "P" || position === "SP" || position === "RP";
-    const groups = pitcher ? ["pitching", "hitting"] : ["hitting", "pitching"];
-    return groups.flatMap((g) => BB_GROUPS[g]);
+    const keys = pitcher ? ["pitching", "hitting"] : ["hitting", "pitching"];
+    return keys.map((g) => [g, BB_GROUPS[g]]);
   }
   const pos = position ?? "";
-  const order =
+  const keys =
     FB_ORDER[pos] ?? (FB_IDP_POSITIONS.has(pos) ? ["idp", "misc"] : FB_DEFAULT);
-  return order.flatMap((g) => FB_GROUPS[g]);
+  return keys.map((g) => [g, FB_GROUPS[g]]);
+}
+
+export interface ProjectionStatGroup {
+  group: string;
+  stats: string;
 }
 
 /**
- * Human-readable projection stat line, or null when nothing rounds to a value
- * worth showing.
+ * The projection stat line split into category groups (Passing, Rushing, …),
+ * each a readable comma-joined line. Season-long rounds to whole numbers;
+ * single-game keeps one decimal; thousands get a comma. Empty groups are
+ * dropped, so an RB has no "Passing" box.
  */
-export function projectionStatLine(
+export function projectionStatGroups(
   statLine: Record<string, number> | undefined,
   position: string | null,
   sport: Sport,
   seasonLong: boolean,
-): string | null {
-  if (!statLine) return null;
-  // Season-long rounds to whole numbers; single-game keeps one decimal. Thousands
-  // get a comma so long yardage totals read cleanly (e.g. "3,548 Pass Yd").
+): ProjectionStatGroup[] {
+  if (!statLine) return [];
   const fmt = (v: number) =>
     (seasonLong ? Math.round(v) : Math.round(v * 10) / 10).toLocaleString("en-US", {
       maximumFractionDigits: 1,
     });
 
-  const parts: string[] = [];
-  for (const [key, label] of orderedGroups(position, sport)) {
-    const raw = statLine[key];
-    if (!raw) continue;
-    const v = seasonLong ? Math.round(raw) : Math.round(raw * 10) / 10;
-    if (v === 0) continue; // drops sub-rounding noise (e.g. 0.4 INT over a season)
-    parts.push(`${fmt(raw)} ${label}`);
+  const out: ProjectionStatGroup[] = [];
+  for (const [groupKey, entries] of orderedGroups(position, sport)) {
+    const parts: string[] = [];
+    for (const [key, label] of entries) {
+      const raw = statLine[key];
+      if (!raw) continue;
+      const v = seasonLong ? Math.round(raw) : Math.round(raw * 10) / 10;
+      if (v === 0) continue; // drops sub-rounding noise (e.g. 0.4 INT over a season)
+      parts.push(`${fmt(raw)} ${label}`);
+    }
+    if (parts.length) {
+      out.push({ group: GROUP_LABELS[groupKey] ?? groupKey, stats: parts.join(", ") });
+    }
   }
-  return parts.length ? parts.join(", ") : null;
+  return out;
 }

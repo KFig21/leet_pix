@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import {
-  ALL_STAT_CATEGORIES,
   baseCategoryKeys,
-  categoryForKey,
   categoryPoints,
   effectiveRate,
   statLabel,
@@ -75,7 +73,7 @@ export function ScoringBreakdownModal({
           {summaryHeading && (
             <div className="breakdown-summary__heading">{summaryHeading}</div>
           )}
-          <p className="breakdown-summary__line">{summary}</p>
+          <div className="breakdown-summary__line">{summary}</div>
         </div>
       )}
       {many ? (
@@ -149,18 +147,6 @@ function Columns({
   );
 }
 
-// Group order follows the stat catalog (Passing, Rushing, Receiving, …).
-const GROUP_ORDER = new Map(
-  [...new Set(ALL_STAT_CATEGORIES.map((c) => c.group))].map((g, i) => [g, i]),
-);
-
-interface Line {
-  key: string;
-  value: number;
-  perUnit: number;
-  points: number;
-}
-
 function Single({
   option,
   rules,
@@ -170,7 +156,7 @@ function Single({
 }) {
   if (!option) return null;
   // Per base category, using the rate that applies to this player's position.
-  const lines: Line[] = baseCategoryKeys(rules)
+  const lines = baseCategoryKeys(rules)
     .map((key) => {
       const value = option.statLine[key] ?? 0;
       const perUnit = effectiveRate(rules, key, option.position);
@@ -181,40 +167,24 @@ function Single({
   if (lines.length === 0) {
     return <p className="breakdown-single__empty">No scored stats this period.</p>;
   }
-
-  // Bucket the rows by their stat group, keeping catalog order.
-  const byGroup = new Map<string, Line[]>();
-  for (const l of lines) {
-    const group = categoryForKey(l.key)?.group ?? "Other";
-    const bucket = byGroup.get(group) ?? [];
-    bucket.push(l);
-    byGroup.set(group, bucket);
-  }
-  const groups = [...byGroup.entries()].sort(
-    (a, b) => (GROUP_ORDER.get(a[0]) ?? 99) - (GROUP_ORDER.get(b[0]) ?? 99),
-  );
-
   return (
-    <div className="breakdown-single">
-      {groups.map(([group, rows]) => (
-        <div key={group} className="breakdown-single__group">
-          <div className="breakdown-single__group-head">{group}</div>
-          {rows.map((l) => (
-            <div key={l.key} className="breakdown-single__row">
-              <span className="breakdown-single__stat">{statLabel(l.key)}</span>
-              <span className="breakdown-single__calc">
-                {commas(l.value)} × {l.perUnit}
-              </span>
-              <strong className="breakdown-single__pts">{fmt(l.points)}</strong>
-            </div>
-          ))}
-        </div>
+    <ul className="breakdown-single">
+      {lines.map((l) => (
+        <li key={l.key} className="breakdown-single__row">
+          <span className="breakdown-single__stat">{statLabel(l.key)}</span>
+          <span className="breakdown-single__calc">
+            {commas(l.value)} × {l.perUnit}
+          </span>
+          <strong className="breakdown-single__pts">{fmt(l.points)}</strong>
+        </li>
       ))}
-      <div className="breakdown-single__row breakdown-single__row--total">
+      <li className="breakdown-single__row breakdown-single__row--total">
         <span className="breakdown-single__stat">Total</span>
         <span />
-        <strong className="breakdown-single__pts">{commas(option.total ?? 0)}</strong>
-      </div>
-    </div>
+        <strong className="breakdown-single__pts breakdown-single__pts--total">
+          {commas(option.total ?? 0)}
+        </strong>
+      </li>
+    </ul>
   );
 }

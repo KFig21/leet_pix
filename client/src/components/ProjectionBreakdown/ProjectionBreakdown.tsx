@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { ScoringPreset, ScoringRules, Sport } from "@leetpix/shared";
 import { api } from "@/lib/api";
-import { projectionStatLine } from "@/lib/projectionStatLine";
+import { projectionStatGroups } from "@/lib/projectionStatLine";
 import { Modal } from "@/components/Modal/Modal";
 import { Loader } from "@/components/Loader/Loader";
 import {
@@ -75,6 +75,10 @@ export function ProjectionBreakdown({ params, className, title, children }: Prop
 
   const openModal = () => setOpen(true);
 
+  const statGroups = data
+    ? projectionStatGroups(data.statLine, data.position, data.sport, data.seasonLong)
+    : [];
+
   return (
     <>
       {/* A span (not a button) so it can live inside the player-select option
@@ -105,13 +109,19 @@ export function ProjectionBreakdown({ params, className, title, children }: Prop
             rules={data.rules}
             scoringPreset={data.scoringPreset}
             scoringFormat={data.scoringFormat}
-            summaryHeading={data.periodLabel}
-            summary={projectionStatLine(
-              data.statLine,
-              data.position,
-              data.sport,
-              data.seasonLong,
-            )}
+            summaryHeading={statGroups.length ? data.periodLabel : undefined}
+            summary={
+              statGroups.length ? (
+                <span className="proj-summary">
+                  {statGroups.map((g) => (
+                    <span key={g.group} className="proj-summary__cat">
+                      <span className="proj-summary__cat-head">{g.group}</span>
+                      <span className="proj-summary__cat-stats">{g.stats}</span>
+                    </span>
+                  ))}
+                </span>
+              ) : undefined
+            }
             options={[
               {
                 playerName: data.playerName,

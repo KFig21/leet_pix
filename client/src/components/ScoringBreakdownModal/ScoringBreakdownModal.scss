@@ -135,22 +135,9 @@
 
 // ── Single option (detailed math) ─────────────────────────────────────────────
 .breakdown-single {
+  list-style: none;
   margin: 0;
   padding: 0;
-
-  // Small category subheader ("Passing", "Rushing", …).
-  &__group-head {
-    padding-top: $gap-md;
-    color: var(--text-secondary);
-    font-size: 11px;
-    font-weight: $font-weight-bold;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  &__group:first-child &__group-head {
-    padding-top: 0;
-  }
 
   // Label flexes/shrinks; the numbers stay intact on the right, so a long yardage
   // value can never push the row off the edge.
@@ -161,10 +148,15 @@
     padding: $gap-sm 0;
     border-bottom: 1px solid var(--border-color);
 
+    // Drop the divider on the last stat row so it doesn't double up with the
+    // total's heavier top border.
+    &:nth-last-child(2) {
+      border-bottom: none;
+    }
+
     &--total {
       border-bottom: none;
       border-top: 2px solid var(--border-color);
-      margin-top: 4px;
     }
   }
 
@@ -177,12 +169,13 @@
     color: var(--text-primary);
   }
 
+  // Monospace so the calc figures line up in a column across rows.
   &__calc {
     flex: 0 0 auto;
     color: var(--text-secondary);
     font-size: $font-size-sm;
     white-space: nowrap;
-    font-variant-numeric: tabular-nums;
+    font-family: $font-mono;
   }
 
   &__pts {
@@ -190,7 +183,14 @@
     min-width: 64px;
     text-align: right;
     white-space: nowrap;
-    font-variant-numeric: tabular-nums;
+    font-family: $font-mono;
+
+    // The standout total: Futura italic, matching the option-bar score.
+    &--total {
+      font-family: $font-display;
+      font-style: italic;
+      font-size: 1.05rem;
+    }
   }
 
   &__empty {

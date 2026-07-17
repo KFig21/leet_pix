@@ -123,6 +123,11 @@ model Profile {
   subscriptionStatus String? // e.g. active / past_due / canceled
   currentPeriodEnd   DateTime?
 
+  // When the user finished (or dismissed) the first-run walkthrough. Null = not
+  // yet onboarded, so the tutorial auto-opens once — persisted server-side so it
+  // doesn't re-show on every new device/browser.
+  onboardedAt DateTime?
+
   // Soft delete: keeps the row (and any authored content's records) around for
   // moderation/recovery instead of a hard cascade.
   deletedAt DateTime?

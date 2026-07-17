@@ -28,6 +28,21 @@ profilesRouter.get(
   }),
 );
 
+// Mark the first-run walkthrough as seen (idempotent — only stamps once).
+profilesRouter.post(
+  "/me/onboarded",
+  requireAuth,
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const onboardedAt = new Date();
+    // updateMany so a not-yet-created profile is a no-op rather than a 500.
+    await prisma.profile.updateMany({
+      where: { id: req.userId, onboardedAt: null },
+      data: { onboardedAt },
+    });
+    res.json({ onboardedAt });
+  }),
+);
+
 // Public profile by username. Includes whether the viewer follows this user.
 profilesRouter.get(
   "/:username",

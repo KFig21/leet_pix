@@ -5,7 +5,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./AuthContext";
+import { api } from "@/lib/api";
 import { OnboardingModal } from "@/components/Onboarding/OnboardingModal";
 
 interface TutorialValue {
@@ -15,29 +17,61 @@ interface TutorialValue {
 
 const TutorialContext = createContext<TutorialValue | undefined>(undefined);
 
-// One flag per user per device — first sign-in shows the walkthrough once.
-const storageKey = (id: string) => `leetpix.onboarded.${id}`;
+// Legacy per-device flag. Kept only to migrate long-time users to the server
+// flag silently (so the tutorial doesn't re-show once after this ships).
+const legacyKey = (id: string) => `leetpix.onboarded.${id}`;
+
+// Minimal slice of /profiles/me the tutorial cares about.
+interface MeOnboarding {
+  onboardedAt: string | null;
+}
 
 export function TutorialProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth();
   const userId = session?.user?.id ?? null;
+  const qc = useQueryClient();
   const [open, setOpen] = useState(false);
 
-  // Auto-open on a user's first authenticated session (until dismissed once).
+  // Onboarding state now lives on the profile, so it persists across devices.
+  const { data: me } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => api.get<MeOnboarding>("/profiles/me"),
+    enabled: !!userId,
+    staleTime: 60_000,
+  });
+
+  const markOnboarded = () => {
+    // Optimistically flip the cached flag so nothing re-opens mid-session.
+    qc.setQueryData<MeOnboarding>(["me"], (prev) =>
+      prev ? { ...prev, onboardedAt: new Date().toISOString() } : prev,
+    );
+    api.post("/profiles/me/onboarded").catch(() => {
+      /* best-effort — a failed stamp just means it may re-open next load */
+    });
+  };
+
+  // Auto-open on a user's first authenticated session. If they've already
+  // dismissed it on this device under the old localStorage scheme, backfill the
+  // server flag silently instead of showing it again.
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !me || me.onboardedAt != null) return;
+    let seenLocally = false;
     try {
-      if (!localStorage.getItem(storageKey(userId))) setOpen(true);
+      seenLocally = !!localStorage.getItem(legacyKey(userId));
     } catch {
-      /* storage unavailable (private mode) — just skip the walkthrough */
+      /* storage unavailable — treat as not seen */
     }
-  }, [userId]);
+    if (seenLocally) markOnboarded();
+    else setOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, me]);
 
   const dismiss = () => {
     setOpen(false);
+    markOnboarded();
     if (userId) {
       try {
-        localStorage.setItem(storageKey(userId), "1");
+        localStorage.setItem(legacyKey(userId), "1");
       } catch {
         /* ignore */
       }

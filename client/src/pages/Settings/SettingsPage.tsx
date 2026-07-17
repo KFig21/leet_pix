@@ -87,11 +87,6 @@ export function SettingsPage() {
       </section>
 
       <section className="settings__section">
-        <h2>Poll view</h2>
-        <PollViewCustomizer />
-      </section>
-
-      <section className="settings__section">
         <h2>Leagues</h2>
         {leagues?.map((l) => (
           <div key={l.id} className="settings__item">
@@ -156,6 +151,11 @@ export function SettingsPage() {
         <Link to="/scoring/new" className="settings__row">
           Create a custom scoring format →
         </Link>
+      </section>
+
+      <section className="settings__section">
+        <h2>Poll view</h2>
+        <PollViewCustomizer />
       </section>
 
       <section className="settings__section">

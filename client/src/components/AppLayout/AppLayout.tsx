@@ -37,7 +37,6 @@ const NAV: NavItem[] = [
 // reached from the drawer). Profile is appended dynamically once we know /me.
 const MOBILE_NAV: NavItem[] = [
   { to: "/home", label: "Home", Icon: HomeIcon },
-  { to: "/trending", label: "Trending", Icon: TrendingUpIcon },
   { to: "/search", label: "Search", Icon: SearchIcon },
   { to: "/notifications", label: "Notifications", Icon: NotificationsIcon },
 ];

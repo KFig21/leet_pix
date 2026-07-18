@@ -7,6 +7,7 @@ import "./ExplorePage.scss";
 const SPORTS: { value: Sport; label: string }[] = [
   { value: Sport.FOOTBALL, label: "Football" },
   { value: Sport.BASEBALL, label: "Baseball" },
+  { value: Sport.BASKETBALL, label: "Basketball" },
 ];
 
 // Discovery hub: the day's slate of games and trending / hot / cold players, all

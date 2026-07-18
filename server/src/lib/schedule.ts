@@ -2,6 +2,7 @@ import { GAME_LOCK_LEAD_MS } from "@leetpix/shared";
 import type { Sport } from "@prisma/client";
 import { prisma } from "./prisma";
 import { mlbPeriod } from "./mlbPeriod";
+import { nbaPeriod } from "./nbaPeriod";
 
 // The game for a set of teams in a given week, keyed by team abbreviation. Used
 // to derive lock times and to show each option's opponent/kickoff on a poll.
@@ -128,10 +129,46 @@ export async function baseballStartInfo(
   };
 }
 
+// Basketball counterpart of baseballStartInfo: a "who should I start" poll
+// targets each player's next scheduled game (basketball has no weekly structure).
+// Returns the lock time and grading period (that game's ET date via nbaPeriod),
+// or null if no upcoming game is on the imported schedule.
+export async function basketballStartInfo(
+  playerIds: string[],
+): Promise<{ lockAt: Date; season: number; week: number } | null> {
+  const players = await prisma.player.findMany({
+    where: { id: { in: playerIds } },
+    select: { teamId: true },
+  });
+  const teamIds = players
+    .map((p) => p.teamId)
+    .filter((t): t is string => !!t);
+  if (teamIds.length === 0) return null;
+
+  const next = await prisma.game.findFirst({
+    where: {
+      sport: "BASKETBALL",
+      kickoff: { gt: new Date() },
+      OR: [{ homeTeamId: { in: teamIds } }, { awayTeamId: { in: teamIds } }],
+    },
+    orderBy: { kickoff: "asc" },
+    select: { kickoff: true },
+  });
+  if (!next) return null;
+
+  const { season, week } = nbaPeriod(next.kickoff);
+  return {
+    lockAt: new Date(next.kickoff.getTime() - GAME_LOCK_LEAD_MS),
+    season,
+    week,
+  };
+}
+
 // The specific games a poll depends on, resolved from its option players at
 // creation time (frozen via the poll_games join so later trades don't drift it).
-// Football: each player's team game in (season, week). Baseball: each player's
-// next scheduled game. Returns de-duplicated Game ids.
+// Football: each player's team game in (season, week). Date-based sports
+// (baseball, basketball): each player's next scheduled game. Returns
+// de-duplicated Game ids.
 export async function pollGameIds(
   sport: Sport,
   season: number,
@@ -157,7 +194,7 @@ export async function pollGameIds(
     return games.map((g) => g.id);
   }
 
-  // BASEBALL: each player's next upcoming game (by team).
+  // Date-based sports (baseball, basketball): each player's next upcoming game.
   const players = await prisma.player.findMany({
     where: { id: { in: playerIds } },
     select: { teamId: true },
@@ -170,7 +207,7 @@ export async function pollGameIds(
   for (const teamId of teamIds) {
     const g = await prisma.game.findFirst({
       where: {
-        sport: "BASEBALL",
+        sport,
         kickoff: { gt: now },
         OR: [{ homeTeamId: teamId }, { awayTeamId: teamId }],
       },
@@ -201,9 +238,10 @@ export async function pollGamesFinal(pollId: string): Promise<boolean | null> {
 // so they can't gate resolution forever). Returns false if no games are known
 // for the period yet, so we never resolve against an unknown/partial slate.
 //
-// Football periods are (season, week). Baseball has no week column — its poll
-// `week` encodes an ET calendar date (YYYYMMDD via mlbPeriod), so we bracket a
-// UTC window around that date and match games by their computed period.
+// Football periods are (season, week). Date-based sports (baseball, basketball)
+// have no week column — a poll's `week` encodes an ET calendar date (YYYYMMDD via
+// mlbPeriod/nbaPeriod, which share the same date math), so we bracket a UTC
+// window around that date and match games by their computed period.
 export async function periodGamesFinal(
   sport: Sport,
   season: number,
@@ -220,8 +258,8 @@ export async function periodGamesFinal(
     return games.every((g) => isDone(g.status));
   }
 
-  // BASEBALL: week is a YYYYMMDD ET date. Query a generous UTC window, then
-  // keep only games whose mlbPeriod matches this exact date.
+  // Date-based sports: week is a YYYYMMDD ET date. Query a generous UTC window,
+  // then keep only games whose computed period matches this exact date.
   const y = Math.floor(week / 10000);
   const m = Math.floor((week % 10000) / 100) - 1;
   const d = week % 100;
@@ -229,7 +267,7 @@ export async function periodGamesFinal(
   const start = new Date(noon - 24 * 3600_000);
   const end = new Date(noon + 24 * 3600_000);
   const games = await prisma.game.findMany({
-    where: { sport: "BASEBALL", kickoff: { gte: start, lte: end } },
+    where: { sport, kickoff: { gte: start, lte: end } },
     select: { status: true, kickoff: true },
   });
   const inPeriod = games.filter((g) => mlbPeriod(g.kickoff).week === week);

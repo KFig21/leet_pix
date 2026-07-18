@@ -138,3 +138,75 @@ export async function importMlbPlayers(): Promise<number> {
   }
   return n;
 }
+
+interface EspnRosterTeam {
+  id: string;
+  abbreviation?: string;
+}
+interface EspnRosterAthlete {
+  id: string;
+  fullName?: string;
+  firstName?: string;
+  lastName?: string;
+  position?: { abbreviation?: string };
+  status?: { type?: string };
+  injuries?: { status?: string }[];
+}
+
+// ESPN's team list (id + our-canonical abbreviation) for iterating rosters.
+async function nbaTeams(): Promise<EspnRosterTeam[]> {
+  const res = await fetch(
+    "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams",
+  );
+  if (!res.ok) throw new Error(`ESPN responded ${res.status}`);
+  const data = (await res.json()) as {
+    sports?: { leagues?: { teams?: { team?: EspnRosterTeam }[] }[] }[];
+  };
+  return (
+    data.sports?.[0]?.leagues?.[0]?.teams
+      ?.map((t) => t.team)
+      .filter((t): t is EspnRosterTeam => !!t?.id) ?? []
+  );
+}
+
+// NBA players from ESPN's free, keyless per-team rosters. Keyed by ESPN athlete
+// id (nbaId), which is also stored as espnId. Positions are ESPN's coarse trio
+// (G/F/C). Also refreshes team (trades) and injuryStatus. Returns the number
+// upserted. One request per team (30) plus the team list — light enough to run
+// daily.
+export async function importNbaPlayers(): Promise<number> {
+  const teams = await nbaTeams();
+  const teamIds = await teamIdByAbbr("BASKETBALL");
+
+  let n = 0;
+  for (const team of teams) {
+    const abbr = team.abbreviation ?? null;
+    const res = await fetch(
+      `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${team.id}/roster`,
+    );
+    if (!res.ok) continue;
+    const data = (await res.json()) as { athletes?: EspnRosterAthlete[] };
+    for (const a of data.athletes ?? []) {
+      if (!a.id || !(a.fullName || (a.firstName && a.lastName))) continue;
+      const fields = {
+        fullName:
+          a.fullName ?? `${a.firstName ?? ""} ${a.lastName ?? ""}`.trim(),
+        firstName: a.firstName ?? null,
+        lastName: a.lastName ?? null,
+        team: abbr,
+        teamId: (abbr ? teamIds.get(abbr) : undefined) ?? null,
+        position: a.position?.abbreviation ?? null,
+        active: a.status?.type ? a.status.type === "active" : true,
+        injuryStatus: a.injuries?.[0]?.status || null,
+        espnId: String(a.id),
+      };
+      await prisma.player.upsert({
+        where: { nbaId: String(a.id) },
+        update: fields,
+        create: { sport: "BASKETBALL", nbaId: String(a.id), ...fields },
+      });
+      n++;
+    }
+  }
+  return n;
+}

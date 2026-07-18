@@ -45,7 +45,7 @@ export async function seedTeams(): Promise<number> {
 
 // team abbreviation -> id, for importers to set the FK as they upsert rows.
 export async function teamIdByAbbr(
-  sport: "FOOTBALL" | "BASEBALL",
+  sport: "FOOTBALL" | "BASEBALL" | "BASKETBALL",
 ): Promise<Map<string, string>> {
   const teams = await prisma.team.findMany({
     where: { sport },

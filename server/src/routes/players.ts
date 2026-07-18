@@ -26,7 +26,9 @@ import {
 export const playersRouter = Router();
 
 const asSport = (v: unknown): Sport | undefined =>
-  v === Sport.FOOTBALL || v === Sport.BASEBALL ? (v as Sport) : undefined;
+  v === Sport.FOOTBALL || v === Sport.BASEBALL || v === Sport.BASKETBALL
+    ? (v as Sport)
+    : undefined;
 
 // Parse a repeatable/CSV query param (?team=A,B or ?team=A&team=B) into a list.
 const asList = (v: unknown): string[] =>

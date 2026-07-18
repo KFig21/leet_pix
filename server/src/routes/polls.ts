@@ -23,6 +23,7 @@ import { getNflState } from "../lib/nflState";
 import {
   gameStartLockAt,
   baseballStartInfo,
+  basketballStartInfo,
   pollGameIds,
 } from "../lib/schedule";
 import {
@@ -250,8 +251,9 @@ pollsRouter.post(
 
     // Tag the poll with the season/grading-period the resolver grades against,
     // and derive the GAME_START lock time from the imported schedule. Football
-    // uses the current NFL week; baseball uses each player's next game date.
-    // Best-effort — left null if the schedule isn't imported yet.
+    // uses the current NFL week; the date-based sports (baseball, basketball) use
+    // each player's next game date. Best-effort — left null if the schedule
+    // isn't imported yet.
     let season: number | null = null;
     let week: number | null = null;
     let lockAt = input.lockAt ? new Date(input.lockAt) : null;
@@ -263,8 +265,14 @@ pollsRouter.post(
       if (input.lockType === "GAME_START" && nfl) {
         lockAt = await gameStartLockAt("FOOTBALL", nfl.season, nfl.week, playerIds);
       }
-    } else if (input.sport === "BASEBALL" && input.lockType === "GAME_START") {
-      const info = await baseballStartInfo(playerIds);
+    } else if (
+      (input.sport === "BASEBALL" || input.sport === "BASKETBALL") &&
+      input.lockType === "GAME_START"
+    ) {
+      const info =
+        input.sport === "BASEBALL"
+          ? await baseballStartInfo(playerIds)
+          : await basketballStartInfo(playerIds);
       if (info) {
         season = info.season;
         week = info.week;

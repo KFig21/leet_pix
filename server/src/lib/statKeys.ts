@@ -182,3 +182,72 @@ export function normalizeMlbPitching(
   if (completeGames >= 1 && hits === 0) out["noHitter"] = 1;
   return out;
 }
+
+// ESPN NBA box-score descriptor keys → our canonical basketball keys (which match
+// the keys in the stat catalog in @leetpix/shared). ESPN's summary endpoint pairs
+// a `keys` array of these descriptors with each athlete's parallel `stats` array.
+// Made/attempted pairs (e.g. "8-15") are split to the made count in the
+// normalizer below. Double/triple-doubles aren't reported, so they're derived.
+export const ESPN_NBA_STAT_MAP: Record<string, string> = {
+  points: "point",
+  rebounds: "rebound",
+  offensiveRebounds: "offensiveRebound",
+  defensiveRebounds: "defensiveRebound",
+  assists: "assist",
+  steals: "steal",
+  blocks: "block",
+  turnovers: "turnover",
+  fouls: "personalFoul",
+  // Made-attempted pairs — the value before the dash is the made count.
+  "fieldGoalsMade-fieldGoalsAttempted": "fieldGoalMade",
+  "threePointFieldGoalsMade-threePointFieldGoalsAttempted": "threePointerMade",
+  "freeThrowsMade-freeThrowsAttempted": "freeThrowMade",
+};
+
+// Made count from an ESPN "made-attempted" cell (e.g. "8-15" → 8).
+function madeCount(cell: string | undefined): number {
+  if (!cell) return 0;
+  const made = Number(String(cell).split("-")[0]);
+  return Number.isFinite(made) ? made : 0;
+}
+
+/**
+ * Normalize one ESPN NBA box-score line to our canonical basketball keys. Takes
+ * the block's `keys` descriptors and the athlete's parallel `stats` values. Only
+ * nonzero keys are kept. Double- and triple-doubles aren't reported by ESPN, so
+ * they're derived from the counting categories (each fires at most once — a
+ * triple-double also counts as a double-double).
+ */
+export function normalizeEspnNbaStats(
+  keys: string[],
+  stats: string[],
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  const set = (k: string, v: number) => {
+    if (v) out[k] = v;
+  };
+
+  for (let i = 0; i < keys.length; i++) {
+    const canonical = ESPN_NBA_STAT_MAP[keys[i]];
+    if (!canonical) continue;
+    const raw = stats[i];
+    const value = canonical.endsWith("Made")
+      ? madeCount(raw)
+      : Number(raw);
+    if (Number.isFinite(value)) set(canonical, value);
+  }
+
+  // Double/triple-double: count the "big four" (+ steals/blocks) categories at
+  // ≥10. A double-double needs ≥2 such categories, a triple-double ≥3.
+  const doubles = [
+    out.point ?? 0,
+    out.rebound ?? 0,
+    out.assist ?? 0,
+    out.steal ?? 0,
+    out.block ?? 0,
+  ].filter((v) => v >= 10).length;
+  if (doubles >= 2) out["doubleDouble"] = 1;
+  if (doubles >= 3) out["tripleDouble"] = 1;
+
+  return out;
+}

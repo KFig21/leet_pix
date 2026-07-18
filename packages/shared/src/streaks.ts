@@ -30,6 +30,7 @@ const COLD_RATIO = 0.75;
 const MIN_MARGIN: Record<Sport, number> = {
   [Sport.FOOTBALL]: 4,
   [Sport.BASEBALL]: 3,
+  [Sport.BASKETBALL]: 8,
 };
 
 // Absolute production gates, so a streak reflects real form and not just noisy
@@ -41,13 +42,17 @@ const MIN_MARGIN: Record<Sport, number> = {
 //     averaging ~6 pts) isn't wrongly tagged "cold".
 // Reference-preset scale: football is HALF_PPR offense; baseball is Standard,
 // where a single=1, HR=4, RBI=1, walk=1 — a genuine hitter slump lands ≤3/gm.
+// Basketball fantasy points run much higher (a starter routinely tops 30/gm
+// under the DFS-style preset), so its thresholds are scaled up accordingly.
 const HOT_FLOOR: Record<Sport, number> = {
   [Sport.FOOTBALL]: 8,
   [Sport.BASEBALL]: 5,
+  [Sport.BASKETBALL]: 40,
 };
 const COLD_CEILING: Record<Sport, number> = {
   [Sport.FOOTBALL]: 6,
   [Sport.BASEBALL]: 3,
+  [Sport.BASKETBALL]: 20,
 };
 
 /**

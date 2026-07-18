@@ -34,9 +34,25 @@ export const BASEBALL_LINEUP_SLOTS = [
   "BENCH",
 ] as const;
 
+export const BASKETBALL_LINEUP_SLOTS = [
+  "PG",
+  "SG",
+  "SF",
+  "PF",
+  "C",
+  "G",
+  "F",
+  "UTIL",
+  "BENCH",
+] as const;
+
 export type FootballLineupSlot = (typeof FOOTBALL_LINEUP_SLOTS)[number];
 export type BaseballLineupSlot = (typeof BASEBALL_LINEUP_SLOTS)[number];
-export type LineupSlot = FootballLineupSlot | BaseballLineupSlot;
+export type BasketballLineupSlot = (typeof BASKETBALL_LINEUP_SLOTS)[number];
+export type LineupSlot =
+  | FootballLineupSlot
+  | BaseballLineupSlot
+  | BasketballLineupSlot;
 
 // A lineup is a sparse map — only the slots for its sport are present, so reads
 // of an absent slot are `undefined` (treat as 0).
@@ -45,6 +61,7 @@ export type LineupSlots = Partial<Record<LineupSlot, number>>;
 export const LINEUP_SLOTS_BY_SPORT: Record<Sport, readonly LineupSlot[]> = {
   [Sport.FOOTBALL]: FOOTBALL_LINEUP_SLOTS,
   [Sport.BASEBALL]: BASEBALL_LINEUP_SLOTS,
+  [Sport.BASKETBALL]: BASKETBALL_LINEUP_SLOTS,
 };
 
 /** The starting/bench slots for a sport, in canonical roster order. */
@@ -53,10 +70,16 @@ export const slotsForSport = (sport: Sport): readonly LineupSlot[] =>
 
 // Every slot across sports, in a canonical order (BENCH last, listed once). Used
 // where the sport isn't known — e.g. rendering a stored lineup, or summing
-// starters — since a lineup only carries its own sport's keys.
+// starters — since a lineup only carries its own sport's keys. Slots shared
+// across sports (C, UTIL) are de-duplicated so each appears exactly once.
 export const ALL_LINEUP_SLOTS: readonly LineupSlot[] = [
-  ...FOOTBALL_LINEUP_SLOTS.filter((s) => s !== "BENCH"),
-  ...BASEBALL_LINEUP_SLOTS.filter((s) => s !== "BENCH"),
+  ...new Set<LineupSlot>(
+    [
+      ...FOOTBALL_LINEUP_SLOTS,
+      ...BASEBALL_LINEUP_SLOTS,
+      ...BASKETBALL_LINEUP_SLOTS,
+    ].filter((s) => s !== "BENCH"),
+  ),
   "BENCH",
 ];
 
@@ -82,6 +105,13 @@ export const LINEUP_SLOT_LABELS: Record<LineupSlot, string> = {
   SP: "SP",
   RP: "RP",
   P: "P",
+  // Basketball (C/UTIL are shared with baseball above).
+  PG: "PG",
+  SG: "SG",
+  SF: "SF",
+  PF: "PF",
+  G: "G",
+  F: "F",
   BENCH: "Bench",
 };
 
@@ -94,6 +124,9 @@ export const LINEUP_SLOT_HINTS: Partial<Record<LineupSlot, string>> = {
   CI: "1B/3B",
   UTIL: "Any hitter",
   P: "SP/RP",
+  // Basketball flex slots.
+  G: "PG/SG",
+  F: "SF/PF",
 };
 
 // Per-slot ceiling so counts stay sane (mirrored by the zod bounds).
@@ -119,6 +152,13 @@ export const LINEUP_SLOT_MAX: Record<LineupSlot, number> = {
   SP: 10,
   RP: 10,
   P: 10,
+  // Basketball (C/UTIL are shared with baseball above).
+  PG: 4,
+  SG: 4,
+  SF: 4,
+  PF: 4,
+  G: 4,
+  F: 4,
   BENCH: 20,
 };
 
@@ -154,9 +194,24 @@ export const DEFAULT_BASEBALL_LINEUP: LineupSlots = {
   BENCH: 5,
 };
 
+// A conventional NBA fantasy starting lineup: one of each position, a G and F
+// flex, three UTIL, and a short bench.
+export const DEFAULT_BASKETBALL_LINEUP: LineupSlots = {
+  PG: 1,
+  SG: 1,
+  SF: 1,
+  PF: 1,
+  C: 1,
+  G: 1,
+  F: 1,
+  UTIL: 3,
+  BENCH: 3,
+};
+
 export const DEFAULT_LINEUP_BY_SPORT: Record<Sport, LineupSlots> = {
   [Sport.FOOTBALL]: DEFAULT_FOOTBALL_LINEUP,
   [Sport.BASEBALL]: DEFAULT_BASEBALL_LINEUP,
+  [Sport.BASKETBALL]: DEFAULT_BASKETBALL_LINEUP,
 };
 
 /** Total starting spots (everything but the bench). */

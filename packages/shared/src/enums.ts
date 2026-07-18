@@ -3,13 +3,16 @@
 export const Sport = {
   FOOTBALL: "FOOTBALL",
   BASEBALL: "BASEBALL",
+  BASKETBALL: "BASKETBALL",
 } as const;
 export type Sport = (typeof Sport)[keyof typeof Sport];
 
-// Accent color per sport, used to tint sport icons/filters.
+// Accent color per sport, used to tint sport icons/filters. Basketball uses the
+// NBA's red so it reads distinctly from football's orange and baseball's blue.
 export const SPORT_COLORS: Record<Sport, string> = {
   FOOTBALL: "#e8833a",
   BASEBALL: "#3b82f6",
+  BASKETBALL: "#c8102e",
 };
 
 export const PollStatus = {
@@ -33,6 +36,7 @@ export const ScoringPreset = {
   FOOTBALL_HALF_PPR: "FOOTBALL_HALF_PPR",
   FOOTBALL_PPR: "FOOTBALL_PPR",
   BASEBALL_STANDARD: "BASEBALL_STANDARD",
+  BASKETBALL_STANDARD: "BASKETBALL_STANDARD",
 } as const;
 export type ScoringPreset = (typeof ScoringPreset)[keyof typeof ScoringPreset];
 

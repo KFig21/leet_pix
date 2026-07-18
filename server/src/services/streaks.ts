@@ -16,16 +16,18 @@ import { scoreStatLine } from "./scoring";
 const REFERENCE_PRESET: Record<Sport, ScoringPreset> = {
   [Sport.FOOTBALL]: "FOOTBALL_HALF_PPR",
   [Sport.BASEBALL]: "BASEBALL_STANDARD",
+  [Sport.BASKETBALL]: "BASKETBALL_STANDARD",
 };
 
 // How far back to pull stat lines: recent + baseline windows.
 const WINDOW = STREAK_RECENT_GAMES * 2;
 
-// Baseball weeks are YYYYMMDD dates; only look back ~45 days so we don't scan a
-// whole season of daily lines. Football is small (≤18/season), so no floor.
-const BASEBALL_LOOKBACK_DAYS = 45;
-function baseballWeekFloor(): number {
-  const d = new Date(Date.now() - BASEBALL_LOOKBACK_DAYS * 86_400_000);
+// Baseball and basketball weeks are YYYYMMDD dates; only look back ~45 days so we
+// don't scan a whole season of daily lines. Football is small (≤18/season), so
+// no floor.
+const DAILY_LOOKBACK_DAYS = 45;
+function dailyWeekFloor(): number {
+  const d = new Date(Date.now() - DAILY_LOOKBACK_DAYS * 86_400_000);
   return Number(
     `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, "0")}${String(
       d.getUTCDate(),
@@ -57,13 +59,16 @@ export async function streaksByPlayer(
   const sportById = new Map(players.map((p) => [p.id, p.sport as Sport]));
   const positionById = new Map(players.map((p) => [p.id, p.position]));
   const footballIds = players.filter((p) => p.sport === "FOOTBALL").map((p) => p.id);
-  const baseballIds = players.filter((p) => p.sport === "BASEBALL").map((p) => p.id);
+  // Baseball and basketball share the date-based (YYYYMMDD) week scheme.
+  const dailyIds = players
+    .filter((p) => p.sport === "BASEBALL" || p.sport === "BASKETBALL")
+    .map((p) => p.id);
 
-  // One query, bounded per sport (baseball by a recent date floor).
+  // One query, bounded per sport (the date-based sports by a recent date floor).
   const or: object[] = [];
   if (footballIds.length) or.push({ playerId: { in: footballIds } });
-  if (baseballIds.length) {
-    or.push({ playerId: { in: baseballIds }, week: { gte: baseballWeekFloor() } });
+  if (dailyIds.length) {
+    or.push({ playerId: { in: dailyIds }, week: { gte: dailyWeekFloor() } });
   }
 
   const rows = await prisma.playerStat.findMany({

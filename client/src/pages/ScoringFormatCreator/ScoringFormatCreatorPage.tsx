@@ -28,6 +28,7 @@ type Field = {
 const SPORTS: { value: Sport; label: string }[] = [
   { value: Sport.FOOTBALL, label: "Football" },
   { value: Sport.BASEBALL, label: "Baseball" },
+  { value: Sport.BASKETBALL, label: "Basketball" },
 ];
 
 // Seed editor state from the catalog defaults for a sport.

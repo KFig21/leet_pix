@@ -203,7 +203,9 @@ playersRouter.get(
 
     // Without a query, a filter, or a projection ranking, there's nothing to
     // browse — a bare open shouldn't dump the whole table alphabetically.
-    if (!hasQuery && !hasFilter && !wantProj) return res.json([]);
+    if (!hasQuery && !hasFilter && !wantProj) {
+      return res.json({ items: [], nextOffset: null });
+    }
 
     const where: Prisma.PlayerWhereInput = { active: true };
     if (sport) where.sport = sport;
@@ -211,7 +213,9 @@ playersRouter.get(
     if (teams.length) where.team = { in: teams };
     if (positions.length) where.position = { in: positions };
 
-    const RESULT_LIMIT = 20;
+    // Page size for infinite scroll (clamped) + offset into the ranked/sorted list.
+    const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 50);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
     const selectFields = {
       id: true,
       fullName: true,
@@ -246,43 +250,57 @@ playersRouter.get(
       sport: Sport;
       injuryStatus: string | null;
     }>;
+    let hasMore: boolean;
 
     if (wantProj && !hasQuery && !hasFilter) {
-      // Default "best players": take the top-projected ids straight from the map,
-      // then hydrate just those rows (no need to scan the whole table).
-      const topIds = [...projById.entries()]
+      // Default "best players": page straight through the cached full-pool
+      // ranking, hydrating only the ids on this page (no table scan).
+      const rankedIds = [...projById.entries()]
         .sort((a, b) => b[1] - a[1])
-        .slice(0, RESULT_LIMIT)
         .map(([id]) => id);
+      const pageIds = rankedIds.slice(offset, offset + limit);
+      hasMore = offset + limit < rankedIds.length;
       const rows = await prisma.player.findMany({
-        where: { id: { in: topIds }, active: true },
+        where: { id: { in: pageIds }, active: true },
         select: selectFields,
       });
       const byId = new Map(rows.map((r) => [r.id, r]));
-      players = topIds.map((id) => byId.get(id)).filter((p): p is (typeof rows)[number] => !!p);
-    } else {
-      // Query/filter: rank the matching candidates by projection, then trim.
+      players = pageIds.map((id) => byId.get(id)).filter((p): p is (typeof rows)[number] => !!p);
+    } else if (wantProj) {
+      // Query/filter + projection ranking: the where-clause (a name search or a
+      // team/position filter) already bounds the candidate set, so load it in
+      // full, rank by projection, then page in memory.
       const candidates = await prisma.player.findMany({
         where,
         orderBy: { fullName: "asc" },
-        take: wantProj ? 200 : RESULT_LIMIT,
         select: selectFields,
       });
-      const ranked = wantProj
-        ? [...candidates].sort((a, b) => {
-            const pa = projById.get(a.id) ?? null;
-            const pb = projById.get(b.id) ?? null;
-            if (pa == null && pb == null) return a.fullName.localeCompare(b.fullName);
-            if (pa == null) return 1;
-            if (pb == null) return -1;
-            return pb - pa;
-          })
-        : candidates;
-      players = ranked.slice(0, RESULT_LIMIT);
+      const ranked = [...candidates].sort((a, b) => {
+        const pa = projById.get(a.id) ?? null;
+        const pb = projById.get(b.id) ?? null;
+        if (pa == null && pb == null) return a.fullName.localeCompare(b.fullName);
+        if (pa == null) return 1;
+        if (pb == null) return -1;
+        return pb - pa;
+      });
+      players = ranked.slice(offset, offset + limit);
+      hasMore = offset + limit < ranked.length;
+    } else {
+      // No projection ranking: a straight DB page, alphabetical + id tiebreak
+      // for stable ordering across pages.
+      const rows = await prisma.player.findMany({
+        where,
+        orderBy: [{ fullName: "asc" }, { id: "asc" }],
+        skip: offset,
+        take: limit + 1,
+        select: selectFields,
+      });
+      hasMore = rows.length > limit;
+      players = hasMore ? rows.slice(0, limit) : rows;
     }
 
     // Attach each result's next game (opponent + kickoff) so the picker shows
-    // who they play — best-effort (needs the schedule imported). Final 20 only.
+    // who they play — best-effort (needs the schedule imported).
     const resultTeams = players
       .map((p) => p.team)
       .filter((t): t is string => !!t);
@@ -293,8 +311,8 @@ playersRouter.get(
     // Recent-form (hot/cold) badge per result, batched.
     const streaks = await streaksByPlayer(players.map((p) => p.id));
 
-    res.json(
-      players.map((p) => {
+    res.json({
+      items: players.map((p) => {
         const g = p.team ? byTeam?.get(p.team) : undefined;
         const opponent = g
           ? g.homeTeam === p.team
@@ -310,6 +328,7 @@ playersRouter.get(
             : null,
         };
       }),
-    );
+      nextOffset: hasMore ? offset + limit : null,
+    });
   }),
 );

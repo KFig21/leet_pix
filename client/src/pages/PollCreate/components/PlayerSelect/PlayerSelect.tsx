@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import {
   Sport as SportEnum,
   isScoreablePoll,
@@ -10,6 +10,7 @@ import {
 } from "@leetpix/shared";
 import { api } from "@/lib/api";
 import { formatProjection } from "@/lib/formatProjection";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { Loader } from "@/components/Loader/Loader";
 import { PlayerMeta } from "@/components/PlayerMeta/PlayerMeta";
 import { TeamTag } from "@/components/TeamTag/TeamTag";
@@ -118,10 +119,20 @@ export function PlayerSelect({
       ].join("|")
     : "";
 
-  const { data: results, isFetching } = useQuery({
+  const {
+    data,
+    isFetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ["players", sport, debounced, teamKey, positionKey, projKey],
-    queryFn: () => {
-      const params = new URLSearchParams({ sport, q: debounced });
+    queryFn: ({ pageParam }) => {
+      const params = new URLSearchParams({
+        sport,
+        q: debounced,
+        offset: String(pageParam),
+      });
       if (teamKey) params.set("team", teamKey);
       if (positionKey) params.set("position", positionKey);
       if (projection) {
@@ -134,13 +145,25 @@ export function PlayerSelect({
         if (projection.evaluationWeeks != null)
           params.set("evaluationWeeks", String(projection.evaluationWeeks));
       }
-      return api.get<PlayerResult[]>(`/players?${params.toString()}`);
+      return api.get<{ items: PlayerResult[]; nextOffset: number | null }>(
+        `/players?${params.toString()}`,
+      );
     },
+    initialPageParam: 0,
+    getNextPageParam: (last) => last.nextOffset,
     enabled: open && ready,
   });
 
+  const results = data?.pages.flatMap((p) => p.items);
   // Hide players already picked in other slots so none can be chosen twice.
   const visible = (results ?? []).filter((p) => !excludeIds.includes(p.id));
+
+  const menuRef = useRef<HTMLUListElement>(null);
+  const sentinelRef = useInfiniteScroll(
+    fetchNextPage,
+    !!hasNextPage && !isFetchingNextPage && !isFetching,
+    { root: menuRef, rootMargin: "80px" },
+  );
 
   // Close the menu on outside click.
   useEffect(() => {
@@ -195,8 +218,8 @@ export function PlayerSelect({
         onFocus={() => setOpen(true)}
       />
       {open && ready && (
-        <ul className="player-select__menu">
-          {isFetching && (
+        <ul className="player-select__menu" ref={menuRef}>
+          {isFetching && !isFetchingNextPage && (
             <li className="player-select__msg">
               <Loader size={16} center={false} /> Searching…
             </li>
@@ -263,6 +286,12 @@ export function PlayerSelect({
               </button>
             </li>
           ))}
+          {visible.length > 0 && (
+            <li className="player-select__sentinel">
+              <div ref={sentinelRef} />
+              {isFetchingNextPage && <Loader size={14} center={false} />}
+            </li>
+          )}
         </ul>
       )}
     </div>

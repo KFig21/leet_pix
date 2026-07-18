@@ -74,6 +74,16 @@
     font-size: $font-size-sm;
   }
 
+  // Invisible infinite-scroll trigger at the end of the results, inside the
+  // scrolling menu itself (not the page) — see useInfiniteScroll's `root` option.
+  &__sentinel {
+    display: flex;
+    justify-content: center;
+    height: 1px;
+    padding: 4px 0;
+    overflow: visible;
+  }
+
   // Desktop row order: team · position · name · schedule … PROJ (right-aligned).
   &__option {
     @include button-reset;

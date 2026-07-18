@@ -117,18 +117,23 @@ export interface SavedScoringFormat {
 }
 
 interface Props {
-  // Embedded (modal) mode: hides the page header + sport tabs, and on save calls
-  // onSaved with the created format instead of navigating away.
+  // Embedded (modal) mode: hides the page header, and on save calls onSaved with
+  // the created format instead of navigating away.
   embedded?: boolean;
   onSaved?: (format: SavedScoringFormat) => void;
   // Start on (and, when embedded, lock to) a specific sport.
   initialSport?: Sport;
+  // Show the sport tabs even when embedded (e.g. onboarding, where the user
+  // hasn't committed to a sport yet). The league modal keeps them hidden since
+  // leagues are football-only.
+  allowSportSelect?: boolean;
 }
 
 export function ScoringFormatCreatorPage({
   embedded = false,
   onSaved,
   initialSport = Sport.FOOTBALL,
+  allowSportSelect = false,
 }: Props = {}) {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -382,8 +387,9 @@ export function ScoringFormatCreatorPage({
           required
         />
 
-        {/* Sport is locked in embedded mode and when editing an existing format. */}
-        {!embedded && !editId && (
+        {/* Sport is locked when editing an existing format, and in embedded mode
+            unless the caller opts in (onboarding does). */}
+        {(!embedded || allowSportSelect) && !editId && (
           <div className="scoring__sport" role="tablist" aria-label="Sport">
             {SPORTS.map((s) => (
               <button

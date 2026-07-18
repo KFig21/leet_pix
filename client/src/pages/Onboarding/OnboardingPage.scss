@@ -28,9 +28,10 @@
     }
 
     // The poll-view step embeds a real sample poll card, which needs more room
-    // than the form steps or its data gets truncated with ellipses.
+    // than the form steps or its data gets truncated with ellipses. Go near the
+    // viewport width (with a sane cap) so option rows lay out fully.
     &--wide {
-      max-width: 760px;
+      max-width: min(960px, 94vw);
     }
   }
 

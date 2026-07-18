@@ -230,7 +230,11 @@ export function OnboardingWizard({ startStep }: Props) {
 
           {step === 4 && (
             <div className="onboard__embed">
-              <ScoringFormatCreatorPage embedded onSaved={() => go(step + 1)} />
+              <ScoringFormatCreatorPage
+                embedded
+                allowSportSelect
+                onSaved={() => go(step + 1)}
+              />
             </div>
           )}
 

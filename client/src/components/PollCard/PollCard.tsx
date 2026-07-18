@@ -86,8 +86,10 @@ export function PollCard({ poll, pick, preview }: Props) {
   const voted = poll.myVoteOptionId ?? null;
   const isOwn = session?.user.id === poll.author.id;
   const resolved = poll.status === "RESOLVED";
-  // Preview cards (create screen, settings customizer) are never votable.
-  const canVote = poll.status === "OPEN" && !voted && !isOwn && !preview;
+  // Preview cards (create screen, settings customizer) are never votable. A vote
+  // can be cast OR changed to a different option while the poll is open — it only
+  // freezes into your record at lock.
+  const canParticipate = poll.status === "OPEN" && !isOwn && !preview;
   // Keeper polls are about season/dynasty value, so the next scheduled game is
   // just clutter — suppress it (injury designations still show).
   const isKeeper = poll.questionType === PollQuestionType.KEEP;
@@ -111,8 +113,11 @@ export function PollCard({ poll, pick, preview }: Props) {
     resolved && projFavoriteId != null && winnerId != null && projFavoriteId !== winnerId;
 
   const vote = useMutation({
+    // PATCH when you already have a pick (change it), POST for a first vote.
     mutationFn: (optionId: string) =>
-      api.post("/votes", { pollId: poll.id, optionId }),
+      voted
+        ? api.patch("/votes", { pollId: poll.id, optionId })
+        : api.post("/votes", { pollId: poll.id, optionId }),
     onSuccess: () => {
       setPending(null);
       setError(null);
@@ -128,7 +133,8 @@ export function PollCard({ poll, pick, preview }: Props) {
       if (o.statLine) setBreakdownList([o]); // detail view carries stat lines
       return;
     }
-    if (!canVote) return;
+    if (!canParticipate) return;
+    if (voted === o.id) return; // already your pick — nothing to change
     if (confirmVotes) setPending(o.id);
     else vote.mutate(o.id);
   };
@@ -384,7 +390,10 @@ export function PollCard({ poll, pick, preview }: Props) {
                 // aria-disabled (not the `disabled` attribute) so the button
                 // isn't click-inert — that would swallow clicks on the nested
                 // projection pill too. onOption already blocks unwanted votes.
-                aria-disabled={(resolved ? !o.statLine : !canVote) || undefined}
+                aria-disabled={
+                  (resolved ? !o.statLine : !canParticipate || voted === o.id) ||
+                  undefined
+                }
                 onClick={(e) => onOption(e, o)}
               >
                 <span className="poll-card__option-fill" style={{ width: `${pct}%` }} />
@@ -490,7 +499,7 @@ export function PollCard({ poll, pick, preview }: Props) {
         )}
       </div>
 
-      {pending && confirmVotes && !voted && (
+      {pending && confirmVotes && (
         <div className="poll-card__confirm">
           <button
             className="poll-card__confirm-btn"
@@ -500,7 +509,13 @@ export function PollCard({ poll, pick, preview }: Props) {
             }}
             disabled={vote.isPending}
           >
-            {vote.isPending ? "Voting…" : "Confirm vote"}
+            {vote.isPending
+              ? voted
+                ? "Changing…"
+                : "Voting…"
+              : voted
+                ? "Change vote"
+                : "Confirm vote"}
           </button>
           <button
             type="button"

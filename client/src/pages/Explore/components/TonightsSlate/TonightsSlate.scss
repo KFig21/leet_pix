@@ -1,0 +1,59 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.slate {
+  &__title {
+    margin: 0 0 $gap-xs;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: var(--text-secondary);
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__row {
+    @include button-reset;
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+    width: 100%;
+    padding: $gap-sm;
+    border-radius: $radius-sm;
+    text-align: left;
+
+    &:not(:last-child) {
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    @include hover {
+      background: var(--bg-hover);
+    }
+  }
+
+  &__teams {
+    display: inline-flex;
+    align-items: center;
+    gap: $gap-xs;
+    min-width: 0;
+  }
+
+  &__at {
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  &__when {
+    margin-left: auto;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+
+    &--live {
+      color: var(--color-danger);
+    }
+  }
+}

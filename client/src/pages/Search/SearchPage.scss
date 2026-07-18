@@ -49,6 +49,34 @@
     flex-direction: column;
   }
 
+  // Header for a deep-linked view (a player's / game's recent polls).
+  &__context {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $gap-sm;
+    padding: $gap-md;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__context-label {
+    color: var(--text-secondary);
+
+    strong {
+      color: var(--text-primary);
+    }
+  }
+
+  &__context-clear {
+    @include button-reset;
+    display: inline-flex;
+    color: var(--text-secondary);
+
+    &:hover {
+      color: var(--text-primary);
+    }
+  }
+
   &__row {
     padding: $gap-md;
     color: var(--text-primary);

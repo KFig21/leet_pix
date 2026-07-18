@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { Sport, type PlayerStreak } from "@leetpix/shared";
 import { api } from "@/lib/api";
 import { Loader } from "@/components/Loader/Loader";
@@ -22,11 +22,6 @@ interface ExplorePlayersData {
   trending: DiscoveryPlayer[];
 }
 
-const SPORTS: { value: Sport; label: string }[] = [
-  { value: Sport.FOOTBALL, label: "Football" },
-  { value: Sport.BASEBALL, label: "Baseball" },
-];
-
 // Trending works year-round; hot/cold only when games have been played recently.
 const GROUPS: { key: keyof ExplorePlayersData; label: string; emoji: string }[] = [
   { key: "trending", label: "Trending", emoji: "📈" },
@@ -34,10 +29,10 @@ const GROUPS: { key: keyof ExplorePlayersData; label: string; emoji: string }[] 
   { key: "cold", label: "Cooling off", emoji: "🧊" },
 ];
 
-// Discovery lists on the explore screen. Tapping a player searches for them, so
-// you can jump to (or start) polls about that name.
-export function ExplorePlayers({ onSelect }: { onSelect: (name: string) => void }) {
-  const [sport, setSport] = useState<Sport>(Sport.FOOTBALL);
+// Discovery lists on the explore screen. Tapping a player opens their recent
+// polls (search by playerId). Sport is controlled by the parent.
+export function ExplorePlayers({ sport }: { sport: Sport }) {
+  const navigate = useNavigate();
   const { data, isLoading } = useQuery({
     queryKey: ["explore-players", sport],
     queryFn: () => api.get<ExplorePlayersData>(`/explore/players?sport=${sport}`),
@@ -48,26 +43,6 @@ export function ExplorePlayers({ onSelect }: { onSelect: (name: string) => void 
 
   return (
     <div className="explore-players">
-      <div className="explore-players__head">
-        <h2 className="search__title">Players</h2>
-        <div className="explore-players__sports" role="tablist" aria-label="Sport">
-          {SPORTS.map((s) => (
-            <button
-              key={s.value}
-              type="button"
-              role="tab"
-              aria-selected={sport === s.value}
-              className={`explore-players__sport${
-                sport === s.value ? " explore-players__sport--on" : ""
-              }`}
-              onClick={() => setSport(s.value)}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {isLoading && <Loader />}
       {empty && (
         <p className="search__msg">
@@ -90,7 +65,7 @@ export function ExplorePlayers({ onSelect }: { onSelect: (name: string) => void 
                     key={p.id}
                     type="button"
                     className="explore-players__row"
-                    onClick={() => onSelect(p.fullName)}
+                    onClick={() => navigate(`/search?playerId=${p.id}`)}
                   >
                     {p.position && (
                       <span className="explore-players__pos">{p.position}</span>

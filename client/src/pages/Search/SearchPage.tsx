@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import SearchIcon from "@mui/icons-material/Search";
-import { POLL_QUESTION_LABELS } from "@leetpix/shared";
+import CloseIcon from "@mui/icons-material/Close";
 import { api } from "@/lib/api";
 import { useSetRightRail } from "@/context/RightRailContext";
 import { PollCard } from "@/components/PollCard/PollCard";
-import { ExplorePlayers } from "./components/ExplorePlayers/ExplorePlayers";
 import { UserRow } from "@/components/UserRow/UserRow";
 import { FollowButton } from "@/components/FollowButton/FollowButton";
 import { Loader } from "@/components/Loader/Loader";
@@ -20,6 +19,8 @@ import type { PollView, ProfileSummary } from "@/types";
 import "./SearchPage.scss";
 
 interface SearchResults {
+  // Present for related-poll lookups (a specific player or game).
+  label?: string;
   users: ProfileSummary[];
   polls: PollView[];
   formats: { id: string; name: string }[];
@@ -27,27 +28,52 @@ interface SearchResults {
 
 const INITIAL_USERS = 3;
 
-// Instagram-style discovery: search bar on top. An empty query shows the explore
-// feed (who to follow, trending polls); typing shows matching results.
+// Search + discovery. A player/game deep-link (?playerId= / ?gameId=) shows that
+// subject's recent polls; typing runs a text search; an empty box shows the
+// explore feed (who to follow, trending polls).
 export function SearchPage() {
+  const [params, setParams] = useSearchParams();
+  const playerId = params.get("playerId") ?? "";
+  const gameId = params.get("gameId") ?? "";
+  const related = !!(playerId || gameId);
+
   const [q, setQ] = useState("");
   const [filters, setFilters] = useState<PollFilterState>(defaultPollFilters);
   const [showAllUsers, setShowAllUsers] = useState(false);
   const setRail = useSetRightRail();
-  const searching = q.trim().length >= 2;
 
-  // Filters live in the rail only while browsing explore (not while searching).
+  const searching = q.trim().length >= 2;
+  // A text search takes precedence over a deep-link once the user starts typing.
+  const mode = searching ? "text" : related ? "related" : "idle";
+
+  const queryStr =
+    mode === "text"
+      ? `q=${encodeURIComponent(q.trim())}`
+      : mode === "related"
+        ? playerId
+          ? `playerId=${playerId}`
+          : `gameId=${gameId}`
+        : null;
+
+  // Filters live in the rail only while browsing the explore feed.
   useEffect(() => {
     setRail(
-      searching ? null : <PollFilters value={filters} onChange={setFilters} />,
+      mode === "idle" ? <PollFilters value={filters} onChange={setFilters} /> : null,
     );
     return () => setRail(null);
-  }, [searching, filters, setRail]);
+  }, [mode, filters, setRail]);
+
+  const changeQ = (val: string) => {
+    setQ(val);
+    // Leaving a deep-link view as soon as they type a real query.
+    if (related && val.trim().length >= 2) setParams({}, { replace: true });
+  };
+  const clearRelated = () => setParams({}, { replace: true });
 
   const suggested = useQuery({
     queryKey: ["explore-users"],
     queryFn: () => api.get<ProfileSummary[]>("/explore/users"),
-    enabled: !searching,
+    enabled: mode === "idle",
   });
   const shownUsers = showAllUsers
     ? suggested.data
@@ -56,16 +82,16 @@ export function SearchPage() {
   const explorePolls = useQuery({
     queryKey: ["explore-polls"],
     queryFn: () => api.get<PollView[]>("/explore/polls"),
-    enabled: !searching,
+    enabled: mode === "idle",
   });
   const shownPolls = explorePolls.data?.filter((p) =>
     matchesPollFilters(p, filters),
   );
 
-  const { data: results } = useQuery({
-    queryKey: ["search", q],
-    queryFn: () => api.get<SearchResults>(`/search?q=${encodeURIComponent(q)}`),
-    enabled: searching,
+  const { data: results, isLoading: resultsLoading } = useQuery({
+    queryKey: ["search", queryStr],
+    queryFn: () => api.get<SearchResults>(`/search?${queryStr}`),
+    enabled: !!queryStr,
   });
 
   return (
@@ -77,22 +103,48 @@ export function SearchPage() {
             className="search__input"
             placeholder="Search players, polls, people…"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => changeQ(e.target.value)}
           />
         </span>
       </header>
 
-      {searching ? (
+      {mode === "related" ? (
         <div className="search__results">
+          <div className="search__context">
+            <span className="search__context-label">
+              Recent polls · <strong>{results?.label ?? "…"}</strong>
+            </span>
+            <button
+              type="button"
+              className="search__context-clear"
+              onClick={clearRelated}
+              aria-label="Clear"
+            >
+              <CloseIcon fontSize="small" />
+            </button>
+          </div>
+          {resultsLoading && <Loader />}
+          {results && results.polls.length === 0 && (
+            <p className="search__msg">
+              No polls about {results.label} yet — be the first to post one.
+            </p>
+          )}
+          {results?.polls.map((p) => (
+            <PollCard key={p.id} poll={p} />
+          ))}
+        </div>
+      ) : mode === "text" ? (
+        <div className="search__results">
+          {resultsLoading && <Loader />}
           {results?.users.map((u) => (
-            <Link key={u.id} to={`/u/${u.username}`} className="search__row">
-              @{u.username}
-            </Link>
+            <UserRow
+              key={u.id}
+              profile={u}
+              action={<FollowButton userId={u.id} />}
+            />
           ))}
           {results?.polls.map((p) => (
-            <Link key={p.id} to={`/polls/${p.id}`} className="search__row">
-              {POLL_QUESTION_LABELS[p.questionType]}
-            </Link>
+            <PollCard key={p.id} poll={p} />
           ))}
           {results &&
             results.users.length === 0 &&
@@ -125,10 +177,6 @@ export function SearchPage() {
                 See more profiles
               </button>
             )}
-          </section>
-
-          <section className="search__section">
-            <ExplorePlayers onSelect={setQ} />
           </section>
 
           <section className="search__section">

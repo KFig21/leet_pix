@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { useSetRightRail } from "@/context/RightRailContext";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { PollCard } from "@/components/PollCard/PollCard";
+import { RailTrends } from "@/components/RailTrends/RailTrends";
 import { Loader } from "@/components/Loader/Loader";
 import {
   PollFilters,
@@ -40,9 +41,14 @@ export function TimelinePage() {
     getNextPageParam: (last) => last.nextCursor,
   });
 
-  // Render the filters into the right rail.
+  // Render the filters + a compact trends widget into the right rail.
   useEffect(() => {
-    setRail(<PollFilters value={filters} onChange={setFilters} />);
+    setRail(
+      <>
+        <PollFilters value={filters} onChange={setFilters} />
+        <RailTrends />
+      </>,
+    );
     return () => setRail(null);
   }, [filters, setRail]);
 

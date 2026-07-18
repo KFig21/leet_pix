@@ -1,0 +1,53 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.explore {
+  &__header {
+    @include sticky-header;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $gap-sm;
+    padding: $gap-md;
+  }
+
+  &__title {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+  }
+
+  // Segmented sport toggle (matches the creators' style).
+  &__sports {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    background: var(--bg-secondary);
+    border-radius: $radius-pill;
+  }
+
+  &__sport {
+    @include button-reset;
+    padding: 4px $gap-md;
+    border: 1px solid transparent;
+    border-radius: $radius-pill;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      color: var(--text-primary);
+    }
+
+    &--on {
+      background: var(--accent);
+      color: var(--accent-contrast);
+    }
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-lg;
+    padding: $gap-md;
+  }
+}

@@ -23,8 +23,10 @@
 
   &__sheet {
     width: 100%;
-    max-height: 80vh;
-    overflow-y: auto;
+    max-height: 85vh;
+    // The sheet itself doesn't scroll — the filters/trends section does, so the
+    // menu (Settings / theme / Sign out) stays pinned at the bottom.
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     gap: $gap-md;
@@ -35,6 +37,13 @@
     border-top-right-radius: $radius-lg;
     border-top: 1px solid var(--border-color);
     animation: drawer-up 0.2s ease;
+  }
+
+  // Scrollable region holding the page's rail (filters + trends).
+  &__section {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   // Floating close button, bottom-right (roughly above the "More" tab).
@@ -71,6 +80,7 @@
   }
 
   &__menu {
+    flex-shrink: 0; // static footer — never scrolls with the section above
     display: flex;
     flex-direction: column;
 

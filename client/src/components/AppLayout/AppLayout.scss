@@ -128,6 +128,9 @@
       position: sticky;
       top: 0;
       align-self: start;
+      // Scroll independently when filters + trends run taller than the viewport.
+      max-height: 100vh;
+      overflow-y: auto;
       padding: $gap-md;
     }
   }

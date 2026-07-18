@@ -1,0 +1,108 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.rail-trends {
+  @include card;
+  margin-top: $gap-md; // separate from the filters card above it
+  padding: $gap-md;
+  background: var(--bg-secondary);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $gap-sm;
+    margin-bottom: $gap-sm;
+  }
+
+  &__title {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+  }
+
+  &__sports {
+    display: flex;
+    gap: 3px;
+    padding: 2px;
+    background: var(--bg-primary);
+    border-radius: $radius-pill;
+  }
+
+  &__sport {
+    @include button-reset;
+    padding: 2px $gap-sm;
+    border-radius: $radius-pill;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+
+    &--on {
+      background: var(--accent);
+      color: var(--accent-contrast);
+    }
+  }
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+
+    &:not(:last-of-type) {
+      margin-bottom: $gap-sm;
+    }
+  }
+
+  &__group-title {
+    padding: $gap-xs 0;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+  }
+
+  &__row {
+    @include button-reset;
+    display: flex;
+    align-items: center;
+    gap: $gap-xs;
+    width: 100%;
+    padding: 6px 4px;
+    border-radius: $radius-sm;
+    text-align: left;
+
+    @include hover {
+      background: var(--bg-hover);
+    }
+  }
+
+  &__name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: $font-weight-bold;
+    font-size: $font-size-sm;
+  }
+
+  &__game {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+  }
+
+  &__at {
+    color: var(--text-secondary);
+    font-weight: normal;
+  }
+
+  &__empty {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  &__all {
+    display: inline-block;
+    margin-top: $gap-sm;
+    color: var(--accent);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+  }
+}

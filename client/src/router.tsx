@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout/AppLayout";
 import { ProtectedRoute } from "@/components/ProtectedRoute/ProtectedRoute";
 import { OnboardingGate } from "@/components/OnboardingGate/OnboardingGate";
@@ -10,6 +10,7 @@ import { RegisterPage } from "@/pages/Register/RegisterPage";
 import { ForgotPasswordPage } from "@/pages/ForgotPassword/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/ResetPassword/ResetPasswordPage";
 import { TimelinePage } from "@/pages/Timeline/TimelinePage";
+import { ExplorePage } from "@/pages/Explore/ExplorePage";
 import { NotificationsPage } from "@/pages/Notifications/NotificationsPage";
 import { ProfilePage } from "@/pages/Profile/ProfilePage";
 import { PollCreatePage } from "@/pages/PollCreate/PollCreatePage";
@@ -45,7 +46,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: "/home", element: <TimelinePage /> },
-      { path: "/explore", element: <Navigate to="/search" replace /> },
+      { path: "/explore", element: <ExplorePage /> },
       { path: "/notifications", element: <NotificationsPage /> },
       { path: "/search", element: <SearchPage /> },
       { path: "/create", element: <PollCreatePage /> },

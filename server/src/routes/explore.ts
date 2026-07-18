@@ -29,6 +29,61 @@ exploreRouter.get(
   }),
 );
 
+// The day's slate: games kicking off today (ET). When there are none (off-day /
+// off-season) it falls back to the soonest upcoming games so the section is
+// never dead. Returns { label, games } — label is "Tonight" or "Upcoming".
+const etDate = (d: Date) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+
+exploreRouter.get(
+  "/slate",
+  asyncHandler(async (req, res) => {
+    const sport =
+      String(req.query.sport ?? "") === Sport.BASEBALL
+        ? Sport.BASEBALL
+        : Sport.FOOTBALL;
+    const now = new Date();
+    const select = {
+      id: true,
+      sport: true,
+      homeTeam: true,
+      awayTeam: true,
+      kickoff: true,
+      status: true,
+    } as const;
+
+    // Bracket a UTC window around "today" and keep games on the current ET date.
+    const windowGames = await prisma.game.findMany({
+      where: {
+        sport,
+        kickoff: {
+          gte: new Date(now.getTime() - 18 * 3600_000),
+          lte: new Date(now.getTime() + 30 * 3600_000),
+        },
+      },
+      orderBy: { kickoff: "asc" },
+      select,
+    });
+    const today = etDate(now);
+    const todays = windowGames.filter((g) => etDate(g.kickoff) === today);
+    if (todays.length) return res.json({ label: "Tonight", games: todays });
+
+    // Fallback: the next scheduled games.
+    const upcoming = await prisma.game.findMany({
+      where: { sport, kickoff: { gt: now } },
+      orderBy: { kickoff: "asc" },
+      take: 8,
+      select,
+    });
+    res.json({ label: "Upcoming", games: upcoming });
+  }),
+);
+
 const pollInclude = {
   author: true,
   scoringFormat: true,

@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import HomeIcon from "@mui/icons-material/Home";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import SearchIcon from "@mui/icons-material/Search";
+import ExploreIcon from "@mui/icons-material/Explore";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import SettingsIcon from "@mui/icons-material/Settings";
 import LightModeIcon from "@mui/icons-material/LightMode";
@@ -25,6 +26,7 @@ type NavItem = { to: string; label: string; Icon: ComponentType<SvgIconProps> };
 
 const NAV: NavItem[] = [
   { to: "/home", label: "Home", Icon: HomeIcon },
+  { to: "/explore", label: "Explore", Icon: ExploreIcon },
   { to: "/search", label: "Search", Icon: SearchIcon },
   { to: "/notifications", label: "Notifications", Icon: NotificationsIcon },
   { to: "/create", label: "Create", Icon: AddCircleIcon },
@@ -35,6 +37,7 @@ const NAV: NavItem[] = [
 // reached from the drawer). Profile is appended dynamically once we know /me.
 const MOBILE_NAV: NavItem[] = [
   { to: "/home", label: "Home", Icon: HomeIcon },
+  { to: "/explore", label: "Explore", Icon: ExploreIcon },
   { to: "/search", label: "Search", Icon: SearchIcon },
   { to: "/notifications", label: "Notifications", Icon: NotificationsIcon },
 ];

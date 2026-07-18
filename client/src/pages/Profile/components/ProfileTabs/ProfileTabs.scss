@@ -80,6 +80,11 @@
     text-align: center;
   }
 
+  // Invisible infinite-scroll trigger near the end of a feed.
+  &__sentinel {
+    height: 1px;
+  }
+
   &__pick-label {
     display: block;
     padding: $gap-sm $gap-md 0;

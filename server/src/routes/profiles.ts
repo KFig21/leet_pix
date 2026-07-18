@@ -98,52 +98,72 @@ async function profileByUsername(username: string) {
   return profile;
 }
 
-// A user's polls (their "posts").
+// Cursor-paginated page size for the profile feeds (1..50).
+const feedLimit = (v: unknown) => Math.min(Math.max(Number(v) || 20, 1), 50);
+
+// A user's polls (their "posts"), cursor-paginated for infinite scroll.
 profilesRouter.get(
   "/:username/polls",
   optionalAuth,
   asyncHandler(async (req: AuthedRequest, res) => {
     const profile = await profileByUsername(req.params.username);
-    const polls = await prisma.poll.findMany({
+    const limit = feedLimit(req.query.limit);
+    const cursor = typeof req.query.cursor === "string" ? req.query.cursor : null;
+
+    const rows = await prisma.poll.findMany({
       where: { authorId: profile.id, deletedAt: null, hiddenAt: null },
-      orderBy: { createdAt: "desc" },
-      take: 50,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       include: pollInclude,
     });
-    res.json(
-      await attachPlayerContext(
-        await attachStatLines(await withMyVote(polls, req.userId)),
-      ),
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    const nextCursor = hasMore ? page[page.length - 1].id : null;
+
+    const items = await attachPlayerContext(
+      await attachStatLines(await withMyVote(page, req.userId)),
     );
+    res.json({ items, nextCursor });
   }),
 );
 
-// A user's votes ("picks") with the poll and the option they chose.
+// A user's votes ("picks") with the poll and the option they chose,
+// cursor-paginated (cursor is the vote id).
 profilesRouter.get(
   "/:username/votes",
   optionalAuth,
   asyncHandler(async (req: AuthedRequest, res) => {
     const profile = await profileByUsername(req.params.username);
-    const votes = await prisma.vote.findMany({
+    const limit = feedLimit(req.query.limit);
+    const cursor = typeof req.query.cursor === "string" ? req.query.cursor : null;
+
+    const rows = await prisma.vote.findMany({
       where: {
         voterId: profile.id,
         poll: { is: { deletedAt: null, hiddenAt: null } },
       },
-      orderBy: { createdAt: "desc" },
-      take: 50,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       include: { poll: { include: pollInclude }, option: true },
     });
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    const nextCursor = hasMore ? page[page.length - 1].id : null;
+
     // Tag each pick's poll with the viewer's own vote.
     const polls = await attachPlayerContext(
       await attachStatLines(
         await withMyVote(
-          votes.map((v) => v.poll),
+          page.map((v) => v.poll),
           req.userId,
         ),
       ),
     );
     const byId = new Map(polls.map((p) => [p.id, p]));
-    res.json(votes.map((v) => ({ ...v, poll: byId.get(v.poll.id) })));
+    const items = page.map((v) => ({ ...v, poll: byId.get(v.poll.id) }));
+    res.json({ items, nextCursor });
   }),
 );
 

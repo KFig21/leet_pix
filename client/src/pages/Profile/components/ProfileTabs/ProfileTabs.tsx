@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useSetRightRail } from "@/context/RightRailContext";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { PollCard } from "@/components/PollCard/PollCard";
 import { UserRow } from "@/components/UserRow/UserRow";
 import { Loader } from "@/components/Loader/Loader";
@@ -44,14 +45,24 @@ export function ProfileTabs({ username, counts, owner }: Props) {
     return () => setRail(null);
   }, [showFilters, filters, setRail]);
 
-  const posts = useQuery({
+  const posts = useInfiniteQuery({
     queryKey: ["profile-polls", username],
-    queryFn: () => api.get<PollView[]>(`/profiles/${username}/polls`),
+    queryFn: ({ pageParam }) =>
+      api.get<InfinitePage<PollView>>(
+        `/profiles/${username}/polls?limit=20${pageParam ? `&cursor=${pageParam}` : ""}`,
+      ),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor,
     enabled: tab === "posts",
   });
-  const picks = useQuery({
+  const picks = useInfiniteQuery({
     queryKey: ["profile-picks", username],
-    queryFn: () => api.get<PickView[]>(`/profiles/${username}/votes`),
+    queryFn: ({ pageParam }) =>
+      api.get<InfinitePage<PickView>>(
+        `/profiles/${username}/votes?limit=20${pageParam ? `&cursor=${pageParam}` : ""}`,
+      ),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor,
     enabled: tab === "picks",
   });
   const followers = useQuery({
@@ -118,6 +129,20 @@ interface QueryLike<T> {
   isLoading: boolean;
 }
 
+interface InfinitePage<T> {
+  items: T[];
+  nextCursor: string | null;
+}
+
+// Structural subset of useInfiniteQuery's result the feed lists need.
+interface InfiniteQueryLike<T> {
+  data?: { pages: InfinitePage<T>[] };
+  isLoading: boolean;
+  fetchNextPage: () => void;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+}
+
 function Loading() {
   return <Loader />;
 }
@@ -125,24 +150,40 @@ function Empty({ text }: { text: string }) {
   return <p className="profile-tabs__msg">{text}</p>;
 }
 
+// Sentinel + "loading more" spinner shared by the paginated feed lists.
+function LoadMore({ query }: { query: InfiniteQueryLike<unknown> }) {
+  const ref = useInfiniteScroll(
+    query.fetchNextPage,
+    query.hasNextPage && !query.isFetchingNextPage,
+  );
+  return (
+    <>
+      <div ref={ref} className="profile-tabs__sentinel" />
+      {query.isFetchingNextPage && <Loader />}
+    </>
+  );
+}
+
 function PollList({
   query,
   filters,
   empty,
 }: {
-  query: QueryLike<PollView>;
+  query: InfiniteQueryLike<PollView>;
   filters: PollFilterState;
   empty: string;
 }) {
+  const items = query.data?.pages.flatMap((p) => p.items) ?? [];
   if (query.isLoading) return <Loading />;
-  if (!query.data?.length) return <Empty text={empty} />;
-  const shown = query.data.filter((p) => matchesPollFilters(p, filters));
+  if (items.length === 0) return <Empty text={empty} />;
+  const shown = items.filter((p) => matchesPollFilters(p, filters));
   if (shown.length === 0) return <Empty text="No posts match these filters." />;
   return (
     <>
       {shown.map((poll) => (
         <PollCard key={poll.id} poll={poll} />
       ))}
+      <LoadMore query={query} />
     </>
   );
 }
@@ -153,14 +194,15 @@ function PickList({
   owner,
   viewingOwn,
 }: {
-  query: QueryLike<PickView>;
+  query: InfiniteQueryLike<PickView>;
   filters: PollFilterState;
   owner?: ProfileSummary;
   viewingOwn: boolean;
 }) {
+  const items = query.data?.pages.flatMap((p) => p.items) ?? [];
   if (query.isLoading) return <Loading />;
-  if (!query.data?.length) return <Empty text="No picks yet." />;
-  const shown = query.data.filter((pick) => matchesPollFilters(pick.poll, filters));
+  if (items.length === 0) return <Empty text="No picks yet." />;
+  const shown = items.filter((pick) => matchesPollFilters(pick.poll, filters));
   if (shown.length === 0) return <Empty text="No picks match these filters." />;
   return (
     <>
@@ -175,6 +217,7 @@ function PickList({
           }
         />
       ))}
+      <LoadMore query={query} />
     </>
   );
 }

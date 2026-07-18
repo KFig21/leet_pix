@@ -8,6 +8,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./AuthContext";
 import { api } from "@/lib/api";
+import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { OnboardingModal } from "@/components/Onboarding/OnboardingModal";
 
 interface TutorialValue {
@@ -40,6 +41,13 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     staleTime: 60_000,
   });
 
+  // The tutorial is a *post*-setup walkthrough: it must wait until the first-run
+  // wizard is finished, otherwise a brand-new account gets both at once. Once the
+  // wizard completes and lands the user on their timeline, this flips to true and
+  // the auto-open effect fires.
+  const { data: onboarding } = useOnboardingStatus();
+  const setupComplete = onboarding?.completed === true;
+
   const markOnboarded = () => {
     // Optimistically flip the cached flag so nothing re-opens mid-session.
     qc.setQueryData<MeOnboarding>(["me"], (prev) =>
@@ -55,6 +63,8 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   // server flag silently instead of showing it again.
   useEffect(() => {
     if (!userId || !me || me.onboardedAt != null) return;
+    // Hold the walkthrough until the setup wizard is done.
+    if (!setupComplete) return;
     let seenLocally = false;
     try {
       seenLocally = !!localStorage.getItem(legacyKey(userId));
@@ -64,7 +74,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     if (seenLocally) markOnboarded();
     else setOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, me]);
+  }, [userId, me, setupComplete]);
 
   const dismiss = () => {
     setOpen(false);

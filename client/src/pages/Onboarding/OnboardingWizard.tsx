@@ -39,8 +39,8 @@ const STEPS: StepMeta[] = [
   { title: "Pick a username", subtitle: "This is your @handle. It has to be unique." },
   { title: "Choose an avatar", subtitle: "Pick an icon or emoji and colors." },
   { title: "Add a bio", subtitle: "Tell people about your fantasy takes.", skippable: true },
-  { title: "Set up a league", subtitle: "Attach your real scoring so polls are judged by your rules.", skippable: true },
-  { title: "Create a scoring format", subtitle: "Or build a custom scoring format from scratch.", skippable: true },
+  { title: "Create a scoring format", subtitle: "Build the scoring your league uses, so polls are judged by your rules.", skippable: true },
+  { title: "Set up a league", subtitle: "Attach the scoring you just made (or add it later).", skippable: true },
   { title: "Voting confirmation", subtitle: "Decide whether votes need a confirm tap." },
   { title: "Customize your poll view", subtitle: "Hide any details you don't want on cards." },
 ];
@@ -167,7 +167,7 @@ export function OnboardingWizard({ startStep }: Props) {
 
   return (
     <div className="onboard">
-      <div className="onboard__card">
+      <div className={`onboard__card${step === 7 ? " onboard__card--wide" : ""}`}>
         <div className="onboard__progress">
           <span className="onboard__step-count">
             {step + 1} / {STEPS.length}
@@ -230,13 +230,13 @@ export function OnboardingWizard({ startStep }: Props) {
 
           {step === 4 && (
             <div className="onboard__embed">
-              <LeagueCreatorPage embedded onSaved={() => go(step + 1)} />
+              <ScoringFormatCreatorPage embedded onSaved={() => go(step + 1)} />
             </div>
           )}
 
           {step === 5 && (
             <div className="onboard__embed">
-              <ScoringFormatCreatorPage embedded onSaved={() => go(step + 1)} />
+              <LeagueCreatorPage embedded onSaved={() => go(step + 1)} />
             </div>
           )}
 

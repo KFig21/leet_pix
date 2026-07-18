@@ -26,6 +26,12 @@
       box-shadow: none;
       margin-top: 0;
     }
+
+    // The poll-view step embeds a real sample poll card, which needs more room
+    // than the form steps or its data gets truncated with ellipses.
+    &--wide {
+      max-width: 760px;
+    }
   }
 
   // ── Progress ────────────────────────────────────────────────────────────────

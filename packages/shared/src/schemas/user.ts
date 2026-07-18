@@ -43,6 +43,9 @@ export const usernameSchema = z
   .max(20)
   .regex(/^[a-zA-Z0-9_]+$/, "Letters, numbers, and underscores only");
 
+// Profanity screening (username/displayName/bio) happens server-side — see
+// server/src/lib/profanity.ts — so the word-list dependency never ships in the
+// client bundle.
 export const updateProfileSchema = z.object({
   username: usernameSchema.optional(),
   displayName: z.string().min(1).max(40).optional(),

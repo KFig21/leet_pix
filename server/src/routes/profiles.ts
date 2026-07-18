@@ -11,9 +11,29 @@ import { HttpError } from "../middleware/error";
 import { withMyVote } from "../lib/myVote";
 import { attachStatLines } from "../lib/statLines";
 import { attachPlayerContext } from "../lib/playerContext";
+import { containsProfanity } from "../lib/profanity";
 import { notifyFollow } from "../services/notifications";
 
 export const profilesRouter = Router();
+
+// Screen the user-authored profile fields for profanity. Only checks fields
+// actually present in this update (partial PUT), so a user editing just their
+// bio doesn't get re-validated against a username they aren't changing.
+function assertClean(fields: {
+  username?: string;
+  displayName?: string;
+  bio?: string;
+}) {
+  if (fields.username !== undefined && containsProfanity(fields.username)) {
+    throw new HttpError(400, "Choose a different username");
+  }
+  if (fields.displayName !== undefined && containsProfanity(fields.displayName)) {
+    throw new HttpError(400, "Choose a different display name");
+  }
+  if (fields.bio !== undefined && containsProfanity(fields.bio)) {
+    throw new HttpError(400, "Please remove inappropriate language from your bio");
+  }
+}
 
 // Current user's profile.
 profilesRouter.get(
@@ -200,6 +220,7 @@ profilesRouter.put(
   requireAuth,
   asyncHandler(async (req: AuthedRequest, res) => {
     const data = updateProfileSchema.parse(req.body);
+    assertClean(data);
     const profile = await prisma.profile.upsert({
       where: { id: req.userId },
       update: data,

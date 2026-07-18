@@ -39,6 +39,7 @@ interface ScoringFormat {
 const SPORTS: { value: Sport; label: string }[] = [
   { value: Sport.FOOTBALL, label: "Football" },
   { value: Sport.BASEBALL, label: "Baseball" },
+  { value: Sport.BASKETBALL, label: "Basketball" },
 ];
 
 // The saved-league shape the API returns (and onSaved hands back).

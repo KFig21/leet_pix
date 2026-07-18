@@ -52,8 +52,9 @@ export async function attachPlayerContext<T extends PollLike>(
 
   const isFootball = (p: PollLike) =>
     p.sport === "FOOTBALL" && p.season != null && p.week != null;
-  const isBaseball = (p: PollLike) =>
-    p.sport === "BASEBALL" && p.week != null;
+  // Date-based sports (baseball, basketball) both key games by ET date.
+  const isDaily = (p: PollLike) =>
+    (p.sport === "BASEBALL" || p.sport === "BASKETBALL") && p.week != null;
 
   // ── Football games (by season/week/team) ──
   const fbSeasons = new Set<number>();
@@ -91,19 +92,23 @@ export async function attachPlayerContext<T extends PollLike>(
     }
   }
 
-  // ── Baseball games (by ET date/team). Game.week is null for MLB, so we bracket
-  // a UTC window around the poll dates and match games by their computed period. ──
-  const bbWeeks = new Set<number>();
-  const bbTeams = new Set<string>();
-  for (const p of polls.filter(isBaseball)) {
-    bbWeeks.add(p.week!);
+  // ── Date-based sports (baseball, basketball) by ET date/team. Game.week is
+  // null for these, so we bracket a UTC window around the poll dates and match
+  // games by their computed period. Keys include the sport because abbreviations
+  // collide across leagues (e.g. ATL, CHI exist in both MLB and the NBA). ──
+  const dailyWeeks = new Set<number>();
+  const dailyTeams = new Set<string>();
+  const dailySports = new Set<string>();
+  for (const p of polls.filter(isDaily)) {
+    dailyWeeks.add(p.week!);
+    dailySports.add(p.sport);
     for (const o of p.options) {
       const t = pById.get(o.playerId)?.team;
-      if (t) bbTeams.add(t);
+      if (t) dailyTeams.add(t);
     }
   }
-  if (bbTeams.size) {
-    const noons = [...bbWeeks].map((w) => {
+  if (dailyTeams.size) {
+    const noons = [...dailyWeeks].map((w) => {
       const y = Math.floor(w / 10000);
       const m = Math.floor((w % 10000) / 100) - 1;
       const d = w % 100;
@@ -113,11 +118,15 @@ export async function attachPlayerContext<T extends PollLike>(
     const end = new Date(Math.max(...noons) + 24 * 3600_000);
     const games = await prisma.game.findMany({
       where: {
-        sport: "BASEBALL",
+        sport: { in: [...dailySports] as ("BASEBALL" | "BASKETBALL")[] },
         kickoff: { gte: start, lte: end },
-        OR: [{ homeTeam: { in: [...bbTeams] } }, { awayTeam: { in: [...bbTeams] } }],
+        OR: [
+          { homeTeam: { in: [...dailyTeams] } },
+          { awayTeam: { in: [...dailyTeams] } },
+        ],
       },
       select: {
+        sport: true,
         homeTeam: true,
         awayTeam: true,
         kickoff: true,
@@ -126,10 +135,10 @@ export async function attachPlayerContext<T extends PollLike>(
     });
     for (const g of games) {
       const wk = mlbPeriod(g.kickoff).week;
-      if (!bbWeeks.has(wk)) continue;
+      if (!dailyWeeks.has(wk)) continue;
       const base = { kickoff: g.kickoff, status: g.status };
-      addGame(`bb|${wk}|${g.homeTeam}`, { ...base, opponent: g.awayTeam, atHome: true });
-      addGame(`bb|${wk}|${g.awayTeam}`, { ...base, opponent: g.homeTeam, atHome: false });
+      addGame(`daily|${g.sport}|${wk}|${g.homeTeam}`, { ...base, opponent: g.awayTeam, atHome: true });
+      addGame(`daily|${g.sport}|${wk}|${g.awayTeam}`, { ...base, opponent: g.homeTeam, atHome: false });
     }
   }
 
@@ -149,8 +158,8 @@ export async function attachPlayerContext<T extends PollLike>(
         opt.game = null;
       } else if (isFootball(p)) {
         opt.game = gIdx.get(`fb|${p.season}|${p.week}|${pl.team}`) ?? null;
-      } else if (isBaseball(p)) {
-        opt.game = gIdx.get(`bb|${p.week}|${pl.team}`) ?? null;
+      } else if (isDaily(p)) {
+        opt.game = gIdx.get(`daily|${p.sport}|${p.week}|${pl.team}`) ?? null;
       } else {
         opt.game = null;
       }

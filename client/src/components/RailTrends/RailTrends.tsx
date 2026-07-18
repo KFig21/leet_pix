@@ -28,6 +28,7 @@ interface GameSummary {
 const SPORTS: { value: Sport; label: string }[] = [
   { value: Sport.FOOTBALL, label: "FB" },
   { value: Sport.BASEBALL, label: "BB" },
+  { value: Sport.BASKETBALL, label: "NBA" },
 ];
 const LIMIT = 4;
 

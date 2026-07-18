@@ -397,6 +397,7 @@ export function PollCreatePage() {
         >
           <option value={Sport.FOOTBALL}>Football</option>
           <option value={Sport.BASEBALL}>Baseball</option>
+          <option value={Sport.BASKETBALL}>Basketball</option>
         </select>
 
         <div className="poll-create__label-row">

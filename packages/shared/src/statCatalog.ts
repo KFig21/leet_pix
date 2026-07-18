@@ -136,9 +136,35 @@ const BASEBALL_CATALOG: StatCategory[] = [
   { key: "noHitter", label: "No-hitter", group: "Pitching", kind: "count", defaultPoints: 10, defaultOn: false, advanced: true },
 ];
 
+const BASKETBALL_CATALOG: StatCategory[] = [
+  // ── Scoring ────────────────────────────────────────────────────────────────
+  // "point" is a count awarded per single point scored (DFS values it at 1 each).
+  { key: "point", label: "Point", group: "Scoring", kind: "count", defaultPoints: 1, defaultOn: true },
+  { key: "threePointerMade", label: "3-pointer made", group: "Scoring", kind: "count", defaultPoints: 0.5, defaultOn: true },
+  { key: "fieldGoalMade", label: "Field goal made", group: "Scoring", kind: "count", defaultPoints: 1, defaultOn: false, advanced: true },
+  { key: "freeThrowMade", label: "Free throw made", group: "Scoring", kind: "count", defaultPoints: 1, defaultOn: false, advanced: true },
+  // ── Rebounding ───────────────────────────────────────────────────────────────
+  { key: "rebound", label: "Rebound", group: "Rebounding", kind: "count", defaultPoints: 1.2, defaultOn: true },
+  { key: "offensiveRebound", label: "Offensive rebound", group: "Rebounding", kind: "count", defaultPoints: 0.5, defaultOn: false, advanced: true },
+  { key: "defensiveRebound", label: "Defensive rebound", group: "Rebounding", kind: "count", defaultPoints: 0.5, defaultOn: false, advanced: true },
+  // ── Playmaking ───────────────────────────────────────────────────────────────
+  { key: "assist", label: "Assist", group: "Playmaking", kind: "count", defaultPoints: 1.5, defaultOn: true },
+  { key: "turnover", label: "Turnover", group: "Playmaking", kind: "count", defaultPoints: -1, defaultOn: true },
+  // ── Defense ────────────────────────────────────────────────────────────────
+  { key: "steal", label: "Steal", group: "Defense", kind: "count", defaultPoints: 3, defaultOn: true },
+  { key: "block", label: "Block", group: "Defense", kind: "count", defaultPoints: 3, defaultOn: true },
+  { key: "personalFoul", label: "Personal foul", group: "Defense", kind: "count", defaultPoints: -0.5, defaultOn: false, advanced: true },
+  // ── Bonuses ──────────────────────────────────────────────────────────────────
+  // Derived at import from the counting stats (≥10 in two/three categories); each
+  // fires at most once per game (a triple-double is also a double-double).
+  { key: "doubleDouble", label: "Double-double", group: "Bonuses", kind: "count", defaultPoints: 1.5, defaultOn: false, advanced: true },
+  { key: "tripleDouble", label: "Triple-double", group: "Bonuses", kind: "count", defaultPoints: 3, defaultOn: false, advanced: true },
+];
+
 export const STAT_CATALOG: Record<Sport, StatCategory[]> = {
   [Sport.FOOTBALL]: FOOTBALL_CATALOG,
   [Sport.BASEBALL]: BASEBALL_CATALOG,
+  [Sport.BASKETBALL]: BASKETBALL_CATALOG,
 };
 
 // Fast key → category lookup for a sport.

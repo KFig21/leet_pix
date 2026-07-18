@@ -4,10 +4,11 @@ import { Sport } from "./enums";
 // branding, used to seed the DB `Team` table and to color team tags client-side.
 //
 // `abbreviation` is our canonical key (Sleeper's for NFL, MLB Stats API's for
-// MLB — i.e. what player/game feeds give us). `espnAbbr` records ESPN's variant
-// where it differs, so the schedule importer can reconcile it.
+// MLB, ESPN's for NBA — i.e. what player/game feeds give us). `espnAbbr` records
+// ESPN's variant where it differs, so the schedule importer can reconcile it.
+// (NBA is sourced entirely from ESPN, so its abbreviation already equals ESPN's.)
 
-export type League = "NFL" | "MLB";
+export type League = "NFL" | "MLB" | "NBA";
 
 export interface Team {
   abbreviation: string;
@@ -92,9 +93,46 @@ const MLB: Omit<Team, "sport" | "league">[] = [
   { abbreviation: "WSH", location: "Washington", name: "Nationals", primaryColor: "#AB0003" },
 ];
 
+// NBA — abbreviation/location/name/color all taken from ESPN's teams endpoint
+// (our sole NBA data source), so our canonical abbreviation already matches
+// ESPN's and no espnAbbr reconciliation is needed.
+const NBA: Omit<Team, "sport" | "league">[] = [
+  { abbreviation: "ATL", location: "Atlanta", name: "Hawks", primaryColor: "#C8102E" },
+  { abbreviation: "BKN", location: "Brooklyn", name: "Nets", primaryColor: "#000000" },
+  { abbreviation: "BOS", location: "Boston", name: "Celtics", primaryColor: "#008348" },
+  { abbreviation: "CHA", location: "Charlotte", name: "Hornets", primaryColor: "#1D1160" },
+  { abbreviation: "CHI", location: "Chicago", name: "Bulls", primaryColor: "#CE1141" },
+  { abbreviation: "CLE", location: "Cleveland", name: "Cavaliers", primaryColor: "#860038" },
+  { abbreviation: "DAL", location: "Dallas", name: "Mavericks", primaryColor: "#0064B1" },
+  { abbreviation: "DEN", location: "Denver", name: "Nuggets", primaryColor: "#0E2240" },
+  { abbreviation: "DET", location: "Detroit", name: "Pistons", primaryColor: "#1D428A" },
+  { abbreviation: "GS", location: "Golden State", name: "Warriors", primaryColor: "#1D428A" },
+  { abbreviation: "HOU", location: "Houston", name: "Rockets", primaryColor: "#CE1141" },
+  { abbreviation: "IND", location: "Indiana", name: "Pacers", primaryColor: "#002D62" },
+  { abbreviation: "LAC", location: "LA", name: "Clippers", primaryColor: "#C8102E" },
+  { abbreviation: "LAL", location: "Los Angeles", name: "Lakers", primaryColor: "#552583" },
+  { abbreviation: "MEM", location: "Memphis", name: "Grizzlies", primaryColor: "#5D76A9" },
+  { abbreviation: "MIA", location: "Miami", name: "Heat", primaryColor: "#98002E" },
+  { abbreviation: "MIL", location: "Milwaukee", name: "Bucks", primaryColor: "#00471B" },
+  { abbreviation: "MIN", location: "Minnesota", name: "Timberwolves", primaryColor: "#0C2340" },
+  { abbreviation: "NO", location: "New Orleans", name: "Pelicans", primaryColor: "#0C2340" },
+  { abbreviation: "NY", location: "New York", name: "Knicks", primaryColor: "#006BB6" },
+  { abbreviation: "OKC", location: "Oklahoma City", name: "Thunder", primaryColor: "#007AC1" },
+  { abbreviation: "ORL", location: "Orlando", name: "Magic", primaryColor: "#0077C0" },
+  { abbreviation: "PHI", location: "Philadelphia", name: "76ers", primaryColor: "#006BB6" },
+  { abbreviation: "PHX", location: "Phoenix", name: "Suns", primaryColor: "#1D1160" },
+  { abbreviation: "POR", location: "Portland", name: "Trail Blazers", primaryColor: "#E03A3E" },
+  { abbreviation: "SA", location: "San Antonio", name: "Spurs", primaryColor: "#000000" },
+  { abbreviation: "SAC", location: "Sacramento", name: "Kings", primaryColor: "#5A2D81" },
+  { abbreviation: "TOR", location: "Toronto", name: "Raptors", primaryColor: "#CE1141" },
+  { abbreviation: "UTAH", location: "Utah", name: "Jazz", primaryColor: "#002B5C" },
+  { abbreviation: "WSH", location: "Washington", name: "Wizards", primaryColor: "#002B5C" },
+];
+
 export const TEAMS: Team[] = [
   ...NFL.map((t) => ({ ...t, sport: Sport.FOOTBALL, league: "NFL" as const })),
   ...MLB.map((t) => ({ ...t, sport: Sport.BASEBALL, league: "MLB" as const })),
+  ...NBA.map((t) => ({ ...t, sport: Sport.BASKETBALL, league: "NBA" as const })),
 ];
 
 // Lookups keyed by "SPORT|ABBR" (abbreviations collide across sports, e.g. ATL).

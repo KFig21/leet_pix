@@ -9,6 +9,7 @@ export const SCORING_PRESET_LABELS: Record<ScoringPreset, string> = {
   FOOTBALL_HALF_PPR: "0.5 PPR",
   FOOTBALL_PPR: "PPR",
   BASEBALL_STANDARD: "Standard",
+  BASKETBALL_STANDARD: "Standard",
 };
 
 // Rate stats carry their intended framing { points, per }; count stats a number.
@@ -45,12 +46,23 @@ export const SCORING_PRESET_RULES: Record<ScoringPreset, ScoringRules> = {
     save: 5,
     earnedRun: -2,
   },
+  // DFS-style line: rewards steals/blocks heavily, dings turnovers.
+  BASKETBALL_STANDARD: {
+    point: 1,
+    threePointerMade: 0.5,
+    rebound: 1.2,
+    assist: 1.5,
+    steal: 3,
+    block: 3,
+    turnover: -1,
+  },
 };
 
 // Which presets are offered per sport in the poll creator.
 export const SPORT_PRESETS: Record<Sport, ScoringPreset[]> = {
   [Sport.FOOTBALL]: ["FOOTBALL_STANDARD", "FOOTBALL_HALF_PPR", "FOOTBALL_PPR"],
   [Sport.BASEBALL]: ["BASEBALL_STANDARD"],
+  [Sport.BASKETBALL]: ["BASKETBALL_STANDARD"],
 };
 
 // Human-readable labels for stat category keys (for the scoring modal). Derived

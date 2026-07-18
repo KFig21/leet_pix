@@ -6,10 +6,19 @@ import { NFL_REGULAR_SEASON_WEEKS } from "@leetpix/shared";
 import { lockDuePolls } from "./services/locking";
 import { resolveDuePolls } from "./services/resolution";
 import { seedTeams } from "./jobs/importTeams";
-import { importNflPlayers, importMlbPlayers } from "./jobs/importPlayers";
-import { importNflGames, importMlbGames } from "./jobs/importGames";
+import {
+  importNflPlayers,
+  importMlbPlayers,
+  importNbaPlayers,
+} from "./jobs/importPlayers";
+import {
+  importNflGames,
+  importMlbGames,
+  importNbaGames,
+} from "./jobs/importGames";
 import { importNflStats } from "./jobs/importStats";
 import { importMlbStats } from "./jobs/importMlbStats";
+import { importNbaStats } from "./jobs/importNbaStats";
 import { refreshOpenPollProjections } from "./services/projections";
 
 const ymd = (d: Date): string => d.toISOString().slice(0, 10);
@@ -104,6 +113,21 @@ async function dailyMlbImports(): Promise<void> {
   await runJob(`mlb stats ${yesterday}`, () => importMlbStats(yesterday));
 }
 
+// Daily NBA refresh: rosters (trades/injuries), today's & tomorrow's schedule
+// (lock times), and yesterday's box scores (to resolve prior-day polls). Mirrors
+// the MLB flow — basketball is date-based, not weekly.
+async function dailyNbaImports(): Promise<void> {
+  const now = new Date();
+  const season = now.getUTCFullYear();
+  const today = ymd(now);
+  const tomorrow = ymd(new Date(now.getTime() + 86_400_000));
+  const yesterday = ymd(new Date(now.getTime() - 86_400_000));
+  await runJob("nba roster", importNbaPlayers);
+  await runJob(`nba games ${today}`, () => importNbaGames(season, today));
+  await runJob(`nba games ${tomorrow}`, () => importNbaGames(season, tomorrow));
+  await runJob(`nba stats ${yesterday}`, () => importNbaStats(yesterday));
+}
+
 // ET calendar date (YYYY-MM-DD) for a moment — MLB schedules are keyed by ET.
 function etDate(d: Date): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -113,10 +137,10 @@ function etDate(d: Date): string {
 
 // A scoring period that has newly-final games needing their box scores pulled.
 interface PendingPeriod {
-  sport: "FOOTBALL" | "BASEBALL";
+  sport: "FOOTBALL" | "BASEBALL" | "BASKETBALL";
   season: number;
   week: number | null; // football week
-  date: string | null; // baseball ET date (YYYY-MM-DD)
+  date: string | null; // baseball/basketball ET date (YYYY-MM-DD)
   gameIds: string[];
 }
 
@@ -144,12 +168,13 @@ async function syncGames(): Promise<string> {
       importNflGames(nfl.season, nfl.week),
     );
   }
-  const mlbSeason = now.getUTCFullYear();
-  const mlbDates = [etDate(now)];
+  const season = now.getUTCFullYear();
+  const dates = [etDate(now)];
   // After midnight ET, a late game still belongs to yesterday's ET slate.
-  if (etHour <= 1) mlbDates.push(etDate(new Date(now.getTime() - 86_400_000)));
-  for (const d of mlbDates) {
-    await runJob(`sync mlb ${d}`, () => importMlbGames(mlbSeason, d));
+  if (etHour <= 1) dates.push(etDate(new Date(now.getTime() - 86_400_000)));
+  for (const d of dates) {
+    await runJob(`sync mlb ${d}`, () => importMlbGames(season, d));
+    await runJob(`sync nba ${d}`, () => importNbaGames(season, d));
   }
 
   // 2. Import stats for FINAL games we haven't processed yet, one call per
@@ -173,10 +198,11 @@ async function syncGames(): Promise<string> {
         gameIds: [],
       };
     } else {
+      // Date-based sports (baseball, basketball): one box-score pull per ET date.
       const date = etDate(g.kickoff);
-      key = `BB:${date}`;
+      key = `${g.sport}:${date}`;
       period = periods.get(key) ?? {
-        sport: "BASEBALL",
+        sport: g.sport,
         season: g.season,
         week: null,
         date,
@@ -192,6 +218,8 @@ async function syncGames(): Promise<string> {
     try {
       if (p.sport === "FOOTBALL") {
         await importNflStats(p.season, p.week!, "actual");
+      } else if (p.sport === "BASKETBALL") {
+        await importNbaStats(p.date!, { finalOnly: true });
       } else {
         await importMlbStats(p.date!, { finalOnly: true });
       }
@@ -236,12 +264,16 @@ export function startScheduler(): void {
     () => guardedJob("sync games", 10 * 60_000, syncGames),
     { timezone: "America/New_York" },
   );
-  // Daily data refresh (football 08:00 UTC, baseball 09:00 UTC).
+  // Daily data refresh (football 08:00 UTC, baseball 09:00 UTC, basketball 10:00
+  // UTC — staggered so the imports don't contend for the same tick).
   cron.schedule("0 8 * * *", () =>
     guardedJob("daily nfl", 20 * 60_000, dailyNflImports),
   );
   cron.schedule("0 9 * * *", () =>
     guardedJob("daily mlb", 20 * 60_000, dailyMlbImports),
+  );
+  cron.schedule("0 10 * * *", () =>
+    guardedJob("daily nba", 20 * 60_000, dailyNbaImports),
   );
 
   console.log(

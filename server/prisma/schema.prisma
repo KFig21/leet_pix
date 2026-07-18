@@ -14,6 +14,7 @@ datasource db {
 enum Sport {
   FOOTBALL
   BASEBALL
+  BASKETBALL
 }
 
 // What a user is allowed to DO (permissions). Orthogonal to UserTier (billing).
@@ -52,6 +53,7 @@ enum ReportTargetType {
 enum League {
   NFL
   MLB
+  NBA
 }
 
 enum PollStatus {
@@ -466,6 +468,8 @@ model Player {
   espnId    String?
   yahooId   String?
   mlbamId   String? @unique
+  // ESPN athlete id — the NBA upsert key (mirrors sleeperId/mlbamId per sport).
+  nbaId     String? @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -527,7 +531,7 @@ model Game {
   // Set once this game's box scores have been imported. Lets the status sync
   // import a period's stats exactly once per FINAL game (and retry on failure).
   statsImportedAt DateTime?
-  source   String // "espn" | "mlb"
+  source   String // "espn" (NFL + NBA) | "mlb"
   sourceId String // stable id within a source (ESPN event id / MLB gamePk)
 
   createdAt DateTime @default(now())

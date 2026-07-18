@@ -15,17 +15,21 @@ import { getExplorePlayers } from "../services/trendingPlayers";
 
 export const exploreRouter = Router();
 
+// The ?sport= query param → a known Sport, defaulting to football.
+const parseSport = (v: unknown): Sport => {
+  const s = String(v ?? "");
+  return (Object.values(Sport) as string[]).includes(s)
+    ? (s as Sport)
+    : Sport.FOOTBALL;
+};
+
 // Discovery lists of players: trending (most-polled recently), hot, and cold.
-// Defaults to football; ?sport=BASEBALL for the other.
+// Defaults to football; ?sport=BASEBALL / BASKETBALL for the others.
 exploreRouter.get(
   "/players",
   optionalAuth,
   asyncHandler(async (req: AuthedRequest, res) => {
-    const sport =
-      String(req.query.sport ?? "") === Sport.BASEBALL
-        ? Sport.BASEBALL
-        : Sport.FOOTBALL;
-    res.json(await getExplorePlayers(sport));
+    res.json(await getExplorePlayers(parseSport(req.query.sport)));
   }),
 );
 
@@ -43,10 +47,7 @@ const etDate = (d: Date) =>
 exploreRouter.get(
   "/slate",
   asyncHandler(async (req, res) => {
-    const sport =
-      String(req.query.sport ?? "") === Sport.BASEBALL
-        ? Sport.BASEBALL
-        : Sport.FOOTBALL;
+    const sport = parseSport(req.query.sport);
     const now = new Date();
     const select = {
       id: true,
@@ -110,7 +111,7 @@ exploreRouter.get(
     const where: Prisma.PollWhereInput = {
       deletedAt: null,
       hiddenAt: null,
-      ...(sport === Sport.FOOTBALL || sport === Sport.BASEBALL
+      ...((Object.values(Sport) as string[]).includes(sport)
         ? { sport: sport as Sport }
         : {}),
     };

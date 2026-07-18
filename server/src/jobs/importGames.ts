@@ -76,6 +76,54 @@ export async function importNflGames(
   return n;
 }
 
+// NBA games for one date from ESPN's free, keyless scoreboard API. Basketball
+// has no weekly structure (like MLB), so games are date-based with a null week;
+// stats/polls are keyed to the ET calendar date via nbaPeriod. ESPN's NBA team
+// abbreviations are our canonical NBA keys, so no fixup is needed. `date` is
+// YYYY-MM-DD (ESPN wants YYYYMMDD). Returns the number of games upserted.
+export async function importNbaGames(
+  season: number,
+  date: string,
+): Promise<number> {
+  const teamId = await teamIdByAbbr("BASKETBALL");
+  const url =
+    `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard` +
+    `?dates=${date.replace(/-/g, "")}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`ESPN responded ${res.status}`);
+  const data = (await res.json()) as { events?: EspnEvent[] };
+  const events = data.events ?? [];
+
+  let n = 0;
+  for (const ev of events) {
+    const comp = ev.competitions?.[0];
+    const home = comp?.competitors?.find((c) => c.homeAway === "home");
+    const away = comp?.competitors?.find((c) => c.homeAway === "away");
+    const homeTeam = home?.team?.abbreviation;
+    const awayTeam = away?.team?.abbreviation;
+    if (!homeTeam || !awayTeam || !ev.date) continue;
+
+    const row = {
+      sport: "BASKETBALL" as const,
+      season,
+      week: null,
+      homeTeam,
+      awayTeam,
+      homeTeamId: teamId.get(homeTeam) ?? null,
+      awayTeamId: teamId.get(awayTeam) ?? null,
+      kickoff: new Date(ev.date),
+      status: espnStatus(ev.status?.type),
+    };
+    await prisma.game.upsert({
+      where: { source_sourceId: { source: "espn", sourceId: ev.id } },
+      update: row,
+      create: { ...row, source: "espn", sourceId: ev.id },
+    });
+    n++;
+  }
+  return n;
+}
+
 interface MlbGame {
   gamePk: number;
   gameDate: string;

@@ -73,6 +73,12 @@ const DIMENSIONS: { key: keyof PollFilterState; label: string; options: Option[]
           color: SPORT_COLORS.BASEBALL,
           icon: <SportIcon sport={Sport.BASEBALL} style={{ fontSize: 16 }} />,
         },
+        {
+          value: "BASKETBALL",
+          label: "Basketball",
+          color: SPORT_COLORS.BASKETBALL,
+          icon: <SportIcon sport={Sport.BASKETBALL} style={{ fontSize: 16 }} />,
+        },
       ],
     },
     {

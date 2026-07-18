@@ -36,6 +36,7 @@ import { MultiSelect, type Option } from "@/components/MultiSelect/MultiSelect";
 import { DateTimePicker } from "@/components/DateTimePicker/DateTimePicker";
 import { TeamTag } from "@/components/TeamTag/TeamTag";
 import { PlayerMeta } from "@/components/PlayerMeta/PlayerMeta";
+import { PostingLimits } from "./components/PostingLimits/PostingLimits";
 import {
   ScoringFormatCreatorPage,
   type SavedScoringFormat,
@@ -380,7 +381,10 @@ export function PollCreatePage() {
 
   return (
     <div className="poll-create">
-      <header className="poll-create__header">New poll</header>
+      <header className="poll-create__header">
+        New poll
+        <PostingLimits />
+      </header>
       <form className="poll-create__form" onSubmit={submit}>
         <div className="poll-create__label-row">
           <label className="poll-create__label">Sport</label>

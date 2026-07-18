@@ -1,0 +1,55 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.posting-limits {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-lg;
+
+  &__trigger {
+    @include button-reset;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    border-radius: 50%;
+
+    &:hover {
+      color: var(--accent);
+    }
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-xs;
+  }
+
+  &__heading {
+    margin: 0;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+  }
+
+  &__body {
+    margin: 0;
+    line-height: 1.55;
+  }
+
+  &__status {
+    margin: 0;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: var(--text-secondary);
+
+    &--good {
+      color: var(--color-success);
+    }
+    &--bad {
+      color: var(--color-danger);
+    }
+  }
+}

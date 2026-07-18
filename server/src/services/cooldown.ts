@@ -63,3 +63,87 @@ export async function assertCanPost(userId: string): Promise<void> {
   const remainingMin = Math.ceil((limits.cooldownMs - elapsed) / 60000);
   throw new HttpError(429, `On cooldown. Wait ${remainingMin}m.`);
 }
+
+export interface PostingStatus {
+  // Effective limits (null = unlimited, i.e. staff). cooldownMs 0 = no cooldown.
+  maxPollsPerDay: number | null;
+  cooldownMs: number;
+  votesToBypassCooldown: number;
+  // Live usage.
+  postedToday: number;
+  pollsLeftToday: number | null; // null = unlimited
+  onCooldown: boolean;
+  cooldownRemainingMs: number;
+  votesSinceLastPoll: number;
+  votesNeededToBypass: number; // remaining votes to skip the wait
+  canPostNow: boolean;
+}
+
+/**
+ * Read-only sibling of assertCanPost: reports where the user stands on both the
+ * daily cap and the cooldown (so the create screen can explain the rules and
+ * show live progress) without throwing.
+ */
+export async function getPostingStatus(userId: string): Promise<PostingStatus> {
+  const { limits } = await userEntitlements(userId);
+  const now = Date.now();
+  const capped = Number.isFinite(limits.maxPollsPerDay);
+
+  const postedToday = capped
+    ? await prisma.poll.count({
+        where: { authorId: userId, createdAt: { gt: new Date(now - DAY_MS) } },
+      })
+    : 0;
+  const pollsLeftToday = capped
+    ? Math.max(0, limits.maxPollsPerDay - postedToday)
+    : null;
+  const dayCapReached = capped && postedToday >= limits.maxPollsPerDay;
+
+  let onCooldown = false;
+  let cooldownRemainingMs = 0;
+  let votesSinceLastPoll = 0;
+  let votesNeededToBypass = 0;
+
+  if (limits.cooldownMs > 0) {
+    const lastPoll = await prisma.poll.findFirst({
+      where: { authorId: userId },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true },
+    });
+    if (lastPoll) {
+      const elapsed = now - lastPoll.createdAt.getTime();
+      if (elapsed < limits.cooldownMs) {
+        cooldownRemainingMs = limits.cooldownMs - elapsed;
+        if (limits.votesToBypassCooldown > 0) {
+          votesSinceLastPoll = await prisma.vote.count({
+            where: {
+              voterId: userId,
+              createdAt: { gt: lastPoll.createdAt },
+              poll: { authorId: { not: userId } },
+            },
+          });
+          votesNeededToBypass = Math.max(
+            0,
+            limits.votesToBypassCooldown - votesSinceLastPoll,
+          );
+          onCooldown = votesNeededToBypass > 0;
+        } else {
+          onCooldown = true;
+        }
+      }
+    }
+  }
+
+  return {
+    maxPollsPerDay: capped ? limits.maxPollsPerDay : null,
+    cooldownMs: limits.cooldownMs,
+    votesToBypassCooldown: limits.votesToBypassCooldown,
+    postedToday,
+    pollsLeftToday,
+    onCooldown,
+    cooldownRemainingMs,
+    votesSinceLastPoll,
+    votesNeededToBypass,
+    canPostNow: !onCooldown && !dayCapReached,
+  };
+}

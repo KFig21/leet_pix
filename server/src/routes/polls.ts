@@ -30,7 +30,7 @@ import {
   projectionWeeks,
   resolveScoringRules,
 } from "../services/projections";
-import { assertCanPost } from "../services/cooldown";
+import { assertCanPost, getPostingStatus } from "../services/cooldown";
 
 export const pollsRouter = Router();
 
@@ -166,6 +166,17 @@ pollsRouter.get(
       ),
     );
     res.json({ items, nextCursor });
+  }),
+);
+
+// The signed-in user's posting allowance: daily cap + cooldown, with live usage
+// (polls left today, cooldown remaining, votes needed to bypass). Registered
+// before "/:id" so the literal path isn't captured as a poll id.
+pollsRouter.get(
+  "/posting-status",
+  requireAuth,
+  asyncHandler(async (req: AuthedRequest, res) => {
+    res.json(await getPostingStatus(req.userId!));
   }),
 );
 

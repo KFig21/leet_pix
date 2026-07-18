@@ -19,7 +19,7 @@ const SLIDES: Slide[] = [
   {
     Icon: HowToVoteIcon,
     title: "Make your pick",
-    body: "On any open poll, tap a player to cast your vote. You'll instantly see how the crowd voted as a percentage next to each option.",
+    body: "On any open poll, tap a player to cast your vote — you'll instantly see how the crowd voted. Voting also clears your posting cooldown, so weighing in on others gets you posting again sooner.",
   },
   {
     Icon: InsightsIcon,
@@ -34,7 +34,7 @@ const SLIDES: Slide[] = [
   {
     Icon: AddCircleIcon,
     title: "Ask the crowd",
-    body: "Hit Create to post your own start, sit, add, drop, trade, or keeper poll. Attach your league's scoring so voters judge it by your rules.",
+    body: "Hit Create to post your own start, sit, add, drop, trade, or keeper poll, with your league's scoring attached. There's a short cooldown between posts (and a daily cap) to keep the feed fresh — vote on a few other polls to skip the wait. The info icon on the create screen shows your current limits.",
   },
   {
     Icon: LeaderboardIcon,

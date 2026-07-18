@@ -4,6 +4,9 @@
 .poll-create {
   &__header {
     @include sticky-header;
+    display: flex;
+    align-items: center;
+    gap: $gap-xs;
     padding: $gap-md;
     font-size: $font-size-xl;
     font-weight: $font-weight-bold;

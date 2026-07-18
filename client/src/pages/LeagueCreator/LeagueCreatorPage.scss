@@ -50,9 +50,9 @@
     }
 
     &--on {
-      background: var(--bg-primary);
+      background: var(--accent);
       border-color: transparent;
-      color: var(--accent);
+      color: var(--accent-contrast);
       box-shadow: var(--shadow-card);
     }
   }

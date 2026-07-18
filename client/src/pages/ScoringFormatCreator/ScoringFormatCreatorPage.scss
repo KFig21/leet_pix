@@ -43,6 +43,15 @@
     margin-right: $gap-xs;
     font-size: $font-size-sm;
     color: var(--text-secondary);
+
+    // On a phone the label + two pills don't fit comfortably on one line, so
+    // give the label its own row above the options (full width forces the pills
+    // to wrap beneath it, side by side).
+    @include mobile {
+      width: 100%;
+      margin-right: 0;
+      margin-bottom: $gap-xs;
+    }
   }
 
   &__rate-tab {
@@ -101,9 +110,9 @@
     }
 
     &--on {
-      background: var(--bg-primary);
+      background: var(--accent);
       border-color: transparent;
-      color: var(--accent);
+      color: var(--accent-contrast);
       box-shadow: var(--shadow-card);
     }
   }

@@ -18,7 +18,7 @@ export function ExplorePage() {
   return (
     <div className="explore">
       <header className="explore__header">
-        <span className="explore__title">Explore</span>
+        <span className="explore__title">Trending</span>
         <div className="explore__sports" role="tablist" aria-label="Sport">
           {SPORTS.map((s) => (
             <button
@@ -37,10 +37,8 @@ export function ExplorePage() {
         </div>
       </header>
 
-      <div className="explore__body">
-        <TonightsSlate sport={sport} />
-        <ExplorePlayers sport={sport} />
-      </div>
+      <TonightsSlate sport={sport} />
+      <ExplorePlayers sport={sport} />
     </div>
   );
 }

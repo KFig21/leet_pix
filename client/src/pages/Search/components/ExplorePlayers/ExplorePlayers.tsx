@@ -23,10 +23,10 @@ interface ExplorePlayersData {
 }
 
 // Trending works year-round; hot/cold only when games have been played recently.
-const GROUPS: { key: keyof ExplorePlayersData; label: string; emoji: string }[] = [
-  { key: "trending", label: "Trending", emoji: "📈" },
-  { key: "hot", label: "Heating up", emoji: "🔥" },
-  { key: "cold", label: "Cooling off", emoji: "🧊" },
+const GROUPS: { key: keyof ExplorePlayersData; label: string }[] = [
+  { key: "trending", label: "Trending players" },
+  { key: "hot", label: "Heating up" },
+  { key: "cold", label: "Cooling off" },
 ];
 
 // Discovery lists on the explore screen. Tapping a player opens their recent
@@ -45,20 +45,18 @@ export function ExplorePlayers({ sport }: { sport: Sport }) {
     <div className="explore-players">
       {isLoading && <Loader />}
       {empty && (
-        <p className="search__msg">
+        <p className="explore-players__msg">
           No player trends yet — check back once more games and polls roll in.
         </p>
       )}
 
       {data &&
-        GROUPS.map(({ key, label, emoji }) => {
+        GROUPS.map(({ key, label }) => {
           const list = data[key];
           if (!list.length) return null;
           return (
             <section key={key} className="explore-players__group">
-              <h3 className="explore-players__group-title">
-                <span aria-hidden>{emoji}</span> {label}
-              </h3>
+              <h2 className="explore-players__group-title">{label}</h2>
               <div className="explore-players__list">
                 {list.map((p) => (
                   <button

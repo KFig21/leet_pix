@@ -46,7 +46,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: "/home", element: <TimelinePage /> },
-      { path: "/explore", element: <ExplorePage /> },
+      { path: "/trending", element: <ExplorePage /> },
       { path: "/notifications", element: <NotificationsPage /> },
       { path: "/search", element: <SearchPage /> },
       { path: "/create", element: <PollCreatePage /> },

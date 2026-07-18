@@ -75,7 +75,7 @@ export function RailTrends() {
 
       {trending.length > 0 && (
         <div className="rail-trends__group">
-          <span className="rail-trends__group-title">📈 Trending players</span>
+          <span className="rail-trends__group-title">Trending players</span>
           {trending.map((p) => (
             <button
               key={p.id}
@@ -94,7 +94,7 @@ export function RailTrends() {
       {games.length > 0 && (
         <div className="rail-trends__group">
           <span className="rail-trends__group-title">
-            🗓️ {slate.data?.label === "Upcoming" ? "Upcoming" : "Tonight"}
+            {slate.data?.label === "Upcoming" ? "Upcoming games" : "Tonight's games"}
           </span>
           {games.map((g) => (
             <button
@@ -115,8 +115,8 @@ export function RailTrends() {
         <p className="rail-trends__empty">No trends yet.</p>
       )}
 
-      <Link to="/explore" className="rail-trends__all">
-        See all in Explore →
+      <Link to="/trending" className="rail-trends__all">
+        See all →
       </Link>
     </div>
   );

@@ -2,52 +2,22 @@
 @use "mixins" as *;
 
 .explore-players {
-  &__head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: $gap-sm;
-    flex-wrap: wrap;
-    margin-bottom: $gap-sm;
-  }
-
-  // Segmented sport toggle (matches the creators' style).
-  &__sports {
-    display: flex;
-    gap: 4px;
-    padding: 3px;
-    background: var(--bg-secondary);
-    border-radius: $radius-pill;
-  }
-
-  &__sport {
-    @include button-reset;
-    padding: 4px $gap-sm;
-    border: 1px solid transparent;
-    border-radius: $radius-pill;
+  &__msg {
+    padding: 0 $gap-md $gap-md;
     color: var(--text-secondary);
-    font-size: $font-size-sm;
-    font-weight: $font-weight-bold;
-
-    &:hover {
-      color: var(--text-primary);
-    }
-
-    &--on {
-      background: var(--accent);
-      color: var(--accent-contrast);
-    }
   }
 
+  // Each group is a section that mirrors the search page (big padded title,
+  // full-width divider).
   &__group {
-    margin-bottom: $gap-md;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: $gap-sm;
   }
 
   &__group-title {
-    margin: 0 0 $gap-xs;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-bold;
-    color: var(--text-secondary);
+    margin: 0;
+    padding: $gap-md;
+    font-size: $font-size-lg;
   }
 
   &__list {
@@ -61,13 +31,8 @@
     align-items: center;
     gap: $gap-sm;
     width: 100%;
-    padding: $gap-sm;
-    border-radius: $radius-sm;
+    padding: $gap-sm $gap-md;
     text-align: left;
-
-    &:not(:last-child) {
-      border-bottom: 1px solid var(--border-color);
-    }
 
     @include hover {
       background: var(--bg-hover);

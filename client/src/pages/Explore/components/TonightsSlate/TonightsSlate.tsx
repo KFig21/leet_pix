@@ -53,13 +53,13 @@ export function TonightsSlate({ sport }: { sport: Sport }) {
 
   return (
     <section className="slate">
-      <h3 className="slate__title">
-        <span aria-hidden>🗓️</span> {data?.label === "Upcoming" ? "Upcoming games" : "Tonight's slate"}
-      </h3>
+      <h2 className="slate__title">
+        {data?.label === "Upcoming" ? "Upcoming games" : "Tonight's slate"}
+      </h2>
 
       {isLoading && <Loader />}
       {data && data.games.length === 0 && (
-        <p className="search__msg">No games scheduled right now.</p>
+        <p className="slate__msg">No games scheduled right now.</p>
       )}
 
       <div className="slate__list">

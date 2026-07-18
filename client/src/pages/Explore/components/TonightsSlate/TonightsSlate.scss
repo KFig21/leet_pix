@@ -1,11 +1,20 @@
 @use "variables" as *;
 @use "mixins" as *;
 
+// Section styling mirrors the search page (big padded title, full-width divider).
 .slate {
+  display: block;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: $gap-sm;
+
   &__title {
-    margin: 0 0 $gap-xs;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-bold;
+    margin: 0;
+    padding: $gap-md;
+    font-size: $font-size-lg;
+  }
+
+  &__msg {
+    padding: 0 $gap-md $gap-md;
     color: var(--text-secondary);
   }
 
@@ -20,13 +29,8 @@
     align-items: center;
     gap: $gap-sm;
     width: 100%;
-    padding: $gap-sm;
-    border-radius: $radius-sm;
+    padding: $gap-sm $gap-md;
     text-align: left;
-
-    &:not(:last-child) {
-      border-bottom: 1px solid var(--border-color);
-    }
 
     @include hover {
       background: var(--bg-hover);

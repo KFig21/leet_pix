@@ -17,6 +17,12 @@
     margin: 0;
   }
 
+  &__actions {
+    flex-shrink: 0;
+    display: flex;
+    gap: $gap-xs;
+  }
+
   &__reset {
     @include button-reset;
     flex-shrink: 0;

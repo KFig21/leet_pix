@@ -34,6 +34,11 @@ export const DEFAULT_POLL_CARD_PREFS: PollCardPrefs = {
   stats: true,
 };
 
+// "Simple" preset — every optional field off, for a bare-bones card.
+export const SIMPLE_POLL_CARD_PREFS: PollCardPrefs = (
+  Object.keys(DEFAULT_POLL_CARD_PREFS) as (keyof PollCardPrefs)[]
+).reduce((acc, k) => ({ ...acc, [k]: false }), {} as PollCardPrefs);
+
 // Order + labels for the settings customizer (drives the toggle list).
 export const POLL_CARD_PREF_FIELDS: { key: keyof PollCardPrefs; label: string }[] =
   [
@@ -57,6 +62,8 @@ interface PreferencesValue {
   pollCard: PollCardPrefs;
   setPollCardPref: (key: keyof PollCardPrefs, value: boolean) => void;
   resetPollCard: () => void;
+  // Apply the "Simple" preset (everything off).
+  simplePollCard: () => void;
 }
 
 const PreferencesContext = createContext<PreferencesValue | undefined>(undefined);
@@ -95,6 +102,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const setPollCardPref = (key: keyof PollCardPrefs, value: boolean) =>
     setPollCard((prev) => ({ ...prev, [key]: value }));
   const resetPollCard = () => setPollCard(DEFAULT_POLL_CARD_PREFS);
+  const simplePollCard = () => setPollCard(SIMPLE_POLL_CARD_PREFS);
 
   return (
     <PreferencesContext.Provider
@@ -104,6 +112,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         pollCard,
         setPollCardPref,
         resetPollCard,
+        simplePollCard,
       }}
     >
       {children}

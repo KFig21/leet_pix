@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { ScoringPreset, ScoringRules, Sport } from "@leetpix/shared";
 import { api } from "@/lib/api";
 import { projectionStatGroups } from "@/lib/projectionStatLine";
+import { StatLineSummary } from "./StatLineSummary";
 import { Modal } from "@/components/Modal/Modal";
 import { Loader } from "@/components/Loader/Loader";
 import {
@@ -111,16 +112,7 @@ export function ProjectionBreakdown({ params, className, title, children }: Prop
             scoringFormat={data.scoringFormat}
             summaryHeading={statGroups.length ? data.periodLabel : undefined}
             summary={
-              statGroups.length ? (
-                <span className="proj-summary">
-                  {statGroups.map((g) => (
-                    <span key={g.group} className="proj-summary__cat">
-                      <span className="proj-summary__cat-head">{g.group}</span>
-                      <span className="proj-summary__cat-stats">{g.stats}</span>
-                    </span>
-                  ))}
-                </span>
-              ) : undefined
+              statGroups.length ? <StatLineSummary groups={statGroups} /> : undefined
             }
             options={[
               {

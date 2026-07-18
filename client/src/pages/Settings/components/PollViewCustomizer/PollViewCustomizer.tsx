@@ -148,10 +148,12 @@ function futureKick(days: number): string {
 // Settings panel: toggle which fields appear on poll cards, with a live preview
 // (a weekly and a keeper example, since the info shown differs by question).
 export function PollViewCustomizer() {
-  const { pollCard, setPollCardPref, resetPollCard } = usePreferences();
+  const { pollCard, setPollCardPref, resetPollCard, simplePollCard } =
+    usePreferences();
   const isDefault = POLL_CARD_PREF_FIELDS.every(
     ({ key }) => pollCard[key] === DEFAULT_POLL_CARD_PREFS[key],
   );
+  const isSimple = POLL_CARD_PREF_FIELDS.every(({ key }) => !pollCard[key]);
 
   return (
     <div className="poll-customizer">
@@ -159,14 +161,24 @@ export function PollViewCustomizer() {
         <p className="settings__hint poll-customizer__hint">
           Hide the details you don't need to make cards easier to scan.
         </p>
-        <button
-          type="button"
-          className="poll-customizer__reset"
-          onClick={resetPollCard}
-          disabled={isDefault}
-        >
-          Reset
-        </button>
+        <div className="poll-customizer__actions">
+          <button
+            type="button"
+            className="poll-customizer__reset"
+            onClick={simplePollCard}
+            disabled={isSimple}
+          >
+            Simple
+          </button>
+          <button
+            type="button"
+            className="poll-customizer__reset"
+            onClick={resetPollCard}
+            disabled={isDefault}
+          >
+            Reset
+          </button>
+        </div>
       </div>
 
       <div className="poll-customizer__toggles">

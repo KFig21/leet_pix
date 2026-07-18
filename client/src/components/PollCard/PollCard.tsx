@@ -34,6 +34,8 @@ import {
   type BreakdownOption,
 } from "@/components/ScoringBreakdownModal/ScoringBreakdownModal";
 import { ProjectionBreakdown } from "@/components/ProjectionBreakdown/ProjectionBreakdown";
+import { StatLineSummary } from "@/components/ProjectionBreakdown/StatLineSummary";
+import { projectionStatGroups } from "@/lib/projectionStatLine";
 import type { PollOptionView, PollView } from "@/types";
 import "./PollCard.scss";
 
@@ -533,6 +535,21 @@ export function PollCard({ poll, pick, preview }: Props) {
           rules={getPollRules(poll)}
           scoringPreset={poll.scoringPreset}
           scoringFormat={poll.scoringFormat}
+          // A readable stat line only makes sense for a single player (the
+          // comparison view has one column each).
+          summaryHeading={breakdownList.length === 1 ? "Final stats" : undefined}
+          summary={
+            breakdownList.length === 1 ? (
+              <StatLineSummary
+                groups={projectionStatGroups(
+                  breakdownList[0].statLine,
+                  breakdownList[0].player?.position ?? null,
+                  poll.sport,
+                  (poll.evaluationWeeks ?? 0) > 1,
+                )}
+              />
+            ) : undefined
+          }
           options={breakdownList.map(
             (o): BreakdownOption => ({
               playerName: o.playerName,

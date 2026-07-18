@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { useSetRightRail } from "@/context/RightRailContext";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { PollCard } from "@/components/PollCard/PollCard";
 import { Loader } from "@/components/Loader/Loader";
 import {
@@ -14,12 +15,29 @@ import {
 import type { PollView } from "@/types";
 import "./TimelinePage.scss";
 
+interface TimelinePageData {
+  items: PollView[];
+  nextCursor: string | null;
+}
+
 export function TimelinePage() {
   const [filters, setFilters] = useState<PollFilterState>(defaultPollFilters);
   const setRail = useSetRightRail();
-  const { data, isLoading, error } = useQuery({
+  const {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ["timeline"],
-    queryFn: () => api.get<PollView[]>("/polls/timeline"),
+    queryFn: ({ pageParam }) =>
+      api.get<TimelinePageData>(
+        `/polls/timeline?limit=20${pageParam ? `&cursor=${pageParam}` : ""}`,
+      ),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor,
   });
 
   // Render the filters into the right rail.
@@ -28,7 +46,12 @@ export function TimelinePage() {
     return () => setRail(null);
   }, [filters, setRail]);
 
-  const shown = data?.filter((p) => matchesPollFilters(p, filters));
+  const polls = data?.pages.flatMap((p) => p.items) ?? [];
+  const shown = polls.filter((p) => matchesPollFilters(p, filters));
+  const sentinelRef = useInfiniteScroll(
+    fetchNextPage,
+    hasNextPage && !isFetchingNextPage,
+  );
 
   return (
     <div className="timeline">
@@ -36,7 +59,7 @@ export function TimelinePage() {
 
       {isLoading && <Loader />}
       {error && <p className="timeline__msg">Couldn’t load your timeline.</p>}
-      {data?.length === 0 && (
+      {!isLoading && polls.length === 0 && (
         <div className="timeline__empty">
           <p className="timeline__msg">
             Your timeline is empty. Follow some people to see their polls.
@@ -46,13 +69,16 @@ export function TimelinePage() {
           </Link>
         </div>
       )}
-      {data && data.length > 0 && shown?.length === 0 && (
+      {polls.length > 0 && shown.length === 0 && (
         <p className="timeline__msg">No polls match these filters.</p>
       )}
 
-      {shown?.map((poll) => (
+      {shown.map((poll) => (
         <PollCard key={poll.id} poll={poll} />
       ))}
+
+      <div ref={sentinelRef} className="timeline__sentinel" />
+      {isFetchingNextPage && <Loader />}
     </div>
   );
 }

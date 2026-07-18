@@ -39,4 +39,9 @@
       background: var(--accent-hover);
     }
   }
+
+  // Invisible trigger near the end of the list for infinite scroll.
+  &__sentinel {
+    height: 1px;
+  }
 }

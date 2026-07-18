@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Prisma } from "@prisma/client";
 import {
   createPollSchema,
   isScoreablePoll,
@@ -82,65 +83,85 @@ pollsRouter.post(
   }),
 );
 
-// Timeline: polls from people the user follows (+ themselves). Two-tier sort —
-// still-votable polls first (soonest lock at top), then everyone else by
-// recency — so you act before things lock.
+// Include shared by feed queries — author, scoring, and each option's counts +
+// a few recent voter avatars.
+const feedInclude = {
+  author: true,
+  scoringFormat: true,
+  league: { include: { scoringFormat: true } },
+  options: {
+    include: {
+      _count: { select: { votes: true } },
+      votes: {
+        take: 3,
+        orderBy: { createdAt: "desc" as const },
+        select: { voter: { select: { avatar: true } } },
+      },
+    },
+  },
+} as const;
+
+// Timeline: polls from people the user follows (+ themselves), cursor-paginated
+// for infinite scroll. The first page pins every still-votable poll (soonest
+// lock first) so you act before things lock; the rest stream by recency.
 pollsRouter.get(
   "/timeline",
   requireAuth,
   asyncHandler(async (req: AuthedRequest, res) => {
+    const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 50);
+    const cursor = typeof req.query.cursor === "string" ? req.query.cursor : null;
+
     const following = await prisma.follow.findMany({
       where: { followerId: req.userId },
       select: { followingId: true },
     });
     const authorIds = [...following.map((f) => f.followingId), req.userId!];
-    const candidates = await prisma.poll.findMany({
-      where: { authorId: { in: authorIds }, deletedAt: null, hiddenAt: null },
-      orderBy: { createdAt: "desc" },
-      take: 100,
-      include: {
-        author: true,
-        scoringFormat: true,
-        league: { include: { scoringFormat: true } },
-        options: {
-          include: {
-            _count: { select: { votes: true } },
-            // A few recent voters, for the option's avatar stack on cards.
-            votes: {
-              take: 3,
-              orderBy: { createdAt: "desc" as const },
-              select: { voter: { select: { avatar: true } } },
-            },
-          },
-        },
-      },
+    const now = new Date();
+
+    const baseWhere: Prisma.PollWhereInput = {
+      authorId: { in: authorIds },
+      deletedAt: null,
+      hiddenAt: null,
+    };
+    // Votable = OPEN and not yet past its lock (null lock = unscheduled, open).
+    const votableWhere: Prisma.PollWhereInput = {
+      status: "OPEN",
+      OR: [{ lockAt: null }, { lockAt: { gt: now } }],
+    };
+
+    // The bulk: non-votable polls by recency, cursor-paginated on id.
+    const rest = await prisma.poll.findMany({
+      where: { ...baseWhere, NOT: votableWhere },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      include: feedInclude,
     });
+    const hasMore = rest.length > limit;
+    const restPage = hasMore ? rest.slice(0, limit) : rest;
+    const nextCursor = hasMore ? restPage[restPage.length - 1].id : null;
 
-    const now = Date.now();
-    // Votable = OPEN and not yet past its lock time (null lock = not scheduled).
-    const votable = (p: (typeof candidates)[number]) =>
-      p.status === "OPEN" && (!p.lockAt || p.lockAt.getTime() > now);
-    const polls = candidates
-      .sort((a, b) => {
-        const va = votable(a) ? 0 : 1;
-        const vb = votable(b) ? 0 : 1;
-        if (va !== vb) return va - vb;
-        if (va === 0) {
-          // Both votable: soonest lock first (unscheduled/null last).
-          const la = a.lockAt?.getTime() ?? Infinity;
-          const lb = b.lockAt?.getTime() ?? Infinity;
-          if (la !== lb) return la - lb;
-        }
-        // Otherwise (and as tiebreak): newest first.
+    // First page (no cursor) pins every votable poll, soonest lock first.
+    let pinned: typeof rest = [];
+    if (!cursor) {
+      pinned = await prisma.poll.findMany({
+        where: { ...baseWhere, ...votableWhere },
+        include: feedInclude,
+      });
+      pinned.sort((a, b) => {
+        const la = a.lockAt?.getTime() ?? Infinity;
+        const lb = b.lockAt?.getTime() ?? Infinity;
+        if (la !== lb) return la - lb;
         return b.createdAt.getTime() - a.createdAt.getTime();
-      })
-      .slice(0, 50);
+      });
+    }
 
-    res.json(
-      await attachPlayerContext(
-        await attachStatLines(await withMyVote(polls, req.userId)),
+    const items = await attachPlayerContext(
+      await attachStatLines(
+        await withMyVote([...pinned, ...restPage], req.userId),
       ),
     );
+    res.json({ items, nextCursor });
   }),
 );
 

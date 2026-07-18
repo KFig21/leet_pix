@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import type { SvgIconProps } from "@mui/material/SvgIcon";
 import HowToVoteIcon from "@mui/icons-material/HowToVote";
 import InsightsIcon from "@mui/icons-material/Insights";
+import ViewAgendaIcon from "@mui/icons-material/ViewAgenda";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import "./OnboardingModal.scss";
@@ -24,6 +25,11 @@ const SLIDES: Slide[] = [
     Icon: InsightsIcon,
     title: "Read the card",
     body: "“PROJ” is a player's projected fantasy points; a ★ marks the projected favorite. Tap the scoring or league badge to see exactly how points are counted.",
+  },
+  {
+    Icon: ViewAgendaIcon,
+    title: "Make it yours",
+    body: "Cards feel busy? Head to Settings → Poll view to hide the fields you don't need — or tap Simple for a clean, no-frills layout. You can switch back anytime.",
   },
   {
     Icon: AddCircleIcon,

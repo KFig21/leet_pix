@@ -15,13 +15,13 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <PreferencesProvider>
-          <AuthProvider>
+        <AuthProvider>
+          <PreferencesProvider>
             <TutorialProvider>
               <RouterProvider router={router} />
             </TutorialProvider>
-          </AuthProvider>
-        </PreferencesProvider>
+          </PreferencesProvider>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   </React.StrictMode>,

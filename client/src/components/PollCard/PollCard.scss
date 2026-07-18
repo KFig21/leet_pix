@@ -104,6 +104,42 @@
     gap: $gap-sm;
   }
 
+  // Desktop: align every option row into three shared columns —
+  // [ name/matchup info | PROJ | result ] — so PROJ sits in a consistent column
+  // at the end of the left cluster, and the info column grows to the longest
+  // row's content (no ellipsis unless the card itself is too narrow). Subgrid
+  // threads the ul's tracks down through li → button → __d to the actual cells.
+  // (Mobile uses the stacked two-row layout and keeps the flex list above.)
+  &__options--grid {
+    display: grid;
+    grid-template-columns: minmax(0, max-content) max-content minmax(0, 1fr);
+
+    > li,
+    .poll-card__option,
+    .poll-card__d {
+      display: grid;
+      grid-template-columns: subgrid;
+      grid-column: 1 / -1;
+    }
+
+    .poll-card__option,
+    .poll-card__d {
+      align-items: center;
+    }
+
+    .poll-card__d-info {
+      grid-column: 1;
+    }
+    .poll-card__proj {
+      grid-column: 2;
+    }
+    .poll-card__d-num {
+      grid-column: 3;
+      justify-self: end;
+      margin-left: 0;
+    }
+  }
+
   &__option {
     @include button-reset;
     position: relative;
@@ -245,21 +281,14 @@
     min-width: 0;
   }
 
-  // Name/pos/team/matchup cluster. It grows to absorb the row's free space so a
-  // long name uses the available width instead of ellipsizing against a fixed
-  // basis while empty space sits to its right. Because it's the only growing
-  // element, PROJ + the result cluster are still pushed together against the
-  // right edge, so PROJ stays in a consistent right-hand column across rows.
+  // Name/pos/team/matchup cluster. In grid mode it occupies the first (info)
+  // column; the column sizes to the longest row's content so the name uses the
+  // available width, only ellipsizing when the whole card runs out of room.
   &__d-info {
     display: flex;
     align-items: center;
     gap: $gap-sm;
-    flex: 1 1 380px;
     min-width: 0;
-
-    &--grow {
-      flex-grow: 1;
-    }
   }
 
   // Result cluster, pinned right: score · voter tally · %.

@@ -10,6 +10,13 @@
   padding: $gap-lg $gap-md calc($gap-xl * 2);
   background: var(--bg-secondary);
 
+  // On a phone the card already goes edge-to-edge, so drop the outer side
+  // padding — three nested paddings (page + card + embed) otherwise squeeze the
+  // form into a narrow strip.
+  @include mobile {
+    padding: $gap-md $gap-xs calc($gap-xl * 2);
+  }
+
   &__card {
     width: 100%;
     max-width: 620px;
@@ -21,7 +28,7 @@
     box-shadow: var(--shadow-card);
 
     @include mobile {
-      padding: $gap-md;
+      padding: $gap-md $gap-sm;
       border: none;
       box-shadow: none;
       margin-top: 0;
@@ -202,6 +209,10 @@
     border: 1px solid var(--border-color);
     border-radius: $radius-md;
     background: var(--bg-secondary);
+
+    @include mobile {
+      padding: $gap-sm;
+    }
   }
 
   &__error {

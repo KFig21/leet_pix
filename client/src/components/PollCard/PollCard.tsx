@@ -187,7 +187,11 @@ export function PollCard({ poll, pick, preview }: Props) {
         )}
       </p>
 
-      <ul className="poll-card__options">
+      <ul
+        className={`poll-card__options${
+          isMobile ? "" : " poll-card__options--grid"
+        }`}
+      >
         {poll.options.map((o) => {
           const votes = o._count?.votes ?? 0;
           const pct = totalVotes ? Math.round((votes / totalVotes) * 100) : 0;
@@ -423,16 +427,13 @@ export function PollCard({ poll, pick, preview }: Props) {
                     </span>
                   </span>
                 ) : (
-                  // Single line: name · pos · team badge · matchup/stats, with
-                  // PROJ on the left; score → voter tally → % pinned right.
-                  // When there's no middle PROJ column (resolved polls, or open
-                  // polls with no projection) the info cluster is free to grow
-                  // into the empty space so long stat lines don't ellipsize;
-                  // when PROJ is present it stays fixed so PROJ column-aligns.
+                  // Single line: name · pos · team badge · matchup/stats, then
+                  // PROJ, then score → voter tally → % pinned right. The three
+                  // cells sit in shared subgrid columns (see __options--grid) so
+                  // PROJ column-aligns across rows and the info cell sizes to the
+                  // longest name instead of ellipsizing while space sits idle.
                   <span className="poll-card__d">
-                    <span
-                      className={`poll-card__d-info${projEl ? "" : " poll-card__d-info--grow"}`}
-                    >
+                    <span className="poll-card__d-info">
                       {nameEl}
                       {show.position && o.player?.position && (
                         <span className="poll-card__pos">{o.player.position}</span>

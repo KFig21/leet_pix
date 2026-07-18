@@ -1,0 +1,256 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.onboard {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: $gap-lg $gap-md calc($gap-xl * 2);
+  background: var(--bg-secondary);
+
+  &__card {
+    width: 100%;
+    max-width: 620px;
+    margin-top: $gap-lg;
+    padding: $gap-lg;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: $radius-lg;
+    box-shadow: var(--shadow-card);
+
+    @include mobile {
+      padding: $gap-md;
+      border: none;
+      box-shadow: none;
+      margin-top: 0;
+    }
+  }
+
+  // ── Progress ────────────────────────────────────────────────────────────────
+  &__progress {
+    display: flex;
+    align-items: center;
+    gap: $gap-md;
+    margin-bottom: $gap-lg;
+  }
+  &__step-count {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    font-variant-numeric: tabular-nums;
+  }
+  &__bar {
+    flex: 1;
+    height: 6px;
+    border-radius: $radius-pill;
+    background: var(--bg-hover);
+    overflow: hidden;
+  }
+  &__bar-fill {
+    height: 100%;
+    border-radius: $radius-pill;
+    background: var(--accent);
+    transition: width 0.25s ease;
+  }
+
+  &__title {
+    margin: 0 0 4px;
+    font-size: $font-size-lg;
+  }
+  &__subtitle {
+    margin: 0 0 $gap-lg;
+    color: var(--text-secondary);
+  }
+
+  &__body {
+    margin-bottom: $gap-lg;
+  }
+
+  // ── Username ────────────────────────────────────────────────────────────────
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-xs;
+  }
+  &__username {
+    display: flex;
+    align-items: center;
+    gap: $gap-xs;
+    padding: 0 $gap-sm;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-sm;
+    background: var(--bg-primary);
+
+    &:focus-within {
+      border-color: var(--accent);
+    }
+  }
+  &__at {
+    color: var(--text-secondary);
+    font-weight: $font-weight-bold;
+  }
+  &__input {
+    flex: 1;
+    padding: $gap-sm 0;
+    border: none;
+    background: none;
+    color: var(--text-primary);
+    font: inherit;
+    outline: none;
+  }
+  &__hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+
+    &--good {
+      color: var(--color-success);
+    }
+    &--bad {
+      color: var(--color-danger);
+    }
+    svg {
+      font-size: 16px;
+    }
+  }
+
+  &__textarea {
+    width: 100%;
+    padding: $gap-sm;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-sm;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font: inherit;
+    resize: vertical;
+
+    &:focus {
+      border-color: var(--accent);
+      outline: none;
+    }
+  }
+  &__counter {
+    align-self: flex-end;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+  }
+
+  // ── Welcome ─────────────────────────────────────────────────────────────────
+  &__welcome-lead {
+    margin: 0 0 $gap-md;
+    line-height: 1.55;
+  }
+  &__welcome-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-sm;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: $gap-sm;
+      color: var(--text-primary);
+    }
+    svg {
+      color: var(--accent);
+    }
+  }
+
+  // ── Voting toggle ───────────────────────────────────────────────────────────
+  &__toggle-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $gap-md;
+    padding: $gap-md;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-md;
+  }
+  &__toggle-label {
+    display: block;
+    font-weight: $font-weight-bold;
+  }
+  &__toggle-help {
+    display: block;
+    margin-top: 2px;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    line-height: 1.5;
+  }
+
+  // Embedded league / scoring creators sit in a bordered, scroll-capped panel so
+  // a big form doesn't blow out the card height.
+  &__embed {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: $gap-md;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-md;
+    background: var(--bg-secondary);
+  }
+
+  &__error {
+    display: flex;
+    align-items: center;
+    gap: $gap-xs;
+    margin: 0 0 $gap-md;
+    color: var(--color-danger);
+    font-size: $font-size-sm;
+  }
+
+  // ── Actions ─────────────────────────────────────────────────────────────────
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $gap-md;
+    padding-top: $gap-md;
+    border-top: 1px solid var(--border-color);
+  }
+  &__actions-right {
+    display: flex;
+    align-items: center;
+    gap: $gap-sm;
+  }
+  &__back,
+  &__skip {
+    @include button-reset;
+    padding: $gap-sm $gap-md;
+    border-radius: $radius-pill;
+    color: var(--text-secondary);
+    font-weight: $font-weight-bold;
+
+    @include hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    &:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+  }
+  &__next {
+    @include button-reset;
+    padding: $gap-sm $gap-lg;
+    border-radius: $radius-pill;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-weight: $font-weight-bold;
+
+    @include hover {
+      background: var(--accent-hover);
+    }
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+}

@@ -1,6 +1,8 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout/AppLayout";
 import { ProtectedRoute } from "@/components/ProtectedRoute/ProtectedRoute";
+import { OnboardingGate } from "@/components/OnboardingGate/OnboardingGate";
+import { OnboardingPage } from "@/pages/Onboarding/OnboardingPage";
 import { LandingPage } from "@/pages/Landing/LandingPage";
 import { LoginPage } from "@/pages/Login/LoginPage";
 import { RegisterPage } from "@/pages/Register/RegisterPage";
@@ -23,9 +25,19 @@ export const router = createBrowserRouter([
   { path: "/forgot-password", element: <ForgotPasswordPage /> },
   { path: "/reset-password", element: <ResetPasswordPage /> },
   {
+    path: "/onboarding",
     element: (
       <ProtectedRoute>
-        <AppLayout />
+        <OnboardingPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    element: (
+      <ProtectedRoute>
+        <OnboardingGate>
+          <AppLayout />
+        </OnboardingGate>
       </ProtectedRoute>
     ),
     children: [

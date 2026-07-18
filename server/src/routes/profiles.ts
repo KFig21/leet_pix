@@ -1,5 +1,7 @@
 import { Router } from "express";
-import { updateProfileSchema } from "@leetpix/shared";
+import { Prisma } from "@prisma/client";
+import { z } from "zod";
+import { updateProfileSchema, usernameSchema } from "@leetpix/shared";
 import { prisma } from "../lib/prisma";
 import { asyncHandler } from "../lib/asyncHandler";
 import {
@@ -15,6 +17,19 @@ import { containsProfanity } from "../lib/profanity";
 import { notifyFollow } from "../services/notifications";
 
 export const profilesRouter = Router();
+
+// Number of setup-wizard pages (welcome … poll view). The last index is
+// STEP_COUNT - 1; `step` is clamped into range.
+const ONBOARDING_STEP_COUNT = 8;
+
+// Defaults used when a profile row must be created before the user has filled it
+// in (e.g. saving onboarding progress before the username step).
+const DEFAULT_PROFILE_CREATE = (userId: string) => ({
+  id: userId,
+  username: `user_${userId.slice(0, 8)}`,
+  displayName: "New User",
+  avatar: { icon: "football", iconColor: "#fff", bgColor: "#1d9bf0" },
+});
 
 // Screen the user-authored profile fields for profanity. Only checks fields
 // actually present in this update (partial PUT), so a user editing just their
@@ -60,6 +75,75 @@ profilesRouter.post(
       data: { onboardedAt },
     });
     res.json({ onboardedAt });
+  }),
+);
+
+// Setup-wizard progress. Never 404s — a user without a profile row yet reads as
+// "not started" so the gate can send them into onboarding.
+profilesRouter.get(
+  "/me/onboarding",
+  requireAuth,
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const profile = await prisma.profile.findUnique({
+      where: { id: req.userId },
+      select: { onboardingStep: true, onboardingCompletedAt: true },
+    });
+    res.json({
+      step: profile?.onboardingStep ?? 0,
+      completed: !!profile?.onboardingCompletedAt,
+    });
+  }),
+);
+
+const onboardingPatchSchema = z.object({
+  step: z.number().int().min(0).max(ONBOARDING_STEP_COUNT - 1).optional(),
+  complete: z.boolean().optional(),
+});
+
+// Save wizard progress (the page left off on) and/or mark it finished. Upserts
+// so progress persists even before the username step creates the profile.
+profilesRouter.patch(
+  "/me/onboarding",
+  requireAuth,
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const { step, complete } = onboardingPatchSchema.parse(req.body);
+    const data: Prisma.ProfileUpdateInput = {};
+    if (step !== undefined) data.onboardingStep = step;
+    if (complete) data.onboardingCompletedAt = new Date();
+
+    const profile = await prisma.profile.upsert({
+      where: { id: req.userId },
+      update: data,
+      create: {
+        ...DEFAULT_PROFILE_CREATE(req.userId!),
+        onboardingStep: step ?? 0,
+        onboardingCompletedAt: complete ? new Date() : null,
+      },
+      select: { onboardingStep: true, onboardingCompletedAt: true },
+    });
+    res.json({
+      step: profile.onboardingStep,
+      completed: !!profile.onboardingCompletedAt,
+    });
+  }),
+);
+
+// Username availability for the onboarding/profile forms — case-insensitive,
+// excluding the caller's own current username.
+profilesRouter.get(
+  "/username-available",
+  requireAuth,
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const parsed = usernameSchema.safeParse(String(req.query.u ?? ""));
+    if (!parsed.success) return res.json({ available: false, valid: false });
+    const existing = await prisma.profile.findFirst({
+      where: {
+        username: { equals: parsed.data, mode: "insensitive" },
+        NOT: { id: req.userId },
+      },
+      select: { id: true },
+    });
+    res.json({ available: !existing, valid: true });
   }),
 );
 
@@ -221,18 +305,26 @@ profilesRouter.put(
   asyncHandler(async (req: AuthedRequest, res) => {
     const data = updateProfileSchema.parse(req.body);
     assertClean(data);
-    const profile = await prisma.profile.upsert({
-      where: { id: req.userId },
-      update: data,
-      create: {
-        id: req.userId!,
-        username: data.username ?? `user_${req.userId!.slice(0, 8)}`,
-        displayName: data.displayName ?? "New User",
-        bio: data.bio,
-        avatar: data.avatar ?? { icon: "football", iconColor: "#fff", bgColor: "#1d9bf0" },
-      },
-    });
-    res.json(profile);
+    try {
+      const profile = await prisma.profile.upsert({
+        where: { id: req.userId },
+        update: data,
+        create: {
+          ...DEFAULT_PROFILE_CREATE(req.userId!),
+          username: data.username ?? `user_${req.userId!.slice(0, 8)}`,
+          displayName: data.displayName ?? "New User",
+          bio: data.bio,
+          avatar: data.avatar ?? { icon: "football", iconColor: "#fff", bgColor: "#1d9bf0" },
+        },
+      });
+      res.json(profile);
+    } catch (e) {
+      // Unique-constraint violation = the chosen username is taken.
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+        throw new HttpError(409, "That username is taken");
+      }
+      throw e;
+    }
   }),
 );
 

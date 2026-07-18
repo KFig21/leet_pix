@@ -123,10 +123,17 @@ model Profile {
   subscriptionStatus String? // e.g. active / past_due / canceled
   currentPeriodEnd   DateTime?
 
-  // When the user finished (or dismissed) the first-run walkthrough. Null = not
-  // yet onboarded, so the tutorial auto-opens once — persisted server-side so it
-  // doesn't re-show on every new device/browser.
+  // When the user finished (or dismissed) the first-run walkthrough (the
+  // informational slide tutorial — separate from the setup wizard below). Null =
+  // not yet dismissed, so it auto-opens once.
   onboardedAt DateTime?
+
+  // First-run SETUP wizard (username / avatar / bio / league / scoring / prefs).
+  // onboardingStep = the page they left off on (resume there). completedAt set =
+  // finished, so the wizard never gates them again. Existing users are stamped
+  // complete by the migration so they aren't forced through it.
+  onboardingStep        Int       @default(0)
+  onboardingCompletedAt DateTime?
 
   // Soft delete: keeps the row (and any authored content's records) around for
   // moderation/recovery instead of a hard cascade.

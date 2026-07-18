@@ -1,5 +1,5 @@
-import { useCallback, useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Link, useLocation } from "react-router-dom";
 import SettingsIcon from "@mui/icons-material/Settings";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import CloseIcon from "@mui/icons-material/Close";
@@ -25,6 +25,18 @@ export function MobileDrawer({ rail, onClose }: Props) {
     setTimeout(onClose, CLOSE_MS);
   }, [onClose]);
 
+  // Purely a navigation menu now, so close whenever the route changes (tapping
+  // any link, or navigating any other way). Skip the initial mount.
+  const { pathname } = useLocation();
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    requestClose();
+  }, [pathname, requestClose]);
+
   return (
     <div
       className={`mobile-drawer${closing ? " mobile-drawer--closing" : ""}`}
@@ -47,18 +59,10 @@ export function MobileDrawer({ rail, onClose }: Props) {
         <div
           className={`mobile-drawer__menu${rail ? " mobile-drawer__menu--divided" : ""}`}
         >
-          <Link
-            to="/trending"
-            className="mobile-drawer__item"
-            onClick={requestClose}
-          >
+          <Link to="/trending" className="mobile-drawer__item">
             <TrendingUpIcon /> Trending
           </Link>
-          <Link
-            to="/settings"
-            className="mobile-drawer__item"
-            onClick={requestClose}
-          >
+          <Link to="/settings" className="mobile-drawer__item">
             <SettingsIcon /> Settings
           </Link>
         </div>

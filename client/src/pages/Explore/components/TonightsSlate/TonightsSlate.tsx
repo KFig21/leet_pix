@@ -31,13 +31,16 @@ const dayFmt = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 });
 
-// Right-side status/time for a game row.
+// Right-side status/time for a game row. Upcoming games (days out) show the date
+// and time; today's games show just the time.
 function gameWhen(g: GameSummary, upcoming: boolean): string {
   if (g.status === "IN_PROGRESS") return "LIVE";
   if (g.status === "FINAL") return "Final";
   if (g.status === "POSTPONED") return "PPD";
   const t = new Date(g.kickoff);
-  return upcoming ? `${dayFmt.format(t)}` : timeFmt.format(t);
+  return upcoming
+    ? `${dayFmt.format(t)} · ${timeFmt.format(t)}`
+    : timeFmt.format(t);
 }
 
 // The day's slate. Tapping a game opens recent polls about either team's players

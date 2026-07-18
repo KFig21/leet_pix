@@ -31,6 +31,22 @@ const SPORTS: { value: Sport; label: string }[] = [
 ];
 const LIMIT = 4;
 
+const timeFmt = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York",
+  hour: "numeric",
+  minute: "2-digit",
+});
+const dayFmt = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York",
+  month: "short",
+  day: "numeric",
+});
+// Compact right-aligned when: date + time for upcoming, time for today.
+function gameWhen(kickoff: string, upcoming: boolean): string {
+  const t = new Date(kickoff);
+  return upcoming ? `${dayFmt.format(t)} · ${timeFmt.format(t)}` : timeFmt.format(t);
+}
+
 // Compact "trends" card for the home right rail: a few trending players and the
 // day's games. Tapping either jumps to its recent polls; "See all" opens Explore.
 export function RailTrends() {
@@ -105,6 +121,9 @@ export function RailTrends() {
             >
               <span className="rail-trends__game">
                 {g.awayTeam} <span className="rail-trends__at">@</span> {g.homeTeam}
+              </span>
+              <span className="rail-trends__when">
+                {gameWhen(g.kickoff, slate.data?.label === "Upcoming")}
               </span>
             </button>
           ))}

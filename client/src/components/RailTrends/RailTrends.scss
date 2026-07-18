@@ -92,6 +92,15 @@
     font-weight: normal;
   }
 
+  &__when {
+    margin-left: auto;
+    flex-shrink: 0;
+    padding-left: $gap-xs;
+    color: var(--text-secondary);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
   &__empty {
     margin: 0;
     color: var(--text-secondary);

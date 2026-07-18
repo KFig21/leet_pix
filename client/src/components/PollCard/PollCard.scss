@@ -245,21 +245,18 @@
     min-width: 0;
   }
 
-  // Name/pos/team/matchup cluster. A fixed (shrinkable-only-under-pressure)
-  // basis, and crucially NO grow: it always ends at the same x, so PROJ —
-  // which follows it — sits on the left in a consistent column across option
-  // rows. (Letting it grow would fill the row and shove PROJ to the right.)
-  // The gap after a short matchup is the price of that vertical alignment.
+  // Name/pos/team/matchup cluster. It grows to absorb the row's free space so a
+  // long name uses the available width instead of ellipsizing against a fixed
+  // basis while empty space sits to its right. Because it's the only growing
+  // element, PROJ + the result cluster are still pushed together against the
+  // right edge, so PROJ stays in a consistent right-hand column across rows.
   &__d-info {
     display: flex;
     align-items: center;
     gap: $gap-sm;
-    flex: 0 1 380px;
+    flex: 1 1 380px;
     min-width: 0;
 
-    // No middle PROJ column to align against (resolved polls, or open polls
-    // with no projection): grow into the empty space so long stat lines use
-    // the whole row instead of ellipsizing against the fixed basis.
     &--grow {
       flex-grow: 1;
     }

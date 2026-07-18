@@ -176,6 +176,13 @@ export function ScoringFormatCreatorPage({
 
   const categories = STAT_CATALOG[sport];
 
+  // The whole/decimal reframing only means something for rate stats measured
+  // per many units (e.g. 1 pt per 25 passing yards). Sports whose only rate
+  // stat is per-1 (baseball innings pitched) get no toggle — it's a no-op there.
+  const showRateStyle = categories.some(
+    (c) => c.kind === "rate" && (c.defaultPer ?? 1) > 1,
+  );
+
   // Group the sport's categories under their section headers, preserving order.
   const groups = useMemo(() => {
     const map = new Map<string, StatCategory[]>();
@@ -378,9 +385,13 @@ export function ScoringFormatCreatorPage({
         </header>
       )}
       <form className="scoring__form" onSubmit={save}>
+        <label className="scoring__preset-label" htmlFor="scoring-name">
+          Scoring format name
+        </label>
         <input
+          id="scoring-name"
           className="scoring__name"
-          placeholder='Name (e.g. "League One Scoring")'
+          placeholder='e.g. "League One Scoring"'
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={40}
@@ -426,24 +437,27 @@ export function ScoringFormatCreatorPage({
           ))}
         </select>
 
-        {/* How rate stats (yards, innings) are entered — value-preserving. */}
-        <div className="scoring__rate-style" role="group" aria-label="Rate scoring style">
-          <span className="scoring__rate-style-label">Rate scoring</span>
-          <button
-            type="button"
-            className={`scoring__rate-tab${rateStyle === "whole" ? " scoring__rate-tab--on" : ""}`}
-            onClick={() => changeRateStyle("whole")}
-          >
-            Whole (1 per 25)
-          </button>
-          <button
-            type="button"
-            className={`scoring__rate-tab${rateStyle === "decimal" ? " scoring__rate-tab--on" : ""}`}
-            onClick={() => changeRateStyle("decimal")}
-          >
-            Decimal (per unit)
-          </button>
-        </div>
+        {/* How rate stats (yards) are entered — value-preserving. Hidden for
+            sports with no per-many-units rate stat (e.g. baseball). */}
+        {showRateStyle && (
+          <div className="scoring__rate-style" role="group" aria-label="Rate scoring style">
+            <span className="scoring__rate-style-label">Rate scoring</span>
+            <button
+              type="button"
+              className={`scoring__rate-tab${rateStyle === "whole" ? " scoring__rate-tab--on" : ""}`}
+              onClick={() => changeRateStyle("whole")}
+            >
+              Whole (1 per 25)
+            </button>
+            <button
+              type="button"
+              className={`scoring__rate-tab${rateStyle === "decimal" ? " scoring__rate-tab--on" : ""}`}
+              onClick={() => changeRateStyle("decimal")}
+            >
+              Decimal (per unit)
+            </button>
+          </div>
+        )}
 
         {groups.map(([group, cats]) => {
           const open = openGroups.has(group);

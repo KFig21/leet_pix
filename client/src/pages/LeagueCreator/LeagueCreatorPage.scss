@@ -40,6 +40,7 @@
     @include button-reset;
     flex: 1;
     padding: $gap-sm;
+    border: 1px solid var(--border-color);
     border-radius: $radius-pill;
     color: var(--text-secondary);
     font-weight: $font-weight-bold;
@@ -50,6 +51,7 @@
 
     &--on {
       background: var(--bg-primary);
+      border-color: transparent;
       color: var(--accent);
       box-shadow: var(--shadow-card);
     }

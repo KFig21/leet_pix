@@ -24,7 +24,7 @@ const SLIDES: Slide[] = [
   {
     Icon: InsightsIcon,
     title: "Read the card",
-    body: "“PROJ” is a player's projected fantasy points; a ★ marks the projected favorite. Tap the scoring or league badge to see exactly how points are counted.",
+    body: "“PROJ” is a player's projected fantasy points for the poll's scoring. Tap the scoring or league badge to see exactly how those points are counted.",
   },
   {
     Icon: ViewAgendaIcon,

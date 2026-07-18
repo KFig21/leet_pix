@@ -54,6 +54,12 @@
       border-color: transparent;
       color: var(--accent-contrast);
       box-shadow: var(--shadow-card);
+
+      &:hover,
+      &:focus,
+      &:active {
+        color: var(--accent-contrast);
+      }
     }
   }
 

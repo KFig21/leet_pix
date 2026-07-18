@@ -6,6 +6,7 @@ import { POLL_QUESTION_LABELS } from "@leetpix/shared";
 import { api } from "@/lib/api";
 import { useSetRightRail } from "@/context/RightRailContext";
 import { PollCard } from "@/components/PollCard/PollCard";
+import { ExplorePlayers } from "./components/ExplorePlayers/ExplorePlayers";
 import { UserRow } from "@/components/UserRow/UserRow";
 import { FollowButton } from "@/components/FollowButton/FollowButton";
 import { Loader } from "@/components/Loader/Loader";
@@ -124,6 +125,10 @@ export function SearchPage() {
                 See more profiles
               </button>
             )}
+          </section>
+
+          <section className="search__section">
+            <ExplorePlayers onSelect={setQ} />
           </section>
 
           <section className="search__section">

@@ -11,8 +11,23 @@ import {
 import { withMyVote } from "../lib/myVote";
 import { attachStatLines } from "../lib/statLines";
 import { attachPlayerContext } from "../lib/playerContext";
+import { getExplorePlayers } from "../services/trendingPlayers";
 
 export const exploreRouter = Router();
+
+// Discovery lists of players: trending (most-polled recently), hot, and cold.
+// Defaults to football; ?sport=BASEBALL for the other.
+exploreRouter.get(
+  "/players",
+  optionalAuth,
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const sport =
+      String(req.query.sport ?? "") === Sport.BASEBALL
+        ? Sport.BASEBALL
+        : Sport.FOOTBALL;
+    res.json(await getExplorePlayers(sport));
+  }),
+);
 
 const pollInclude = {
   author: true,

@@ -3,7 +3,7 @@ import GroupsIcon from "@mui/icons-material/Groups";
 import {
   SCORING_PRESET_LABELS,
   SCORING_PRESET_RULES,
-  LINEUP_SLOTS,
+  ALL_LINEUP_SLOTS,
   LINEUP_SLOT_LABELS,
   statLabel,
   formatScoringRule,
@@ -35,8 +35,9 @@ export function LeagueBadge({ league }: Props) {
     ? SCORING_PRESET_RULES[league.scoringPreset as ScoringPreset]
     : (league.scoringFormat?.rules ?? {});
 
-  // Starting slots (everything but the bench) that actually have a count.
-  const starters = LINEUP_SLOTS.filter(
+  // Starting slots (everything but the bench) that actually have a count. Works
+  // for any sport since a lineup only carries its own sport's slots.
+  const starters = ALL_LINEUP_SLOTS.filter(
     (s) => s !== "BENCH" && (league.lineup[s] || 0) > 0,
   );
 

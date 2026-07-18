@@ -27,6 +27,34 @@
     font-weight: $font-weight-bold;
   }
 
+  // ── Sport selector (segmented tabs) ────────────────────────────────────────
+  &__sport {
+    display: flex;
+    gap: $gap-xs;
+    padding: $gap-xs;
+    background: var(--bg-secondary);
+    border-radius: $radius-pill;
+  }
+
+  &__sport-tab {
+    @include button-reset;
+    flex: 1;
+    padding: $gap-sm;
+    border-radius: $radius-pill;
+    color: var(--text-secondary);
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      color: var(--text-primary);
+    }
+
+    &--on {
+      background: var(--bg-primary);
+      color: var(--accent);
+      box-shadow: var(--shadow-card);
+    }
+  }
+
   &__label-row {
     display: flex;
     align-items: baseline;

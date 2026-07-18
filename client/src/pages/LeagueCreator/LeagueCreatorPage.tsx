@@ -7,10 +7,11 @@ import {
   Sport,
   SPORT_PRESETS,
   SCORING_PRESET_LABELS,
-  LINEUP_SLOTS,
+  slotsForSport,
   LINEUP_SLOT_LABELS,
   LINEUP_SLOT_HINTS,
-  DEFAULT_FOOTBALL_LINEUP,
+  LINEUP_SLOT_MAX,
+  DEFAULT_LINEUP_BY_SPORT,
   startingSpots,
   rosterSize,
   type LineupSlots,
@@ -35,19 +36,10 @@ interface ScoringFormat {
   rules: Record<string, ScoringRuleValue>;
 }
 
-// Per-slot max so counts stay sane (matches the shared zod bounds).
-const SLOT_MAX: Record<LineupSlot, number> = {
-  QB: 5,
-  RB: 10,
-  WR: 10,
-  TE: 5,
-  FLEX: 5,
-  SUPERFLEX: 3,
-  K: 3,
-  DST: 3,
-  IDP: 10,
-  BENCH: 20,
-};
+const SPORTS: { value: Sport; label: string }[] = [
+  { value: Sport.FOOTBALL, label: "Football" },
+  { value: Sport.BASEBALL, label: "Baseball" },
+];
 
 // The saved-league shape the API returns (and onSaved hands back).
 export interface SavedLeague {
@@ -64,7 +56,7 @@ interface Props {
 }
 
 // League setup wizard: team count + starting lineup + scoring. Reusable across
-// polls (attach one so voters see how valuable a position is). Football-only.
+// polls (attach one so voters see how valuable a position is).
 export function LeagueCreatorPage({ embedded = false, onSaved }: Props = {}) {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -72,8 +64,11 @@ export function LeagueCreatorPage({ embedded = false, onSaved }: Props = {}) {
   const params = useParams<{ id?: string }>();
   const editId = embedded ? undefined : params.id;
   const [name, setName] = useState("");
+  const [sport, setSport] = useState<Sport>(Sport.FOOTBALL);
   const [numTeams, setNumTeams] = useState(12);
-  const [lineup, setLineup] = useState<LineupSlots>({ ...DEFAULT_FOOTBALL_LINEUP });
+  const [lineup, setLineup] = useState<LineupSlots>({
+    ...DEFAULT_LINEUP_BY_SPORT[Sport.FOOTBALL],
+  });
   // Encoded scoring choice: "preset:FOOTBALL_PPR" or "custom:<id>".
   const [scoring, setScoring] = useState<string>(
     `preset:${SPORT_PRESETS[Sport.FOOTBALL][0]}`,
@@ -89,6 +84,7 @@ export function LeagueCreatorPage({ embedded = false, onSaved }: Props = {}) {
     queryFn: () =>
       api.get<{
         name: string;
+        sport: Sport;
         numTeams: number;
         lineup: LineupSlots;
         scoringPreset: ScoringPreset | null;
@@ -99,12 +95,13 @@ export function LeagueCreatorPage({ embedded = false, onSaved }: Props = {}) {
   useEffect(() => {
     if (!existing) return;
     setName(existing.name);
+    setSport(existing.sport);
     setNumTeams(existing.numTeams);
-    setLineup({ ...DEFAULT_FOOTBALL_LINEUP, ...existing.lineup });
+    setLineup({ ...DEFAULT_LINEUP_BY_SPORT[existing.sport], ...existing.lineup });
     setScoring(
       existing.scoringFormatId
         ? `custom:${existing.scoringFormatId}`
-        : `preset:${existing.scoringPreset ?? SPORT_PRESETS[Sport.FOOTBALL][0]}`,
+        : `preset:${existing.scoringPreset ?? SPORT_PRESETS[existing.sport][0]}`,
     );
   }, [existing]);
 
@@ -112,10 +109,17 @@ export function LeagueCreatorPage({ embedded = false, onSaved }: Props = {}) {
     queryKey: ["scoring-formats"],
     queryFn: () => api.get<ScoringFormat[]>("/scoring-formats"),
   });
-  const customForSport = (customFormats ?? []).filter(
-    (f) => f.sport === Sport.FOOTBALL,
-  );
-  const presets = SPORT_PRESETS[Sport.FOOTBALL];
+  const customForSport = (customFormats ?? []).filter((f) => f.sport === sport);
+  const presets = SPORT_PRESETS[sport];
+
+  // Switching sports swaps the slot set + presets and resets those choices,
+  // since a football lineup/scoring is meaningless for a baseball league.
+  const changeSport = (next: Sport) => {
+    if (next === sport) return;
+    setSport(next);
+    setLineup({ ...DEFAULT_LINEUP_BY_SPORT[next] });
+    setScoring(`preset:${SPORT_PRESETS[next][0]}`);
+  };
 
   // Badge props for the currently selected scoring (preview on click).
   const [scoringKind, scoringVal] = scoring.split(":");
@@ -143,7 +147,7 @@ export function LeagueCreatorPage({ embedded = false, onSaved }: Props = {}) {
   const step = (slot: LineupSlot, delta: number) =>
     setLineup((prev) => ({
       ...prev,
-      [slot]: Math.max(0, Math.min(SLOT_MAX[slot], (prev[slot] || 0) + delta)),
+      [slot]: Math.max(0, Math.min(LINEUP_SLOT_MAX[slot], (prev[slot] || 0) + delta)),
     }));
 
   const save = async (e: React.FormEvent) => {
@@ -158,7 +162,7 @@ export function LeagueCreatorPage({ embedded = false, onSaved }: Props = {}) {
     try {
       const body = {
         name,
-        sport: Sport.FOOTBALL,
+        sport,
         numTeams,
         lineup,
         scoringPreset: kind === "preset" ? (val as ScoringPreset) : undefined,
@@ -184,6 +188,29 @@ export function LeagueCreatorPage({ embedded = false, onSaved }: Props = {}) {
         </header>
       )}
       <form className="league__form" onSubmit={save}>
+        {/* Sport is locked when editing (slots/scoring are already committed). */}
+        {!editId && (
+          <>
+            <label className="league__label">Sport</label>
+            <div className="league__sport" role="tablist" aria-label="Sport">
+              {SPORTS.map((s) => (
+                <button
+                  key={s.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={sport === s.value}
+                  className={`league__sport-tab${
+                    sport === s.value ? " league__sport-tab--on" : ""
+                  }`}
+                  onClick={() => changeSport(s.value)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
         <label className="league__label">Name</label>
         <input
           className="league__input"
@@ -212,7 +239,7 @@ export function LeagueCreatorPage({ embedded = false, onSaved }: Props = {}) {
           </span>
         </div>
         <div className="league__slots">
-          {LINEUP_SLOTS.map((slot) => (
+          {slotsForSport(sport).map((slot) => (
             <div key={slot} className="league__slot">
               <span className="league__slot-label">
                 {LINEUP_SLOT_LABELS[slot]}
@@ -237,7 +264,7 @@ export function LeagueCreatorPage({ embedded = false, onSaved }: Props = {}) {
                   type="button"
                   className="league__step"
                   aria-label={`More ${LINEUP_SLOT_LABELS[slot]}`}
-                  disabled={(lineup[slot] || 0) >= SLOT_MAX[slot]}
+                  disabled={(lineup[slot] || 0) >= LINEUP_SLOT_MAX[slot]}
                   onClick={() => step(slot, 1)}
                 >
                   <AddIcon fontSize="small" />
@@ -295,7 +322,7 @@ export function LeagueCreatorPage({ embedded = false, onSaved }: Props = {}) {
         >
           <ScoringFormatCreatorPage
             embedded
-            initialSport={Sport.FOOTBALL}
+            initialSport={sport}
             onSaved={onScoringSaved}
           />
         </Modal>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import "../Login/LoginPage.scss";
+import { AuthShell } from "@/components/AuthShell/AuthShell";
 
 // Landing page for the reset-password email link. Supabase parses the recovery
 // token from the URL and establishes a temporary session; we then let the user
@@ -45,9 +45,9 @@ export function ResetPasswordPage() {
   };
 
   return (
-    <div className="auth-page">
+    <AuthShell>
       <div className="auth-page__card">
-        <h1 className="auth-page__title">LeetPix</h1>
+        <h1 className="auth-page__title">Set a new password</h1>
 
         {done ? (
           <p className="auth-page__subtitle">
@@ -83,6 +83,6 @@ export function ResetPasswordPage() {
           </>
         )}
       </div>
-    </div>
+    </AuthShell>
   );
 }

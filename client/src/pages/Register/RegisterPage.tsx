@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-// Shares the auth-page styling.
-import "../Login/LoginPage.scss";
+import { AuthShell, GoogleButton } from "@/components/AuthShell/AuthShell";
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -18,43 +17,66 @@ export function RegisterPage() {
     const { error } = await supabase.auth.signUp({ email, password });
     setBusy(false);
     if (error) return setError(error.message);
-    // After email confirmation + first sign-in, user completes profile in Settings.
+    // After email confirmation + first sign-in, the setup wizard runs.
     navigate("/home");
   };
 
-  return (
-    <div className="auth-page">
-      <form className="auth-page__card" onSubmit={submit}>
-        <h1 className="auth-page__title">Create account</h1>
-        <p className="auth-page__subtitle">Join LeetPix.</p>
+  const oauth = async () => {
+    await supabase.auth.signInWithOAuth({ provider: "google" });
+  };
 
-        <input
-          className="auth-page__input"
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          className="auth-page__input"
-          type="password"
-          placeholder="Password (min 6 chars)"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          minLength={6}
-          required
-        />
+  return (
+    <AuthShell>
+      <form className="auth-page__card" onSubmit={submit}>
+        <h1 className="auth-page__title">Create your account</h1>
+        <p className="auth-page__subtitle">
+          Join LeetPix and start settling debates.
+        </p>
+
+        <div className="auth-page__field">
+          <label className="auth-page__label" htmlFor="reg-email">
+            Email
+          </label>
+          <input
+            id="reg-email"
+            className="auth-page__input"
+            type="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+        <div className="auth-page__field">
+          <label className="auth-page__label" htmlFor="reg-pw">
+            Password
+          </label>
+          <input
+            id="reg-pw"
+            className="auth-page__input"
+            type="password"
+            placeholder="At least 6 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={6}
+            required
+          />
+        </div>
         {error && <p className="auth-page__error">{error}</p>}
 
         <button className="auth-page__submit" disabled={busy}>
-          {busy ? "Creating…" : "Sign up"}
+          {busy ? "Creating…" : "Create account"}
         </button>
+
+        <div className="auth-page__divider">or</div>
+        <GoogleButton onClick={oauth} label="Sign up with Google" />
 
         <p className="auth-page__switch">
           Have an account? <Link to="/login">Sign in</Link>
         </p>
       </form>
-    </div>
+    </AuthShell>
   );
 }

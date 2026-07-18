@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
-import "../Login/LoginPage.scss";
+import { AuthShell } from "@/components/AuthShell/AuthShell";
 
 export function ForgotPasswordPage() {
   const [identifier, setIdentifier] = useState("");
@@ -24,10 +24,10 @@ export function ForgotPasswordPage() {
   };
 
   return (
-    <div className="auth-page">
+    <AuthShell>
       {sent ? (
         <div className="auth-page__card">
-          <h1 className="auth-page__title">LeetPix</h1>
+          <h1 className="auth-page__title">Check your inbox</h1>
           <p className="auth-page__subtitle">
             If an account matches that, we’ve emailed a password reset link. Check
             your inbox (and spam).
@@ -63,6 +63,6 @@ export function ForgotPasswordPage() {
           </p>
         </form>
       )}
-    </div>
+    </AuthShell>
   );
 }

@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
@@ -29,7 +30,44 @@ export function SettingsPage() {
   const { openTutorial } = useTutorial();
   const { confirmVotes, setConfirmVotes } = usePreferences();
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [accountBusy, setAccountBusy] = useState(false);
   const isDark = theme === "dark";
+
+  // Deactivate: reversible hide. Sign out afterward so the hidden state takes
+  // effect immediately; signing back in reactivates via the reactivation gate.
+  const deactivate = async () => {
+    if (
+      !window.confirm(
+        "Deactivate your account? You'll be hidden from everyone until you sign back in. Your polls and picks are kept.",
+      )
+    )
+      return;
+    setAccountBusy(true);
+    try {
+      await api.post("/profiles/me/deactivate");
+      await signOut();
+      navigate("/");
+    } finally {
+      setAccountBusy(false);
+    }
+  };
+
+  // Delete: permanent + anonymizing. Require typing DELETE as a friction gate.
+  const deleteAccount = async () => {
+    const typed = window.prompt(
+      "This permanently deletes your account. Your polls stay (shown as “Deleted user”) so other people's picks survive, but your votes and follows are removed. This can't be undone.\n\nType DELETE to confirm.",
+    );
+    if (typed !== "DELETE") return;
+    setAccountBusy(true);
+    try {
+      await api.del("/profiles/me");
+      await signOut();
+      navigate("/");
+    } finally {
+      setAccountBusy(false);
+    }
+  };
 
   const { data: leagues } = useQuery({
     queryKey: ["leagues"],
@@ -174,6 +212,35 @@ export function SettingsPage() {
         <button className="settings__signout" onClick={signOut}>
           Sign out
         </button>
+
+        <div className="settings__danger">
+          <button
+            type="button"
+            className="settings__danger-btn"
+            onClick={deactivate}
+            disabled={accountBusy}
+          >
+            Deactivate account
+          </button>
+          <p className="settings__danger-help">
+            Temporarily hide your profile, polls, and picks. Sign back in anytime
+            to restore everything.
+          </p>
+
+          <button
+            type="button"
+            className="settings__danger-btn settings__danger-btn--delete"
+            onClick={deleteAccount}
+            disabled={accountBusy}
+          >
+            Delete account
+          </button>
+          <p className="settings__danger-help">
+            Permanently delete your account. Your polls stay (shown as “Deleted
+            user”) so others' picks survive; your votes and follows are removed.
+            This can't be undone.
+          </p>
+        </div>
       </section>
     </div>
   );

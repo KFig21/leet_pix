@@ -15,6 +15,9 @@ searchRouter.get(
     const [users, polls, formats] = await Promise.all([
       prisma.profile.findMany({
         where: {
+          // Deactivated/deleted accounts are not searchable.
+          deactivatedAt: null,
+          deletedAt: null,
           OR: [
             { username: { contains: q, mode: "insensitive" } },
             { displayName: { contains: q, mode: "insensitive" } },
@@ -27,6 +30,7 @@ searchRouter.get(
         where: {
           deletedAt: null,
           hiddenAt: null,
+          author: { is: { deactivatedAt: null } },
           options: { some: { playerName: { contains: q, mode: "insensitive" } } },
         },
         include: {

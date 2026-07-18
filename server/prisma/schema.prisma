@@ -135,8 +135,14 @@ model Profile {
   onboardingStep        Int       @default(0)
   onboardingCompletedAt DateTime?
 
-  // Soft delete: keeps the row (and any authored content's records) around for
-  // moderation/recovery instead of a hard cascade.
+  // Reversible deactivation: the account is hidden everywhere (search, profile,
+  // feeds) but fully recoverable — the user reactivates on their next sign-in.
+  // Distinct from deletedAt (permanent).
+  deactivatedAt DateTime?
+
+  // Account deletion (anonymize-in-place): the auth user is removed and this row
+  // is stripped of PII + stamped deletedAt, so authored polls survive (attributed
+  // to "Deleted user") without a destructive cascade.
   deletedAt DateTime?
 
   createdAt   DateTime @default(now())

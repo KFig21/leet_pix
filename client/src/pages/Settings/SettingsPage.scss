@@ -114,13 +114,61 @@
   &__signout {
     @include button-reset;
     padding: $gap-sm $gap-lg;
-    border: 1px solid var(--color-danger);
+    border: 1px solid var(--border-color);
     border-radius: $radius-pill;
-    color: var(--color-danger);
+    color: var(--text-primary);
     font-weight: $font-weight-bold;
 
     &:hover {
-      background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+      background: var(--bg-hover);
     }
+  }
+
+  // Destructive account actions, set apart from the rest of the section.
+  &__danger {
+    margin-top: $gap-lg;
+    padding-top: $gap-md;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $gap-xs;
+  }
+
+  &__danger-btn {
+    @include button-reset;
+    padding: $gap-sm $gap-lg;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-pill;
+    color: var(--text-primary);
+    font-weight: $font-weight-bold;
+
+    &:hover {
+      background: var(--bg-hover);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    // The irreversible one is styled as clearly dangerous.
+    &--delete {
+      margin-top: $gap-md;
+      border-color: var(--color-danger);
+      color: var(--color-danger);
+
+      &:hover {
+        background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+      }
+    }
+  }
+
+  &__danger-help {
+    margin: 0;
+    max-width: 46ch;
+    color: var(--text-secondary);
+    font-size: $font-size-sm;
+    line-height: 1.5;
   }
 }

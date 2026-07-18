@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { updateProfileSchema, usernameSchema } from "@leetpix/shared";
 import { prisma } from "../lib/prisma";
+import { supabaseAdmin } from "../lib/supabase";
 import { asyncHandler } from "../lib/asyncHandler";
 import {
   requireAuth,
@@ -17,6 +18,14 @@ import { containsProfanity } from "../lib/profanity";
 import { notifyFollow } from "../services/notifications";
 
 export const profilesRouter = Router();
+
+// A profile is hidden from everyone but its owner when deactivated (reversible)
+// or deleted (anonymized). Used to gate public read paths.
+type Visibility = { deactivatedAt: Date | null; deletedAt: Date | null };
+const isHidden = (p: Visibility) =>
+  p.deactivatedAt != null || p.deletedAt != null;
+// Prisma where-clause form for excluding hidden profiles.
+const VISIBLE_PROFILE = { deactivatedAt: null, deletedAt: null } as const;
 
 // Number of setup-wizard pages (welcome … poll view). The last index is
 // STEP_COUNT - 1; `step` is clamped into range.
@@ -160,7 +169,10 @@ profilesRouter.get(
         },
       },
     });
-    if (!profile) throw new HttpError(404, "Not found");
+    // Deactivated/deleted profiles read as not-found to everyone but the owner.
+    if (!profile || (isHidden(profile) && profile.id !== req.userId)) {
+      throw new HttpError(404, "Not found");
+    }
 
     let isFollowing = false;
     if (req.userId && req.userId !== profile.id) {
@@ -196,9 +208,11 @@ const pollInclude = {
   },
 } as const;
 
-async function profileByUsername(username: string) {
+async function profileByUsername(username: string, viewerId?: string | null) {
   const profile = await prisma.profile.findUnique({ where: { username } });
-  if (!profile) throw new HttpError(404, "Not found");
+  if (!profile || (isHidden(profile) && profile.id !== viewerId)) {
+    throw new HttpError(404, "Not found");
+  }
   return profile;
 }
 
@@ -210,7 +224,7 @@ profilesRouter.get(
   "/:username/polls",
   optionalAuth,
   asyncHandler(async (req: AuthedRequest, res) => {
-    const profile = await profileByUsername(req.params.username);
+    const profile = await profileByUsername(req.params.username, req.userId);
     const limit = feedLimit(req.query.limit);
     const cursor = typeof req.query.cursor === "string" ? req.query.cursor : null;
 
@@ -238,7 +252,7 @@ profilesRouter.get(
   "/:username/votes",
   optionalAuth,
   asyncHandler(async (req: AuthedRequest, res) => {
-    const profile = await profileByUsername(req.params.username);
+    const profile = await profileByUsername(req.params.username, req.userId);
     const limit = feedLimit(req.query.limit);
     const cursor = typeof req.query.cursor === "string" ? req.query.cursor : null;
 
@@ -274,10 +288,12 @@ profilesRouter.get(
 // Followers / following as profile summaries.
 profilesRouter.get(
   "/:username/followers",
-  asyncHandler(async (req, res) => {
-    const profile = await profileByUsername(req.params.username);
+  optionalAuth,
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const profile = await profileByUsername(req.params.username, req.userId);
     const rows = await prisma.follow.findMany({
-      where: { followingId: profile.id },
+      // Don't surface deactivated/deleted accounts in the list.
+      where: { followingId: profile.id, follower: { is: VISIBLE_PROFILE } },
       include: { follower: true },
       orderBy: { createdAt: "desc" },
     });
@@ -287,10 +303,11 @@ profilesRouter.get(
 
 profilesRouter.get(
   "/:username/following",
-  asyncHandler(async (req, res) => {
-    const profile = await profileByUsername(req.params.username);
+  optionalAuth,
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const profile = await profileByUsername(req.params.username, req.userId);
     const rows = await prisma.follow.findMany({
-      where: { followerId: profile.id },
+      where: { followerId: profile.id, following: { is: VISIBLE_PROFILE } },
       include: { following: true },
       orderBy: { createdAt: "desc" },
     });
@@ -325,6 +342,77 @@ profilesRouter.put(
       }
       throw e;
     }
+  }),
+);
+
+// Deactivate: reversible hide. The account vanishes from public read paths but
+// the row and all content are kept; the user reactivates on next sign-in.
+profilesRouter.post(
+  "/me/deactivate",
+  requireAuth,
+  asyncHandler(async (req: AuthedRequest, res) => {
+    await prisma.profile.updateMany({
+      where: { id: req.userId, deletedAt: null },
+      data: { deactivatedAt: new Date() },
+    });
+    res.status(204).end();
+  }),
+);
+
+// Reactivate: clear the deactivation flag (the "welcome back" path).
+profilesRouter.post(
+  "/me/reactivate",
+  requireAuth,
+  asyncHandler(async (req: AuthedRequest, res) => {
+    await prisma.profile.updateMany({
+      where: { id: req.userId },
+      data: { deactivatedAt: null },
+    });
+    res.status(204).end();
+  }),
+);
+
+// Delete: permanent. Anonymize the profile in place and drop the user's own
+// footprint (votes + follows), but keep authored polls so other people's picks,
+// results, and threads survive — attributed to "Deleted user". The Supabase auth
+// identity is removed last so a mid-way failure never orphans a live login.
+profilesRouter.delete(
+  "/me",
+  requireAuth,
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const userId = req.userId!;
+    const existing = await prisma.profile.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (existing) {
+      // 12 hex chars keeps the handle short while collision stays negligible.
+      const suffix = userId.replace(/-/g, "").slice(0, 12);
+      await prisma.$transaction([
+        prisma.vote.deleteMany({ where: { voterId: userId } }),
+        prisma.follow.deleteMany({
+          where: { OR: [{ followerId: userId }, { followingId: userId }] },
+        }),
+        prisma.profile.update({
+          where: { id: userId },
+          data: {
+            username: `deleted_${suffix}`,
+            displayName: "Deleted user",
+            bio: null,
+            avatar: { icon: "football", iconColor: "#ffffff", bgColor: "#3a3a3a" },
+            stripeCustomerId: null,
+            subscriptionStatus: null,
+            currentPeriodEnd: null,
+            deactivatedAt: null,
+            deletedAt: new Date(),
+          },
+        }),
+      ]);
+    }
+
+    await supabaseAdmin.auth.admin.deleteUser(userId);
+    res.status(204).end();
   }),
 );
 

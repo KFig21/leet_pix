@@ -122,6 +122,10 @@ pollsRouter.get(
       authorId: { in: authorIds },
       deletedAt: null,
       hiddenAt: null,
+      // Hide polls from accounts that are (reversibly) deactivated. Deleted
+      // accounts are anonymized in place and their follow edges dropped, so they
+      // never reach a following-feed anyway.
+      author: { is: { deactivatedAt: null } },
     };
     // Votable = OPEN and not yet past its lock (null lock = unscheduled, open).
     const votableWhere: Prisma.PollWhereInput = {
@@ -184,7 +188,11 @@ pollsRouter.get(
         },
       },
     });
-    if (!poll || poll.deletedAt || poll.hiddenAt) throw new HttpError(404, "Not found");
+    // Deactivated authors' polls are hidden; deleted (anonymized) ones remain
+    // viewable so voters keep access to their own record.
+    if (!poll || poll.deletedAt || poll.hiddenAt || poll.author.deactivatedAt) {
+      throw new HttpError(404, "Not found");
+    }
     const [withVote] = await withMyVote([poll], req.userId);
     const [withStats] = await attachStatLines([withVote]);
     const [withCtx] = await attachPlayerContext([withStats]);

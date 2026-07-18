@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout/AppLayout";
 import { ProtectedRoute } from "@/components/ProtectedRoute/ProtectedRoute";
 import { OnboardingGate } from "@/components/OnboardingGate/OnboardingGate";
+import { ReactivateGate } from "@/components/ReactivateGate/ReactivateGate";
 import { OnboardingPage } from "@/pages/Onboarding/OnboardingPage";
 import { LandingPage } from "@/pages/Landing/LandingPage";
 import { LoginPage } from "@/pages/Login/LoginPage";
@@ -35,9 +36,11 @@ export const router = createBrowserRouter([
   {
     element: (
       <ProtectedRoute>
-        <OnboardingGate>
-          <AppLayout />
-        </OnboardingGate>
+        <ReactivateGate>
+          <OnboardingGate>
+            <AppLayout />
+          </OnboardingGate>
+        </ReactivateGate>
       </ProtectedRoute>
     ),
     children: [
